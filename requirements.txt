@@ -3,3 +3,10 @@ Sphinx
 coverage
 awscli
 python-dotenv>=0.5.1
+pandas
+h5py
+tensorflow
+keras
+gevent
+requests
+numpy>=1.14
