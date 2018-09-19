@@ -36,7 +36,7 @@ def load_model(model_file):
 
 
 model_name = '2015.h5.python36'
-model_file = os.path.join(cfg.BASE_DIR, '..', 'models', model_name)
+model_file = os.path.join(cfg.BASE_DIR, 'models', model_name)
 
 model = load_model(model_file)
 if not model:
