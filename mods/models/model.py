@@ -88,26 +88,25 @@ def predict_data(*args):
     """
     Function to make prediction on an uploaded file
     """
-    if args and len(args) > 0:
-        data = args[0]
+    if args:
+        for data in args:
+            message = {'status': 'ok', 'predictions': []}
 
-        message = {'status': 'ok', 'predictions': []}
+            data_json = json.loads(data[0])
+            rows = np.array(data_json['rows'], dtype=np.float32)
 
-        data_json = json.loads(data[0])
-        rows = np.array(data_json['rows'], dtype=np.float32)
+            global model
+            predictions = model.predict(rows)
 
-        global model
-        predictions = model.predict(rows)
-
-        i = 0
-        for prediction in predictions:
-            p = {
-                'prob': float(prediction[0])
-            }
-            if 'labels' in data_json:
-                p['label'] = data_json['labels'][i]
-            message.get('predictions').append(p)
-            i = i + 1
+            i = 0
+            for prediction in predictions:
+                p = {
+                    'prob': float(prediction[0])
+                }
+                if 'labels' in data_json:
+                    p['label'] = data_json['labels'][i]
+                message.get('predictions').append(p)
+                i = i + 1
     else:
         message = 'Error reading input data'
     return message
