@@ -59,12 +59,12 @@ def get_metadata():
 
     pkg = pkg_resources.get_distribution(module[0])
     meta = {
-        'Name': None,
-        'Version': None,
-        'Summary': None,
+        'Name': 'MODS (Massive Online Data Streams)',
+        'Version': '0.1',
+        'Summary': 'Intelligent module using ML/DL techniques for underlying IDS and monitoring system',
         'Home-page': None,
-        'Author': None,
-        'Author-email': None,
+        'Author': 'Giang Nguyen, Stefan Dlugolinsky',
+        'Author-email': 'giang.nguyen@savba.sk, stefan.dlugolinsky@savba.sk',
         'License': None,
     }
 
