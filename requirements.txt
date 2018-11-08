@@ -9,4 +9,7 @@ tensorflow
 keras
 gevent
 requests
-numpy>=1.14
+numpy
+scikit-learn
+matplotlib
+seaborn
