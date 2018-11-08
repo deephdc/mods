@@ -29,7 +29,7 @@ app_models = BASE_DIR + '/models/'
 app_checkpoints = BASE_DIR + '/checkpoints/'
 app_visualization = BASE_DIR + '/visualization/'
 
-default_model = 'serie_mock_1h_10m-seq-6.h5'
+default_model = 'serie_mock_1h_10m-seq-6.zip'
 
 # Feature data
 feature_filename = 'features.tsv'

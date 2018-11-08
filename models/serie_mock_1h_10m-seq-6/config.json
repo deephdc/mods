@@ -1,0 +1,21 @@
+{
+  "model": {
+    "file": "model.h5",
+    "multivariate": 2,
+    "sequence_len": 6
+  },
+  "scaler": {
+    "file": "scaler.pkl"
+  },
+  "sample_data": {
+    "file": "sample_data.tsv",
+    "sep": " ",
+    "skiprows": 0,
+    "skipfooter": 0,
+    "engine": "python",
+    "usecols": [
+      "number_of_conn",
+      "sum_orig_bytes"
+    ]
+  }
+}

@@ -298,7 +298,7 @@ def get_metadata_filename(model_filename):
 # loads model and model's metadata
 def load_model(filename, metadata_filename):
     try:
-        model = keras.models.load_model(filename)
+        model = keras.models.__load_model(filename)
         metadata = load_model_metadata(metadata_filename)
         return model, metadata
     except Exception as e:

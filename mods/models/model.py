@@ -12,52 +12,73 @@ import os
 import sys
 import json
 import numpy as np
+import pandas as pd
+import keras
 
-# cat data/features/serie_mock_1h_10m.tsv | cut -f 4-5 -d $'\t' | tail -n +2 | head -n+1 -n 10 | awk '{printf "[%s, %s],\n", $1, $2}'
-sample_data = np.array([
-    [16595, 484293804],
-    [29823, 2352139701],
-    [42214, 3441880182],
-    [55848, 3597720209],
-    [103089, 3608747597],
-    [116832, 3612003592],
-    [114082, 3130504652],
-    [115091, 3862441600],
-    [115942, 3159371336],
-    [117386, 3005934068],
-])
+from zipfile import ZipFile
 
-model_filename = os.path.join(cfg.app_models, cfg.default_model)
-model_metadata_filename = utl.get_metadata_filename(model_filename)
+
+class MODSModel:
+    def __init__(self, file):
+        self.config = None
+        self.model = None
+        self.scaler = None
+        self.sample_data = None
+        self.__load(file)
+        self.__init()
+
+    def __load(self, file):
+        print('Loading model: %s' % file)
+        with ZipFile(file) as zip:
+            self.__load_config(zip, 'config.json')
+            self.__load_model(zip, self.config['model'])
+            self.__load_scaler(zip, self.config['scaler'])
+            self.__load_sample_data(zip, self.config['sample_data'])
+        print('Model loaded')
+
+    def __load_config(self, zip, file):
+        print('Loading model config')
+        with zip.open(file) as f:
+            self.config = json.load(f)
+        print('Model config:\n%s' % json.dumps(self.config, indent=True))
+
+    def __load_model(self, zip, config):
+        print('Loading keras model')
+        with zip.open(config['file']) as f:
+            contents = zip.read(f)
+            self.model = keras.models.load_model(contents)
+        print('Keras model loaded')
+
+    def __load_scaler(self, zip, config):
+        print('Loading scaler')
+        with zip.open(config['file']) as f:
+            self.scaler = joblib.load(f)
+        print('Scaler loaded')
+
+    def __load_sample_data(self, zip, config):
+        print('Loading sample data')
+        with zip.open(config['file']) as f:
+            pd.read_csv(f,
+                        sep=config['sep'],
+                        skiprows=config['skiprows'],
+                        skipfooter=config['skipfooter'],
+                        engine=config['engine'],
+                        usecols=lambda col: col in config['usecols']
+                        )
+        print('Sample data loaded')
+
+    def __init(self):
+        print('Initializing model')
+        return
+
 
 # load model
-model, model_metadata = utl.load_model(model_filename, model_metadata_filename)
-if not model:
+model_filename = os.path.join(cfg.app_models, cfg.default_model)
+mods_model = MODSModel(model_filename)
+
+if not mods_model:
     print('Could not load model: %s' % model_filename)
     sys.exit(1)
-elif not model_metadata:
-    print('Could not load model metadata: %s' % model_metadata_filename)
-    sys.exit(1)
-else:
-    print('Model loaded: %s' % model_filename)
-
-model_init()
-
-
-# todo
-def get_sample_data():
-    global sample_data
-    return [json.dumps({
-        'labels': sample_data[:, 0].tolist(),
-        'rows': sample_data[:, 1:].tolist()
-    })]
-
-
-# todo: model initialization
-def model_init():
-    # x = K.zeros((metadata['sequence_len'], metadata['multivariate']), dtype='float32')
-    # model.predict(np.zeros((1, model_metadata['multivariate'])))
-    model.predict(x)
 
 
 def transform(data):
@@ -67,9 +88,30 @@ def transform(data):
     return dt
 
 
+def get_sample_data():
+    return sample_data()
+    # df = pd.DataFrame(sample_data)
+    # df.interpolate(inplace=True)
+    # df = df.values.astype('float32')
+    # df = transform(df)
+    # return df
+
+
+# todo: model initialization
+def model_init():
+    df = get_sample_data()
+    tsg = get_tsg(df, model_metadata['sequence_len'])
+    pred = model.predict_generator(tsg)
+    data = denormalize(model, scaler, pred)
+    print(data)
+
+
+model_init()
+
+
 # returns time series generator
 def get_tsg(data, length):
-    return TimeseriesGenerator(data, data, length=sequence_len, sampling_rate=1, stride=1, batch_size=1)
+    return TimeseriesGenerator(data, data, length=length, sampling_rate=1, stride=1, batch_size=1)
 
 
 # normalizes data
