@@ -19,6 +19,7 @@ import h5py
 import tempfile
 
 from zipfile import ZipFile
+from sklearn.externals import joblib
 
 
 class MODSModel:
@@ -29,6 +30,19 @@ class MODSModel:
         self.sample_data = None
         self.__load(file)
         self.__init()
+
+    # saves the contents of the original file (e.g. file in a zip) into a temp file and runs func over it
+    def __func_over_tempfile(self, orig_file, func, mode='wb'):
+        # create temp file
+        _, fname = tempfile.mkstemp()
+        with open(fname, mode) as tf:
+            # extract model to the temp file
+            tf.write(orig_file.read())
+            # call the func over the temp file
+            result = func(fname)
+        # remove the temp file
+        os.remove(fname)
+        return result
 
     def __load(self, file):
         print('Loading model: %s' % file)
@@ -48,15 +62,7 @@ class MODSModel:
     def __load_model(self, zip, config):
         print('Loading keras model')
         with zip.open(config['file']) as f:
-            # create temp file
-            _, fname = tempfile.mkstemp('.h5')
-            # extract model to the temp file
-            with open(fname, 'wb') as tf:
-                tf.write(f.read())
-            # load model from the temp file
-            self.model = keras.models.load_model(fname)
-            # remove the temp file
-            os.remove(fname)
+            self.model = self.__func_over_tempfile(f, keras.models.load_model)
         print('Keras model loaded')
 
     def __load_scaler(self, zip, config):
