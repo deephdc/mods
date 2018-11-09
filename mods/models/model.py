@@ -32,14 +32,14 @@ class MODSModel:
         self.__init()
 
     # saves the contents of the original file (e.g. file in a zip) into a temp file and runs func over it
-    def __func_over_tempfile(self, orig_file, func, mode='wb'):
+    def __func_over_tempfile(self, orig_file, func, mode='wb', *args, **kwargs):
         # create temp file
         _, fname = tempfile.mkstemp()
         with open(fname, mode) as tf:
             # extract model to the temp file
             tf.write(orig_file.read())
             # call the func over the temp file
-            result = func(fname)
+            result = func(fname, *args, **kwargs)
         # remove the temp file
         os.remove(fname)
         return result
@@ -74,13 +74,13 @@ class MODSModel:
     def __load_sample_data(self, zip, config):
         print('Loading sample data')
         with zip.open(config['file']) as f:
-            pd.read_csv(f,
-                        sep=config['sep'],
-                        skiprows=config['skiprows'],
-                        skipfooter=config['skipfooter'],
-                        engine=config['engine'],
-                        usecols=lambda col: col in config['usecols']
-                        )
+            self.sample_data = pd.read_csv(io.TextIOWrapper(f),
+                                           sep=config['sep'],
+                                           skiprows=config['skiprows'],
+                                           skipfooter=config['skipfooter'],
+                                           engine=config['engine'],
+                                           usecols=lambda col: col in config['usecols']
+                                           )
         print('Sample data loaded')
 
     def __init(self):
@@ -122,7 +122,7 @@ def model_init():
     print(data)
 
 
-model_init()
+# model_init()
 
 
 # returns time series generator
