@@ -117,7 +117,7 @@ class MODSModel:
                                            engine=config[MODSModel.__ENGINE],
                                            usecols=lambda col: col in config[MODSModel.__USECOLS]
                                            )
-        print('Sample data loaded')
+        print('Sample data loaded:\n%s' % self.sample_data)
 
     def __default_config(self):
         return {
@@ -206,10 +206,15 @@ class MODSModel:
     def __init(self):
         print('Initializing model')
         df = self.sample_data
+        print('self.sample_data:\n%s' % df)
         df = df.interpolate()
+        print('interpolated:\n%s' % df)
         df = df.values.astype('float32')
+        print('astype:\n%s' % df)
         df = self.transform(df)
+        print('transformed:\n%s' % df)
         tsg = self.get_tsg(df)
+        print('tsg:\n%s' % df)
         prediction = self.model.predict_generator(tsg)
         df = self.denormalize(prediction)
         print(df)
