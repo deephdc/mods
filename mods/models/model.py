@@ -8,12 +8,15 @@ import mods.config as cfg
 # import utilities
 import mods.utils as utl
 
+import io
 import os
 import sys
 import json
 import numpy as np
 import pandas as pd
 import keras
+import h5py
+import tempfile
 
 from zipfile import ZipFile
 
@@ -45,8 +48,15 @@ class MODSModel:
     def __load_model(self, zip, config):
         print('Loading keras model')
         with zip.open(config['file']) as f:
-            contents = zip.read(f)
-            self.model = keras.models.load_model(contents)
+            # create temp file
+            _, fname = tempfile.mkstemp('.h5')
+            # extract model to the temp file
+            with open(fname, 'wb') as tf:
+                tf.write(f.read())
+            # load model from the temp file
+            self.model = keras.models.load_model(fname)
+            # remove the temp file
+            os.remove(fname)
         print('Keras model loaded')
 
     def __load_scaler(self, zip, config):
