@@ -9,26 +9,62 @@ import mods.config as cfg
 import mods.utils as utl
 
 import io
+
 import os
+
 import sys
 import json
-import numpy as np
-import pandas as pd
-import keras
-import h5py
 import tempfile
 
 from zipfile import ZipFile
+
+import numpy as np
+import pandas as pd
+
+import keras
+from keras.callbacks import EarlyStopping
+from keras.callbacks import ModelCheckpoint
+from keras.layers import Dense
+from keras.layers import Input
+from keras.layers.recurrent import GRU
+from keras.layers.recurrent import LSTM
+from keras.models import Model
+from keras.preprocessing.sequence import TimeseriesGenerator
+
 from sklearn.externals import joblib
+from sklearn.preprocessing import MinMaxScaler
 
 
 class MODSModel:
+    # generic
+    __FILE = 'file'
+    # model
+    __MODEL = 'model'
+    __MULTIVARIATE = 'multivariate'
+    __SEQUENCE_LEN = 'sequence_len'
+    # scaler
+    __SCALER = 'scaler'
+    # sample data
+    __SAMPLE_DATA = 'sample_data'
+    __SEP = 'sep'
+    __SKIPROWS = 'skiprows'
+    __SKIPFOOTER = 'skipfooter'
+    __ENGINE = 'engine'
+    __USECOLS = 'usecols'
+
     def __init__(self, file):
+        self.file = file
+        self.name = os.path.basename(file)
         self.config = None
         self.model = None
         self.scaler = None
         self.sample_data = None
-        self.__load(file)
+        if os.path.isfile(file):
+            self.__load(file)
+        else:
+            self.config = self.__default_config()
+            self.model = self.create_model()
+            self.scaler = MinMaxScaler(feature_range=(0, 1))
         self.__init()
 
     # saves the contents of the original file (e.g. file in a zip) into a temp file and runs func over it
@@ -48,9 +84,9 @@ class MODSModel:
         print('Loading model: %s' % file)
         with ZipFile(file) as zip:
             self.__load_config(zip, 'config.json')
-            self.__load_model(zip, self.config['model'])
-            self.__load_scaler(zip, self.config['scaler'])
-            self.__load_sample_data(zip, self.config['sample_data'])
+            self.__load_model(zip, self.config[MODSModel.__MODEL])
+            self.__load_scaler(zip, self.config[MODSModel.__SCALER])
+            self.__load_sample_data(zip, self.config[MODSModel.__SAMPLE_DATA])
         print('Model loaded')
 
     def __load_config(self, zip, file):
@@ -61,31 +97,150 @@ class MODSModel:
 
     def __load_model(self, zip, config):
         print('Loading keras model')
-        with zip.open(config['file']) as f:
+        with zip.open(config[MODSModel.__FILE]) as f:
             self.model = self.__func_over_tempfile(f, keras.models.load_model)
         print('Keras model loaded')
 
     def __load_scaler(self, zip, config):
         print('Loading scaler')
-        with zip.open(config['file']) as f:
+        with zip.open(config[MODSModel.__FILE]) as f:
             self.scaler = joblib.load(f)
         print('Scaler loaded')
 
     def __load_sample_data(self, zip, config):
         print('Loading sample data')
-        with zip.open(config['file']) as f:
+        with zip.open(config[MODSModel.__FILE]) as f:
             self.sample_data = pd.read_csv(io.TextIOWrapper(f),
-                                           sep=config['sep'],
-                                           skiprows=config['skiprows'],
-                                           skipfooter=config['skipfooter'],
-                                           engine=config['engine'],
-                                           usecols=lambda col: col in config['usecols']
+                                           sep=config[MODSModel.__SEP],
+                                           skiprows=config[MODSModel.__SKIPROWS],
+                                           skipfooter=config[MODSModel.__SKIPFOOTER],
+                                           engine=config[MODSModel.__ENGINE],
+                                           usecols=lambda col: col in config[MODSModel.__USECOLS]
                                            )
         print('Sample data loaded')
 
+    def __default_config(self):
+        return {
+            MODSModel.__MODEL: {
+                MODSModel.__FILE: 'model.h5',
+                MODSModel.__MULTIVARIATE: len(cfg.cols_included),
+                MODSModel.__SEQUENCE_LEN: cfg.sequence_len,
+            },
+            MODSModel.__SCALER: {
+                MODSModel.__FILE: 'scaler.pkl'
+            },
+            MODSModel.__SAMPLE_DATA: {
+                MODSModel.__FILE: 'sample_data.tsv',
+                MODSModel.__SEP: '\t',
+                MODSModel.__SKIPROWS: 0,
+                MODSModel.__SKIPFOOTER: 0,
+                MODSModel.__ENGINE: 'python',
+                MODSModel.__USECOLS: lambda col: col in cfg.cols_included
+            }
+        }
+
+    def cfg_model(self):
+        return self.config[MODSModel.__MODEL]
+
+    def set_multivariate(self, multivariate):
+        self.cfg_model()[MODSModel.__MULTIVARIATE] = multivariate
+
+    def set_sequence_len(self, sequence_len):
+        self.cfg_model()[MODSModel.__SEQUENCE_LEN] = sequence_len
+
+    def get_multivariate(self):
+        return self.cfg_model()[MODSModel.__MULTIVARIATE]
+
+    def get_sequence_len(self):
+        return self.cfg_model()[MODSModel.__SEQUENCE_LEN]
+
+    def create_model(self,
+                     multivariate=None,
+                     sequence_len=None,
+                     use_GRU=cfg.use_GRU,
+                     blocks=cfg.blocks):
+
+        if multivariate:
+            self.set_multivariate(multivariate)
+        else:
+            multivariate = self.get_multivariate()
+        if sequence_len:
+            self.set_sequence_len(sequence_len)
+        else:
+            sequence_len = self.get_sequence_len()
+
+        # Define model
+        x = Input(shape=(sequence_len, multivariate))
+        try:
+            if use_GRU:
+                h = GRU(blocks)(x)
+            else:
+                h = LSTM(blocks)(x)
+        except Exception as e:
+            print(e)
+            h = LSTM(blocks)(x)
+
+        y = Dense(multivariate, activation='sigmoid')(h)  # 'sigmoid', 'softmax'
+        self.model = Model(inputs=x, outputs=y)
+
+        # Drawing model
+        print(self.model.summary())
+
+        # Compile model
+        self.model.compile(loss='mean_squared_error',
+                           optimizer='adam',  # 'adagrad', 'rmsprop'
+                           metrics=['mse', 'mae'])  # 'mape', 'cosine'
+
+        # Checkpointing and earlystopping
+        filepath = cfg.app_checkpoints + self.name + '-{epoch:02d}.hdf5'
+        checkpoints = ModelCheckpoint(filepath, monitor='loss',
+                                      save_best_only=True, mode=max, verbose=1
+                                      )
+        earlystops = EarlyStopping(monitor='loss',
+                                   patience=cfg.epochs_patience, verbose=1
+                                   )
+        callbacks_list = [checkpoints, earlystops]
+
+        return model
+
     def __init(self):
         print('Initializing model')
+        df = self.sample_data
+        df = df.interpolate()
+        df = df.values.astype('float32')
+        df = self.transform(df)
+        tsg = self.get_tsg(df)
+        prediction = self.model.predict_generator(tsg)
+        df = self.denormalize(prediction)
+        print(df)
+        print('Model initialized')
         return
+
+    def transform(self, df):
+        # First order differential for numpy array      y' = d(y)/d(t) = f(y,t)
+        # be carefull                                   len(dt) == len(data)-1
+        # todo: move here from the utils.py
+        df = utl.delta_timeseries(df)
+        return df
+
+    # normalizes data
+    def normalize(self, df):
+        # Scale all metrics but each separately
+        df = self.scaler.fit_transform(df)
+        return df
+
+    # denormalizes time series
+    def denormalize(self, tsg):
+        return self.scaler.inverse_transform(self.model.predict_generator(tsg))
+
+    # returns time series generator
+    def get_tsg(self, df):
+        return TimeseriesGenerator(df,
+                                   df,
+                                   length=self.get_sequence_len(),
+                                   sampling_rate=1,
+                                   stride=1,
+                                   batch_size=1)
 
 
 # load model
@@ -97,50 +252,13 @@ if not mods_model:
     sys.exit(1)
 
 
-def transform(data):
-    # First order differential for numpy array      y' = d(y)/d(t) = f(y,t)
-    # be carefull                                   len(dt) == len(data)-1
-    dt = utl.delta_timeseries(data)
-    return dt
-
-
-def get_sample_data():
-    return sample_data()
-    # df = pd.DataFrame(sample_data)
-    # df.interpolate(inplace=True)
-    # df = df.values.astype('float32')
-    # df = transform(df)
-    # return df
-
-
-# todo: model initialization
-def model_init():
-    df = get_sample_data()
-    tsg = get_tsg(df, model_metadata['sequence_len'])
-    pred = model.predict_generator(tsg)
-    data = denormalize(model, scaler, pred)
-    print(data)
-
-
-# model_init()
-
-
-# returns time series generator
-def get_tsg(data, length):
-    return TimeseriesGenerator(data, data, length=length, sampling_rate=1, stride=1, batch_size=1)
-
-
-# normalizes data
-def normalize(data):
-    # Scale all metrics but each separately
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    data = scaler.fit_transform(data)
-    return data, scaler
-
-
-# denormalizes time series
-def denormalize(model, scaler, tsg):
-    return scaler.inverse_transform(model.predict_generator(tsg))
+# def get_sample_data():
+#     return sample_data()
+#     # df = pd.DataFrame(sample_data)
+#     # df.interpolate(inplace=True)
+#     # df = df.values.astype('float32')
+#     # df = transform(df)
+#     # return df
 
 
 def get_metadata():
