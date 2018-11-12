@@ -219,9 +219,8 @@ class MODSModel:
         print('tsg:\n%s' % df)
         prediction = self.model.predict_generator(tsg)
         df = self.denormalize(prediction)
-        print('denormaled:\n%s' % df)
+        print('denormalized:\n%s' % df)
         print('Model initialized')
-        return
 
     def transform(self, df):
         # First order differential for numpy array      y' = d(y)/d(t) = f(y,t)
