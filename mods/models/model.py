@@ -296,13 +296,19 @@ def predict_data(*args):
     """
     Function to make prediction on an uploaded file
     """
+    print('predict_data(*args):\n\targs=%s' % args)
     message = 'Error reading input data'
     if args:
         for data in args:
             message = {'status': 'ok', 'predictions': []}
             df = pd.read_csv(io.BytesIO(data[0]), sep='\t', skiprows=0, skipfooter=0, engine='python')
-            predictions = mods_model.predict(df)
-            message['predictions'] = df.to_json()
+            print(df)
+            model = mods_model.model
+            print(model)
+            predictions = model.predict(df)
+            print(predictions)
+            message.get('predictions').append(predictions)
+
     return message
 
 
