@@ -213,11 +213,13 @@ class MODSModel:
         print('astype:\n%s' % df)
         df = self.transform(df)
         print('transformed:\n%s' % df)
+        df = self.normalize(df)
+        print('normalized:\n%s' % df)
         tsg = self.get_tsg(df)
         print('tsg:\n%s' % df)
         prediction = self.model.predict_generator(tsg)
         df = self.denormalize(prediction)
-        print(df)
+        print('denormaled:\n%s' % df)
         print('Model initialized')
         return
 
@@ -236,7 +238,7 @@ class MODSModel:
 
     # denormalizes time series
     def denormalize(self, tsg):
-        return self.scaler.inverse_transform(self.model.predict_generator(tsg))
+        return self.scaler.inverse_transform(tsg)
 
     # returns time series generator
     def get_tsg(self, df):
