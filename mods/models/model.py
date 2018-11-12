@@ -157,7 +157,7 @@ class MODSModel:
     def create_model(self,
                      multivariate=None,
                      sequence_len=None,
-                     use_GRU=cfg.use_GRU,
+                     use_GRU=cfg.use_GRU,  # todo: use_GRU --> model_type; e.g., NN, LSTM, GRU
                      blocks=cfg.blocks):
 
         if multivariate:
@@ -201,25 +201,9 @@ class MODSModel:
                                    )
         callbacks_list = [checkpoints, earlystops]
 
-        return model
-
     def __init(self):
         print('Initializing model')
-        df = self.sample_data
-        print('self.sample_data:\n%s' % df)
-        df = df.interpolate()
-        print('interpolated:\n%s' % df)
-        df = df.values.astype('float32')
-        print('astype:\n%s' % df)
-        df = self.transform(df)
-        print('transformed:\n%s' % df)
-        df = self.normalize(df)
-        print('normalized:\n%s' % df)
-        tsg = self.get_tsg(df)
-        print('tsg:\n%s' % df)
-        prediction = self.model.predict_generator(tsg)
-        df = self.denormalize(prediction)
-        print('denormalized:\n%s' % df)
+        self.predict(self.sample_data)
         print('Model initialized')
 
     def transform(self, df):
@@ -247,6 +231,16 @@ class MODSModel:
                                    sampling_rate=1,
                                    stride=1,
                                    batch_size=1)
+
+    def predict(self, df):
+        df = df.interpolate()
+        df = df.values.astype('float32')
+        df = self.transform(df)
+        df = self.normalize(df)
+        tsg = self.get_tsg(df)
+        prediction = self.model.predict_generator(tsg)
+        df = self.denormalize(prediction)
+        return df
 
 
 # load model
@@ -302,26 +296,19 @@ def predict_data(*args):
     """
     Function to make prediction on an uploaded file
     """
+    print('predict_data(*args):\n\targs=%s' % args)
     message = 'Error reading input data'
     if args:
         for data in args:
             message = {'status': 'ok', 'predictions': []}
+            df = pd.read_csv(io.BytesIO(data[0]), sep='\t', skiprows=0, skipfooter=0, engine='python')
+            print(df)
+            model = mods_model.model
+            print(model)
+            predictions = model.predict(df)
+            print(predictions)
+            message.get('predictions').append(predictions)
 
-            data_json = json.loads(data[0])
-            rows = np.array(data_json['rows'], dtype=np.float32)
-
-            global model
-            predictions = model.predict(rows)
-
-            i = 0
-            for prediction in predictions:
-                p = {
-                    'prob': float(prediction[0])
-                }
-                if 'labels' in data_json:
-                    p['label'] = data_json['labels'][i]
-                message.get('predictions').append(p)
-                i = i + 1
     return message
 
 
