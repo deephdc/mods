@@ -224,13 +224,20 @@ class MODSModel:
         self.predict(self.sample_data)
         print('Model initialized')
 
+    # data transformation
     def transform(self, df):
         # First order differential for numpy array      y' = d(y)/d(t) = f(y,t)
         # be carefull                                   len(dt) == len(data)-1
+        # todo: option with or without delta
         # todo: move here from the utils.py
         df = utl.delta_timeseries(df)
         return df
-
+    
+    # invertly data transformation
+    def transform_invert(self, df):
+        # todo option with or without delta
+        return
+    
     # normalizes data
     def normalize(self, df):
         # Scale all metrics but each separately
