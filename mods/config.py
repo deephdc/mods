@@ -57,7 +57,7 @@ sequence_len = 6  # sequence lenght
 batch_size = 1  # delta (6), without_delta(1)
 
 # default LSTM or GRU
-use_GRU = False  # default is LSTM
+model_type = 'LSTM'
 blocks = 6
 epochs = 50
 epochs_patience = 10

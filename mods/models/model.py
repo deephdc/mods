@@ -41,6 +41,7 @@ import keras
 from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
 from keras.layers import Dense
+from keras.layers import Flatten
 from keras.layers import Input
 from keras.layers.recurrent import GRU
 from keras.layers.recurrent import LSTM
@@ -173,7 +174,7 @@ class MODSModel:
     def create_model(self,
                      multivariate=None,
                      sequence_len=None,
-                     use_GRU=cfg.use_GRU,  # todo: use_GRU --> model_type; e.g., NN, LSTM, GRU
+                     model_type=cfg.model_type,
                      blocks=cfg.blocks):
 
         if multivariate:
@@ -187,16 +188,14 @@ class MODSModel:
 
         # Define model
         x = Input(shape=(sequence_len, multivariate))
-        try:
-            if use_GRU:
-                h = GRU(blocks)(x)
-            else:
-                h = LSTM(blocks)(x)
-        except Exception as e:
-            print(e)
+        if model_type == 'NN':
+            h = Dense(units=multivariate, activation='relu')(x)
+            h = Flatten()(h)
+        elif model_type == 'GRU':
+            h = GRU(blocks)(x)
+        else:
             h = LSTM(blocks)(x)
-
-        y = Dense(multivariate, activation='sigmoid')(h)  # 'sigmoid', 'softmax'
+        y = Dense(units=multivariate, activation='sigmoid')(h)  # 'sigmoid', 'softmax'
         self.model = Model(inputs=x, outputs=y)
 
         # Drawing model
