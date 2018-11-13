@@ -14,11 +14,15 @@
 # limitations under the License.
 #
 """
-Created on Mon NOv 1 10:14:37 2018
+Created on Mon Oct 15 10:14:37 2018
 
-Model description
-@@
+Train multivariate models 
+with first order differential to monitor changes
+
+@author: giang nguyen
+@author: stefan dlugolinsky
 """
+
 import pkg_resources
 # import project config.py
 import mods.config as cfg
