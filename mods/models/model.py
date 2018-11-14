@@ -16,8 +16,7 @@
 """
 Created on Mon Oct 15 10:14:37 2018
 
-Train multivariate models 
-with first order differential to monitor changes
+Train models with first order differential to monitor changes
 
 @author: giang nguyen
 @author: stefan dlugolinsky
@@ -231,8 +230,16 @@ class MODSModel:
     def delta(self, df):
         return df[1:] - df[:-1]
 
+    # todo: option with or without delta
     def transform(self, df):
         return self.delta(df)
+
+    # todo: option with or without delta
+    def inverse_transform(self, original, transformed, prediction):
+        beg = self.get_sequence_len()
+        end = beg + len(prediction)
+        y = original[beg + 1:end + 1]
+        return y - transformed[beg:end] + prediction
 
     # normalizes data
     def normalize(self, df):
@@ -243,12 +250,6 @@ class MODSModel:
     # inverse method to @normalize
     def inverse_normalize(self, df):
         return self.scaler.inverse_transform(df)
-
-    def inverse_transform(self, original, transformed, prediction):
-        beg = self.get_sequence_len()
-        end = beg + len(prediction)
-        y = original[beg + 1:end + 1]
-        return y - transformed[beg:end] + prediction
 
     # returns time series generator
     def get_tsg(self, df):
