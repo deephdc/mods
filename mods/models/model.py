@@ -225,12 +225,14 @@ class MODSModel:
         self.predict(self.sample_data)
         print('Model initialized')
 
+    # First order differential for numpy array      y' = d(y)/d(t) = f(y,t)
+    # be carefull                                   len(dt) == len(data)-1
+    # e.g., [5,2,9,1] --> [2-5,9-2,1-9] == [-3,7,-8]
+    def delta(self, df):
+        return df[1:] - df[:-1]
+
     def transform(self, df):
-        # First order differential for numpy array      y' = d(y)/d(t) = f(y,t)
-        # be carefull                                   len(dt) == len(data)-1
-        # todo: move here from the utils.py
-        df = utl.delta_timeseries(df)
-        return df
+        return self.delta(df)
 
     # normalizes data
     def normalize(self, df):
@@ -238,9 +240,15 @@ class MODSModel:
         df = self.scaler.fit_transform(df)
         return df
 
-    # denormalizes time series
-    def denormalize(self, tsg):
-        return self.scaler.inverse_transform(tsg)
+    # inverse method to @normalize
+    def inverse_normalize(self, df):
+        return self.scaler.inverse_transform(df)
+
+    def inverse_transform(self, original, transformed, prediction):
+        beg = self.get_sequence_len()
+        end = beg + len(prediction)
+        y = original[beg + 1:end + 1]
+        return y - transformed[beg:end] + prediction
 
     # returns time series generator
     def get_tsg(self, df):
@@ -252,14 +260,28 @@ class MODSModel:
                                    batch_size=1)
 
     def predict(self, df):
-        df = df.interpolate()
-        df = df.values.astype('float32')
-        df = self.transform(df)
-        df = self.normalize(df)
-        tsg = self.get_tsg(df)
-        prediction = self.model.predict_generator(tsg)
-        df = self.denormalize(prediction)
-        return df
+
+        interpol = df.interpolate()
+        interpol = interpol.values.astype('float32')
+        # print('interpolated:\n%s' % interpol)
+
+        trans = self.transform(interpol)
+        # print('transformed:\n%s' % transf)
+
+        norm = self.normalize(trans)
+        # print('normalized:\n%s' % norm)
+
+        tsg = self.get_tsg(norm)
+        pred = self.model.predict_generator(tsg)
+        # print('prediction:\n%s' % pred)
+
+        denorm = self.inverse_normalize(pred)
+        # print('denormalized:\n%s' % denorm)
+
+        invtrans = self.inverse_transform(interpol, trans, denorm)
+        # print('inverse transformed:\n%s' % invtrans)
+
+        return invtrans
 
 
 # load model
