@@ -54,6 +54,8 @@ from keras.preprocessing.sequence import TimeseriesGenerator
 from sklearn.externals import joblib
 from sklearn.preprocessing import MinMaxScaler
 
+import socket
+
 
 class MODSModel:
     # generic
@@ -355,12 +357,66 @@ def predict_data(*args):
     return message
 
 
-def predict_url(*args):
+def predict_stream(*args):
     """
-    Function to make prediction on a URL
+    Function to make prediction on a stream
+
+    Sample *args
+    {
+        "host": "127.0.0.1",
+        "port": 9999,
+        "columns": [
+            "ts", "uid", "id.orig_h", "id.orig_p", "id.resp_h", "id.resp_p", "proto", "service", "duration",
+            "orig_bytes", "resp_bytes", "conn_state", "local_orig", "local_resp", "missed_bytes", "history",
+            "orig_pkts", "orig_ip_bytes", "resp_pkts", "resp_ip_bytes", "tunnel_parents"
+        ]
+    }
     """
-    message = 'Not implemented in the model (predict_url)'
-    return message
+    print('args: %s' % args)
+
+    conf = json.loads(args[0])
+    host = conf['host']
+    port = int(conf['port'])
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        print('connecting to %s:%s' % (host, port))
+        sock.connect((host, port))
+        print('success')
+    except Exception as e:
+        message = str(e)
+        return message
+
+    chunks = []
+    chunks_to_join = 5
+    chunks_collected = 0
+    chunk_len = 128
+    data = b''
+
+    seq_len = mods_model.get_sequence_len()
+
+    while True:
+        chunk = sock.recv(chunk_len)
+        print('chunk: %s' % chunk)
+        if chunk == b'':
+            print('End of stream')
+            break
+        chunks.append(chunk)
+        chunks_collected += 1
+        if chunks_collected == chunks_to_join:
+            tmp = b''.join(chunks)
+            last = tmp.rfind(b'\n')
+            # completed lines
+            data = tmp[:last + 1]
+            # incomplete line
+            chunks = [tmp[last + 1:]]
+            chunks_collected = 0
+            print(data)
+            df = pd.read_csv(io.BytesIO(data), sep='\t', skiprows=0, skipfooter=0, engine='python', header=None, dtype=str)
+            print(df)
+            predictions = mods_model.predict(df)
+            message = {'status': 'ok', 'predictions': predictions.tolist()}
+            print(message)
 
 
 def train(*args):
