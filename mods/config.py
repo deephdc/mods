@@ -28,18 +28,20 @@ from os.path import expanduser
 # identify basedir for the package
 BASE_DIR = path.dirname(path.normpath(path.dirname(__file__)))
 
+
 # Data repository
-DATA_DIR = expanduser("~") + '/data/deep-dm/'  # app_data_raw
+DATA_DIR = expanduser("~") + '/data/deep-dm/'           # app_data_raw
 # Data dirs
 dir_logs = DATA_DIR + 'logs/'
 dir_parquet = DATA_DIR + 'logs_parquet/'
 dir_cleaned = DATA_DIR + 'logs_cleaned/'
 log_header_lines = 8
 
+
 # Application dirs
 app_data = BASE_DIR + '/data/'
 app_data_raw = BASE_DIR + '/data/raw/'  # ln -s ...
-app_data_features = BASE_DIR + '/data/features/'  # extracted features
+app_data_features = BASE_DIR + '/data/features/'        # extracted features
 app_models = BASE_DIR + '/models/'
 app_checkpoints = BASE_DIR + '/checkpoints/'
 app_visualization = BASE_DIR + '/visualization/'
@@ -56,10 +58,10 @@ window_duration = '1 hour'
 slide_duration = '10 minutes'
 
 # ML data
-column_separator = '\t'  # for tsv
-# column_separator = ','                  # for csv
+column_separator = '\t'                                                     # for tsv
+# column_separator = ','                                                    # for csv
 
-# cols_included = ['Close']               # yahoo_finance_stock.csv
+# cols_included = ['Close']                                                 # yahoo_finance_stock.csv
 # cols_included = ['number_of_conn', 'sum_orig_bytes', 'sum_resp_bytes']
 cols_included = ['number_of_conn', 'sum_orig_bytes']
 # cols_included = ['sum_orig_bytes', 'sum_resp_bytes']
@@ -67,15 +69,19 @@ cols_included = ['number_of_conn', 'sum_orig_bytes']
 # cols_included = ['sum_orig_bytes']
 
 
-split_ratio = 0.67  # train:test = 2:1
-sequence_len = 6  # sequence lenght
-batch_size = 1  # delta (6), without_delta(1)
+# ML and time series datasets
+split_ratio = 0.67                      # train:test = 2:1
+batch_size = 1                          # delta (6), without_delta(1)
+sequence_len = 6                        # sequence lenght
 
-# default LSTM or GRU
-model_type = 'LSTM'
+
+# model properties
+model_type  = 'LSTM'                    # 'LSTM', 'GRU', 'NN'
+model_delta = True
 blocks = 6
 epochs = 50
 epochs_patience = 10
+
 
 # Auxiliary
 rate_RMSE = True

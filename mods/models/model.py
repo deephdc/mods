@@ -62,6 +62,7 @@ class MODSModel:
     __MODEL = 'model'
     __MULTIVARIATE = 'multivariate'
     __SEQUENCE_LEN = 'sequence_len'
+    __MODEL_DELTA = 'model_delta'
     # scaler
     __SCALER = 'scaler'
     # sample data
@@ -145,6 +146,7 @@ class MODSModel:
                 MODSModel.__FILE: 'model.h5',
                 MODSModel.__MULTIVARIATE: len(cfg.cols_included),
                 MODSModel.__SEQUENCE_LEN: cfg.sequence_len,
+                MODSModel.__MODEL_DELTA: cfg.model_delta
             },
             MODSModel.__SCALER: {
                 MODSModel.__FILE: 'scaler.pkl'
@@ -165,19 +167,26 @@ class MODSModel:
     def set_multivariate(self, multivariate):
         self.cfg_model()[MODSModel.__MULTIVARIATE] = multivariate
 
-    def set_sequence_len(self, sequence_len):
-        self.cfg_model()[MODSModel.__SEQUENCE_LEN] = sequence_len
-
     def get_multivariate(self):
         return self.cfg_model()[MODSModel.__MULTIVARIATE]
 
+    def set_sequence_len(self, sequence_len):
+        self.cfg_model()[MODSModel.__SEQUENCE_LEN] = sequence_len
+
     def get_sequence_len(self):
         return self.cfg_model()[MODSModel.__SEQUENCE_LEN]
+
+    def set_model_delta(self, model_delta):
+        self.cfg_model()[MODSModel.__MODEL_DELTA] = model_delta
+
+    def isdelta(self):
+        return self.cfg_model()[MODSModel.__MODEL_DELTA]
 
     def create_model(self,
                      multivariate=None,
                      sequence_len=None,
                      model_type=cfg.model_type,
+                     model_delta=cfg.model_delta,
                      blocks=cfg.blocks):
 
         if multivariate:
@@ -188,6 +197,8 @@ class MODSModel:
             self.set_sequence_len(sequence_len)
         else:
             sequence_len = self.get_sequence_len()
+        if model_delta:
+            self.set_model_delta(model_delta)
 
         # Define model
         x = Input(shape=(sequence_len, multivariate))
@@ -230,16 +241,21 @@ class MODSModel:
     def delta(self, df):
         return df[1:] - df[:-1]
 
-    # todo: option with or without delta
     def transform(self, df):
-        return self.delta(df)
+        if self.isdelta():
+            return self.delta(df)
+        else:
+            # bucketing, taxo, fuzzy
+            return df
 
-    # todo: option with or without delta
     def inverse_transform(self, original, transformed, prediction):
-        beg = self.get_sequence_len()
-        end = beg + len(prediction)
-        y = original[beg + 1:end + 1]
-        return y - transformed[beg:end] + prediction
+        if self.isdelta():
+            beg = self.get_sequence_len()
+            end = beg + len(prediction)
+            y = original[beg + 1:end + 1]
+            return y - transformed[beg:end] + prediction
+        else:
+            return prediction
 
     # normalizes data
     def normalize(self, df):
