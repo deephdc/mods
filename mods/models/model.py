@@ -358,17 +358,23 @@ def predict_data(*args):
     return message
 
 
-# todo: open new output socket on some port and push there predictions
 def predict_stream(*args):
     """
     Function to make prediction on a stream
 
-    Sample *args
-    {
-        "host": "127.0.0.1",
-        "port": 9999,
-        "columns": [9]
-    }
+    TODO:
+    1) Open new output socket and write predictions to it. This method will return just status of creating such socket.
+    2) Control the streaming; e.g., stop
+
+    Prerequisities:
+        1) DEEPaaS with 'predict_stream' method (similar to 'predict_url')
+        2) tunnel the stream locally: ssh -q -f -L 9999:127.0.0.1:9999 deeplogs 'tail -F /storage/bro/logs/current/conn.log | nc -l -k 9999'
+        3) call DEEPaaS predict_stream with json string parameter:
+            {
+                "host": "127.0.0.1",
+                "port": 9999,
+                "columns": [16, 9]
+            }
     """
     print('args: %s' % args)
 
@@ -388,34 +394,38 @@ def predict_stream(*args):
     chunks = []
     chunks_to_join = 20
     chunks_collected = 0
-    chunk_len = 1024
-    data = b''
-    eos = False
+    chunk_size = 512
+    receiving = True
+    predictions_total = 0
 
     seq_len = mods_model.get_sequence_len()
+    buffer = pd.DataFrame()
 
-    while True:
-        chunk = sock.recv(chunk_len)
+    while receiving:
+        chunk = sock.recv(chunk_size)
+        print('chunk: %d B' % len(chunk))
         if chunk == b'':
             # end of the stream
-            eos = True
+            receiving = False
         else:
             chunks.append(chunk)
             chunks_collected += 1
-        if eos or chunks_collected == chunks_to_join:
+            print('chunks: %d' % chunks_collected)
+        if chunks_collected == chunks_to_join or not receiving:
+            # join collected chunks
             raw = b''.join(chunks)
-            # the beginning the complete data
+            # the beginning of the complete data
             beg = raw.find(b'\n') + 1
             # the end of the complete data
             end = raw.rfind(b'\n') + 1
-            # completed lines
-            data = raw[beg:end]
+            # completed raw lines
+            raw_complete = raw[beg:end]
             # store the incomplete line for the next loop
             chunks = [raw[end:]]
             chunks_collected = 0
             # create pandas dataframe
             df = pd.read_csv(
-                io.BytesIO(data),
+                io.BytesIO(raw_complete),
                 sep='\t',
                 header=None,
                 usecols=params['columns'],
@@ -424,14 +434,23 @@ def predict_stream(*args):
                 engine='python',
                 skip_blank_lines=True
             )
+            print('new rows: %d rows' % len(df))
             for col in df:
-                df[col] = pd.to_numeric(df[col], errors='coerce')
-            print(df)
-            # predictions = mods_model.predict(df)
-            # message = {'status': 'ok', 'predictions': predictions.tolist()}
-            # print(message)
-        if eos:
-            break
+                df[col] = [np.nan if x == '-' else pd.to_numeric(x, errors='coerce') for x in df[col]]
+            # append the dataframe to the buffer
+            buffer = buffer.append(df)
+            print('buffer: %d rows' % len(buffer))
+        # there must be at least 'seq_len' rows in the buffer to make time series generator and predict
+        if len(buffer) >= seq_len:
+            predictions = mods_model.predict(buffer)
+            predictions_total += 1
+            message = {'status': 'ok', 'predictions': predictions.tolist()}
+            buffer = pd.DataFrame()
+            print(message)
+    return {
+        'status': 'ok',
+        'predictions_total': predictions_total
+    }
 
 
 def train(*args):
