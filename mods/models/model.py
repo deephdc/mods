@@ -367,18 +367,14 @@ def predict_stream(*args):
     {
         "host": "127.0.0.1",
         "port": 9999,
-        "columns": [
-            "ts", "uid", "id.orig_h", "id.orig_p", "id.resp_h", "id.resp_p", "proto", "service", "duration",
-            "orig_bytes", "resp_bytes", "conn_state", "local_orig", "local_resp", "missed_bytes", "history",
-            "orig_pkts", "orig_ip_bytes", "resp_pkts", "resp_ip_bytes", "tunnel_parents"
-        ]
+        "columns": [9]
     }
     """
     print('args: %s' % args)
 
-    conf = json.loads(args[0])
-    host = conf['host']
-    port = int(conf['port'])
+    params = json.loads(args[0])
+    host = params['host']
+    port = int(params['port'])
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
@@ -422,7 +418,7 @@ def predict_stream(*args):
                 io.BytesIO(data),
                 sep='\t',
                 header=None,
-                usecols=[9],
+                usecols=params['columns'],
                 skiprows=0,
                 skipfooter=0,
                 engine='python',
