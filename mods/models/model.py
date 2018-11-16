@@ -38,6 +38,7 @@ import tempfile
 
 from zipfile import ZipFile
 
+import numpy as np
 import pandas as pd
 
 import keras
@@ -357,6 +358,7 @@ def predict_data(*args):
     return message
 
 
+# todo: open new output socket on some port and push there predictions
 def predict_stream(*args):
     """
     Function to make prediction on a stream
@@ -388,37 +390,52 @@ def predict_stream(*args):
         return message
 
     chunks = []
-    chunks_to_join = 5
+    chunks_to_join = 20
     chunks_collected = 0
-    chunk_len = 128
+    chunk_len = 1024
     data = b''
+    eos = False
 
     seq_len = mods_model.get_sequence_len()
 
     while True:
         chunk = sock.recv(chunk_len)
-        print('chunk: %s' % chunk)
         if chunk == b'':
-            print('End of stream')
-            break
-        chunks.append(chunk)
-        chunks_collected += 1
-        if chunks_collected == chunks_to_join:
-            tmp = b''.join(chunks)
-            first = tmp.find(b'\n')
-            last = tmp.rfind(b'\n')
+            # end of the stream
+            eos = True
+        else:
+            chunks.append(chunk)
+            chunks_collected += 1
+        if eos or chunks_collected == chunks_to_join:
+            raw = b''.join(chunks)
+            # the beginning the complete data
+            beg = raw.find(b'\n') + 1
+            # the end of the complete data
+            end = raw.rfind(b'\n') + 1
             # completed lines
-            data = tmp[first + 1:last + 1]
-            # incomplete line
-            chunks = [tmp[last + 1:]]
+            data = raw[beg:end]
+            # store the incomplete line for the next loop
+            chunks = [raw[end:]]
             chunks_collected = 0
-            print(data)
-            # df = pd.read_csv(io.BytesIO(data), sep='\t', skiprows=0, skipfooter=0, engine='python', header=[9],
-            #                  dtype=[int])
-            # print(df)
+            # create pandas dataframe
+            df = pd.read_csv(
+                io.BytesIO(data),
+                sep='\t',
+                header=None,
+                usecols=[9],
+                skiprows=0,
+                skipfooter=0,
+                engine='python',
+                skip_blank_lines=True
+            )
+            for col in df:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+            print(df)
             # predictions = mods_model.predict(df)
             # message = {'status': 'ok', 'predictions': predictions.tolist()}
             # print(message)
+        if eos:
+            break
 
 
 def train(*args):
