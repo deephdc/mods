@@ -405,18 +405,20 @@ def predict_stream(*args):
         chunks_collected += 1
         if chunks_collected == chunks_to_join:
             tmp = b''.join(chunks)
+            first = tmp.find(b'\n')
             last = tmp.rfind(b'\n')
             # completed lines
-            data = tmp[:last + 1]
+            data = tmp[first + 1:last + 1]
             # incomplete line
             chunks = [tmp[last + 1:]]
             chunks_collected = 0
             print(data)
-            df = pd.read_csv(io.BytesIO(data), sep='\t', skiprows=0, skipfooter=0, engine='python', header=None, dtype=str)
-            print(df)
-            predictions = mods_model.predict(df)
-            message = {'status': 'ok', 'predictions': predictions.tolist()}
-            print(message)
+            # df = pd.read_csv(io.BytesIO(data), sep='\t', skiprows=0, skipfooter=0, engine='python', header=[9],
+            #                  dtype=[int])
+            # print(df)
+            # predictions = mods_model.predict(df)
+            # message = {'status': 'ok', 'predictions': predictions.tolist()}
+            # print(message)
 
 
 def train(*args):
