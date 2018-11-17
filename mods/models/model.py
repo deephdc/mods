@@ -203,17 +203,32 @@ class MODSModel:
         if model_delta:
             self.set_model_delta(model_delta)
 
-        # Define model
-        x = Input(shape=(sequence_len, multivariate))
-        if model_type == 'NN':
-            h = Dense(units=multivariate, activation='relu')(x)
+	
+	# Define model
+    	x = Input(shape=(sequence_len, multivariate))
+    	if model=='GRU':
+            h = GRU(cfg.blocks)(x)
+    	elif model=='bidirect':
+            h = Bidirectional(LSTM(cfg.blocks))(x)
+    	elif model=='seq2seq':
+            h = LSTM(cfg.blocks)(x)
+            h = RepeatVector(sequence_len)(h)
+            h = LSTM(cfg.blocks, return_sequences=True)(h)
             h = Flatten()(h)
-        elif model_type == 'GRU':
-            h = GRU(blocks)(x)
-        else:
-            h = LSTM(blocks)(x)
-        y = Dense(units=multivariate, activation='sigmoid')(h)  # 'sigmoid', 'softmax'
-        self.model = Model(inputs=x, outputs=y)
+    	elif model=='CNN':
+            h = Conv1D(filters=64, kernel_size=2, activation='relu')(x)
+            h = MaxPooling1D(pool_size=2)(h)
+            h = Flatten()(h)
+        elif model=='MLP':
+            h = Dense(units=multivariate, activation='relu')(x)
+            # h = Dense(units=multivariate, activation='relu')(h)
+            h = Flatten()(h)    
+    	else:   # default LSTM
+            h = LSTM(cfg.blocks)(x)
+	    # h = LSTM(cfg.blocks)(h)         # stacked
+    	y = Dense(units=multivariate, activation='sigmoid')(h) 	# 'softmax'
+    	self.model = Model(inputs=x, outputs=y)
+
 
         # Drawing model
         print(self.model.summary())
@@ -221,15 +236,18 @@ class MODSModel:
         # Compile model
         self.model.compile(loss='mean_squared_error',
                            optimizer='adam',  # 'adagrad', 'rmsprop'
-                           metrics=['mse', 'mae'])  # 'mape', 'cosine'
+                           metrics=['mse', 'mae', 'mape'])  	# 'cosine'
 
         # Checkpointing and earlystopping
         filepath = cfg.app_checkpoints + self.name + '-{epoch:02d}.hdf5'
         checkpoints = ModelCheckpoint(filepath, monitor='loss',
-                                      save_best_only=True, mode=max, verbose=1
+                                      save_best_only=True, 
+				      mode=max, 
+				      verbose=1
                                       )
         earlystops = EarlyStopping(monitor='loss',
-                                   patience=cfg.epochs_patience, verbose=1
+                                   patience=cfg.epochs_patience, 
+				   verbose=1
                                    )
         callbacks_list = [checkpoints, earlystops]
 
