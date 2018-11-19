@@ -56,6 +56,7 @@ from sklearn.externals import joblib
 from sklearn.preprocessing import MinMaxScaler
 
 import socket
+from threading import Event, Thread
 
 
 class MODSModel:
@@ -358,6 +359,36 @@ def predict_data(*args):
     return message
 
 
+class Server(Thread):
+
+    def __init__(self, host, port, max_connections=10):
+        Thread.__init__(self)
+        self.__host = host
+        self.__port = port
+        self.__max_connections = max_connections
+        self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.__socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.__socket.bind((host, port))
+        self.__running = False
+        self.__clients = []
+
+    def run(self):
+        self.__running = True
+        while self.__running:
+            self.__socket.listen(self.__max_connections)
+            (sock, (host, port)) = self.__socket.accept()
+            print('accepted connection: %s:%s' % (host, port))
+            self.__clients.append((sock, (host, port)))
+
+    def send(self, bytes):
+        for (client, (ip, port)) in self.__clients:
+            print('sending bytes (%d) to %s:%s' % (len(bytes), ip, port))
+            client.send(bytes)
+
+    def stop(self):
+        self.__running = False
+
+
 def predict_stream(*args):
     """
     Function to make prediction on a stream
@@ -371,22 +402,43 @@ def predict_stream(*args):
         2) tunnel the stream locally: ssh -q -f -L 9999:127.0.0.1:9999 deeplogs 'tail -F /storage/bro/logs/current/conn.log | nc -l -k 9999'
         3) call DEEPaaS predict_stream with json string parameter:
             {
-                "host": "127.0.0.1",
-                "port": 9999,
-                "columns": [16, 9]
+                "in": {
+                    "host": "127.0.0.1",
+                    "port": 9999,
+                    "encoding": "utf-8",
+                    "columns": [16, 9]
+                },
+                "out": {
+                    "host": "127.0.0.1",
+                    "port": 9998,
+                    "encoding": "utf-8",
+                    "max_connections": 5
+                }
             }
     """
     print('args: %s' % args)
 
     params = json.loads(args[0])
-    host = params['host']
-    port = int(params['port'])
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # OUTPUT
+    params_out = params['out']
+    host_out = params_out['host']
+    port_out = int(params_out['port'])
+    encoding_out = params_out['encoding']
+
+    server = Server(host_out, port_out)
+    server.start()
+
+    # INPUT
+    params_in = params['in']
+    host_in = params_in['host']
+    port_in = int(params_in['port'])
+    encoding_in = params_in['encoding']
+    sock_in = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        print('connecting to %s:%s' % (host, port))
-        sock.connect((host, port))
-        print('success')
+        print('connecting to %s:%s' % (host_in, port_in))
+        sock_in.connect((host_in, port_in))
+        print('successfully connected')
     except Exception as e:
         message = str(e)
         return message
@@ -402,7 +454,7 @@ def predict_stream(*args):
     buffer = pd.DataFrame()
 
     while receiving:
-        chunk = sock.recv(chunk_size)
+        chunk = sock_in.recv(chunk_size)
         print('chunk: %d B' % len(chunk))
         if chunk == b'':
             # end of the stream
@@ -428,7 +480,7 @@ def predict_stream(*args):
                 io.BytesIO(raw_complete),
                 sep='\t',
                 header=None,
-                usecols=params['columns'],
+                usecols=params_in['columns'],
                 skiprows=0,
                 skipfooter=0,
                 engine='python',
@@ -444,9 +496,13 @@ def predict_stream(*args):
         if len(buffer) >= seq_len:
             predictions = mods_model.predict(buffer)
             predictions_total += 1
-            message = {'status': 'ok', 'predictions': predictions.tolist()}
             buffer = pd.DataFrame()
+            message = json.dumps({'status': 'ok', 'predictions': predictions.tolist()}, indent=True)
             print(message)
+            message = message.encode(encoding_out)
+            server.send(message)
+    server.stop()
+    server.join()
     return {
         'status': 'ok',
         'predictions_total': predictions_total
