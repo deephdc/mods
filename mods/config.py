@@ -76,7 +76,7 @@ sequence_len = 6                        # sequence lenght
 
 
 # model properties
-model_type  = 'LSTM'                    # 'LSTM', 'GRU', 'NN'
+model_type  = 'LSTM'                    # 'LSTM', 'bidirect', 'seq2seq', 'GRU', 'CNN', 'MLP'
 model_delta = True
 blocks = 6
 epochs = 50
