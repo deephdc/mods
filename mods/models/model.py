@@ -404,7 +404,6 @@ def predict_stream(*args):
                     "host": "127.0.0.1",
                     "port": 9998,
                     "encoding": "utf-8",
-                    "max_connections": 5
                 }
             }
     """
@@ -496,11 +495,12 @@ def predict_stream(*args):
             predictions = mods_model.predict(buffer)
             predictions_total += 1
             buffer = pd.DataFrame()
-            message = json.dumps({'status': 'ok', 'predictions': predictions.tolist()}, indent=True)
+            message = json.dumps({'status': 'ok', 'predictions': predictions.tolist()})
             print(message)
-            message = message.encode(encoding_out)
+            tsv = pd.DataFrame(predictions).to_csv(None, sep="\t", index=False, header=False)
+            tsv = tsv.encode(encoding_out)
             try:
-                sock_out.send(message)
+                sock_out.send(tsv)
             except Exception as e:
                 print(e)
                 receiving = False
