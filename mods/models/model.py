@@ -381,36 +381,6 @@ def predict_data(*args):
     return message
 
 
-class Server(Thread):
-
-    def __init__(self, host, port, max_connections=10):
-        Thread.__init__(self)
-        self.__host = host
-        self.__port = port
-        self.__max_connections = max_connections
-        self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.__socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.__socket.bind((host, port))
-        self.__running = False
-        self.__clients = []
-
-    def run(self):
-        self.__running = True
-        while self.__running:
-            self.__socket.listen(self.__max_connections)
-            (sock, (host, port)) = self.__socket.accept()
-            print('accepted connection: %s:%s' % (host, port))
-            self.__clients.append((sock, (host, port)))
-
-    def send(self, bytes):
-        for (client, (ip, port)) in self.__clients:
-            print('sending bytes (%d) to %s:%s' % (len(bytes), ip, port))
-            client.send(bytes)
-
-    def stop(self):
-        self.__running = False
-
-
 def predict_stream(*args):
     """
     Function to make prediction on a stream
@@ -448,8 +418,15 @@ def predict_stream(*args):
     port_out = int(params_out['port'])
     encoding_out = params_out['encoding']
 
-    server = Server(host_out, port_out)
-    server.start()
+    # OUTPUT
+    sock_out = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        print('connecting to %s:%s' % (host_out, port_out))
+        sock_out.connect((host_out, port_out))
+        print('successfully connected')
+    except Exception as e:
+        message = str(e)
+        return message
 
     # INPUT
     params_in = params['in']
@@ -522,9 +499,13 @@ def predict_stream(*args):
             message = json.dumps({'status': 'ok', 'predictions': predictions.tolist()}, indent=True)
             print(message)
             message = message.encode(encoding_out)
-            server.send(message)
-    server.stop()
-    server.join()
+            try:
+                sock_out.send(message)
+            except Exception as e:
+                print(e)
+                receiving = False
+    sock_out.close()
+    sock_in.close()
     return {
         'status': 'ok',
         'predictions_total': predictions_total
