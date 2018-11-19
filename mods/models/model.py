@@ -44,9 +44,13 @@ import pandas as pd
 import keras
 from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
+from keras.layers import Bidirectional
 from keras.layers import Dense
 from keras.layers import Flatten
 from keras.layers import Input
+from keras.layers import RepeatVector
+from keras.layers.convolutional import Conv1D
+from keras.layers.convolutional import MaxPooling1D
 from keras.layers.recurrent import GRU
 from keras.layers.recurrent import LSTM
 from keras.models import Model
@@ -56,7 +60,7 @@ from sklearn.externals import joblib
 from sklearn.preprocessing import MinMaxScaler
 
 import socket
-from threading import Event, Thread
+from threading import Thread
 
 
 class MODSModel:
@@ -197,39 +201,39 @@ class MODSModel:
             self.set_multivariate(multivariate)
         else:
             multivariate = self.get_multivariate()
+
         if sequence_len:
             self.set_sequence_len(sequence_len)
         else:
             sequence_len = self.get_sequence_len()
+
         if model_delta:
             self.set_model_delta(model_delta)
 
-	
-	# Define model
-    	x = Input(shape=(sequence_len, multivariate))
-    	if model=='GRU':
+        # Define model
+        x = Input(shape=(sequence_len, multivariate))
+        if model_type == 'GRU':
             h = GRU(cfg.blocks)(x)
-    	elif model=='bidirect':
+        elif model_type == 'bidirect':
             h = Bidirectional(LSTM(cfg.blocks))(x)
-    	elif model=='seq2seq':
+        elif model_type == 'seq2seq':
             h = LSTM(cfg.blocks)(x)
             h = RepeatVector(sequence_len)(h)
             h = LSTM(cfg.blocks, return_sequences=True)(h)
             h = Flatten()(h)
-    	elif model=='CNN':
+        elif model_type == 'CNN':
             h = Conv1D(filters=64, kernel_size=2, activation='relu')(x)
             h = MaxPooling1D(pool_size=2)(h)
             h = Flatten()(h)
-        elif model=='MLP':
+        elif model_type == 'MLP':
             h = Dense(units=multivariate, activation='relu')(x)
             # h = Dense(units=multivariate, activation='relu')(h)
-            h = Flatten()(h)    
-    	else:   # default LSTM
+            h = Flatten()(h)
+        else:  # default LSTM
             h = LSTM(cfg.blocks)(x)
-	    # h = LSTM(cfg.blocks)(h)         # stacked
-    	y = Dense(units=multivariate, activation='sigmoid')(h) 	# 'softmax'
-    	self.model = Model(inputs=x, outputs=y)
-
+            # h = LSTM(cfg.blocks)(h)         # stacked
+        y = Dense(units=multivariate, activation='sigmoid')(h)  # 'softmax'
+        self.model = Model(inputs=x, outputs=y)
 
         # Drawing model
         print(self.model.summary())
@@ -237,18 +241,18 @@ class MODSModel:
         # Compile model
         self.model.compile(loss='mean_squared_error',
                            optimizer='adam',  # 'adagrad', 'rmsprop'
-                           metrics=['mse', 'mae', 'mape'])  	# 'cosine'
+                           metrics=['mse', 'mae', 'mape'])  # 'cosine'
 
         # Checkpointing and earlystopping
         filepath = cfg.app_checkpoints + self.name + '-{epoch:02d}.hdf5'
         checkpoints = ModelCheckpoint(filepath, monitor='loss',
-                                      save_best_only=True, 
-				      mode=max, 
-				      verbose=1
+                                      save_best_only=True,
+                                      mode=max,
+                                      verbose=1
                                       )
         earlystops = EarlyStopping(monitor='loss',
-                                   patience=cfg.epochs_patience, 
-				   verbose=1
+                                   patience=cfg.epochs_patience,
+                                   verbose=1
                                    )
         callbacks_list = [checkpoints, earlystops]
 
