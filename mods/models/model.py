@@ -454,8 +454,9 @@ def predict_stream(*args):
     while receiving:
         chunk = sock_in.recv(chunk_size)
         print('chunk: %d B' % len(chunk))
-        if chunk == b'':
+        if not chunk:
             # end of the stream
+            print('end of the input stream')
             receiving = False
         else:
             chunks.append(chunk)
@@ -504,7 +505,9 @@ def predict_stream(*args):
             except Exception as e:
                 print(e)
                 receiving = False
+    sock_out.shutdown()
     sock_out.close()
+    sock_in.shutdown()
     sock_in.close()
     return {
         'status': 'ok',
