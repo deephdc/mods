@@ -60,7 +60,8 @@ from sklearn.externals import joblib
 from sklearn.preprocessing import MinMaxScaler
 
 import socket
-from threading import Thread
+from threading import Thread, Lock
+from flask import stream_with_context, request, Response
 
 
 class MODSModel:
@@ -381,6 +382,131 @@ def predict_data(*args):
     return message
 
 
+class Streamer(Thread):
+    def __init__(self, stream, max_clients=3):
+        super(Streamer, self).__init__()
+        self.__lock = Lock()
+        self.__stream = stream
+        self.__max_clients = max_clients
+        self.__clients = [None] * max_clients
+
+    def add_client(self, client):
+        self.__lock.acquire()
+        added = False
+        for i in range(0, len(self.__clients)):
+            if not self.__clients[i]:
+                self.__clients[i] = client
+                added = True
+                break
+        self.__lock.release()
+        return added
+
+    def shutdown_close(self):
+        self.__lock.acquire()
+        for i in range(0, len(self.__clients)):
+            if not self.__clients[i]:
+                continue
+            self.__shutdown_close_client(i)
+        self.__lock.release()
+
+    def __shutdown_close_client(self, id):
+        print('shutting down client: %d' % id)
+        client = self.__clients[id]
+        print('shutting down client: %s' % str(client))
+        sock = client[0]
+        try:
+            sock.shutdown(socket.SHUT_RDWR)
+            print('client shotdown: %d' % id)
+        except Exception as e:
+            print(e)
+        try:
+            sock.close()
+            print('client closed: %d' % id)
+        except Exception as e:
+            print(e)
+        self.__clients[id] = None
+
+    def run(self):
+        while True:
+            data = self.__stream.recv(4096)
+            self.__lock.acquire()
+            for i in range(0, len(self.__clients)):
+                if not self.__clients[i]:
+                    continue
+                sock = self.__clients[i][0]
+                try:
+                    sock.send(data)
+                except Exception as e:
+                    print(e)
+                    self.__shutdown_close_client(i)
+            self.__lock.release()
+
+
+# accepting connections
+def pipe(host_in, port_in, host_out, port_out):
+    # INPUT
+    sock_in = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock_in.connect((host_in, port_in))
+    streamer = Streamer(sock_in)
+    streamer.start()
+    # OUTPUT
+    sock_out = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock_out.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock_out.bind((host_out, port_out))
+    sock_out.listen(8)
+    print('streaming at %s:%s' % (host_out, port_out))
+    try:
+        while True:
+            client = sock_out.accept()
+            if not streamer.add_client(client):
+                print('could not accept connection from %s: maximum number of clients reached' % str(client[1]))
+            else:
+                print('accepted connection from %s' % str(client[1]))
+    except:
+        streamer.shutdown_close()
+    streamer.stop()
+    streamer.join()
+
+    #
+    # (sock_client, (host_client, port_client)) = sock_out.accept()
+    # print('accepted connection: %s:%s' % (host_client, port_client))
+    # rocknroll = True
+    # while rocknroll:
+    #     try:
+    #         recvd = sock_in.recv(4096)
+    #         if not recvd:
+    #             rocknroll = False
+    #         sock_client.send(recvd)
+    #     except Exception as e:
+    #         rocknroll = False
+    #         print(e)
+    # sock_client.shutdown()
+    # sock_client.close()
+    # sock_out.shutdown()
+    # sock_out.close()
+    # sock_in.shutdown()
+    # sock_in.close()
+
+
+# def pipe(host_in, port_in, host_out, port_out):
+#     # INPUT
+#     sock_in = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#     sock_in.connect((host_in, port_in))
+#     # OUTPUT
+#     sock_out = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#     sock_out.connect((host_out, port_out))
+#     while True:
+#         try:
+#             recvd = sock_in.recv(4096)
+#             sock_out.send(recvd)
+#         except Exception as e:
+#             print(e)
+#             sock_out.shutdown()
+#             sock_out.close()
+#             sock_in.shutdown()
+#             sock_in.close()
+
+
 def predict_stream(*args):
     """
     Function to make prediction on a stream
@@ -408,34 +534,39 @@ def predict_stream(*args):
             }
     """
     print('args: %s' % args)
+    # return Response(stream_with_context(bullshit(100)))
 
     params = json.loads(args[0])
 
-    # OUTPUT
+    # INPUT params
+    params_in = params['in']
+    host_in = params_in['host']
+    port_in = int(params_in['port'])
+    encoding_in = params_in['encoding']
+
+    # OUTPUT params
     params_out = params['out']
     host_out = params_out['host']
     port_out = int(params_out['port'])
     encoding_out = params_out['encoding']
 
-    # OUTPUT
-    sock_out = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    return pipe(host_in, port_in, host_out, port_out)
+
+    # INPUT socket
+    sock_in = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        print('connecting to %s:%s' % (host_out, port_out))
-        sock_out.connect((host_out, port_out))
+        print('connecting to %s:%s' % (host_in, port_in))
+        sock_in.connect((host_in, port_in))
         print('successfully connected')
     except Exception as e:
         message = str(e)
         return message
 
-    # INPUT
-    params_in = params['in']
-    host_in = params_in['host']
-    port_in = int(params_in['port'])
-    encoding_in = params_in['encoding']
-    sock_in = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # OUTPUT socket
+    sock_out = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        print('connecting to %s:%s' % (host_in, port_in))
-        sock_in.connect((host_in, port_in))
+        print('connecting to %s:%s' % (host_out, port_out))
+        sock_out.connect((host_out, port_out))
         print('successfully connected')
     except Exception as e:
         message = str(e)
