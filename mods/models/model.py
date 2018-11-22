@@ -60,8 +60,6 @@ from sklearn.externals import joblib
 from sklearn.preprocessing import MinMaxScaler
 
 import socket
-from threading import Thread, Lock
-from flask import stream_with_context, request, Response
 
 
 class MODSModel:
@@ -382,107 +380,6 @@ def predict_data(*args):
     return message
 
 
-class Streamer(Thread):
-    def __init__(self, stream, max_clients=3):
-        super(Streamer, self).__init__()
-        self.__lock = Lock()
-        self.__stream = stream
-        self.__max_clients = max_clients
-        self.__clients = [None] * max_clients
-        self.__clients_count = 0
-        self.__streamed = False
-
-    def add_client(self, client):
-        self.__lock.acquire()
-        added = False
-        for i in range(0, len(self.__clients)):
-            if not self.__clients[i]:
-                self.__clients[i] = client
-                self.__clients_count += 1
-                added = True
-                break
-        self.__lock.release()
-        return added
-
-    def shutdown_close(self):
-        self.__lock.acquire()
-        for i in range(0, len(self.__clients)):
-            if not self.__clients[i]:
-                continue
-            self.__shutdown_close_client(i)
-        self.__lock.release()
-
-    def __shutdown_close_client(self, id):
-        print('shutting down client: %d' % id)
-        client = self.__clients[id]
-        print('shutting down client: %s' % str(client))
-        sock = client[0]
-        try:
-            sock.shutdown(socket.SHUT_RDWR)
-            print('client shotdown: %d' % id)
-        except Exception as e:
-            print(e)
-        try:
-            sock.close()
-            print('client closed: %d' % id)
-        except Exception as e:
-            print(e)
-        self.__clients[id] = None
-        self.__clients_count -= 1
-
-    def run(self):
-        while True:
-            data = self.__stream.recv(4096)
-            self.__lock.acquire()
-            if self.__streamed and self.__clients_count <= 0:
-                print('all clients disconnected. quitting ...')
-                self.__lock.release()
-                return
-            for i in range(0, len(self.__clients)):
-                if not self.__clients[i]:
-                    continue
-                sock = self.__clients[i][0]
-                try:
-                    self.__streamed = True
-                    sock.send(data)
-                except Exception as e:
-                    print(e)
-                    self.__shutdown_close_client(i)
-            self.__lock.release()
-
-
-# accepting connections
-def pipe(host_in, port_in, host_out, port_out):
-    # INPUT
-    sock_in = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock_in.connect((host_in, port_in))
-    streamer = Streamer(sock_in)
-    streamer.start()
-    # OUTPUT
-    sock_out = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock_out.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock_out.bind((host_out, port_out))
-    sock_out.listen(8)
-    print('streaming at %s:%s' % (host_out, port_out))
-    try:
-        while streamer.is_alive():
-            client = sock_out.accept()
-            if not streamer.add_client(client):
-                print('could not accept connection from %s: maximum number of clients reached' % str(client[1]))
-                client[0].shutdown(socket.SHUT_RDWR)
-                client[0].close()
-            else:
-                print('accepted connection from %s' % str(client[1]))
-    except:
-        streamer.shutdown_close()
-    print('stopping streaming...')
-    streamer.join()
-    sock_out.shutdown(socket.SHUT_RDWR)
-    sock_out.close()
-    sock_in.shutdown(socket.SHUT_RDWR)
-    sock_in.close()
-
-
 def predict_stream(*args):
     """
     Function to make prediction on a stream
@@ -514,108 +411,119 @@ def predict_stream(*args):
 
     params = json.loads(args[0])
 
-    # INPUT params
+    # INPUT
     params_in = params['in']
     host_in = params_in['host']
     port_in = int(params_in['port'])
     encoding_in = params_in['encoding']
+    sock_in = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock_in.connect((host_in, port_in))
 
-    # OUTPUT params
+    # OUTPUT
     params_out = params['out']
     host_out = params_out['host']
     port_out = int(params_out['port'])
     encoding_out = params_out['encoding']
-
-    return pipe(host_in, port_in, host_out, port_out)
-
-    # INPUT socket
-    sock_in = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        print('connecting to %s:%s' % (host_in, port_in))
-        sock_in.connect((host_in, port_in))
-        print('successfully connected')
-    except Exception as e:
-        message = str(e)
-        return message
-
-    # OUTPUT socket
     sock_out = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        print('connecting to %s:%s' % (host_out, port_out))
-        sock_out.connect((host_out, port_out))
-        print('successfully connected')
-    except Exception as e:
-        message = str(e)
-        return message
+    sock_out.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock_out.bind((host_out, port_out))
+    sock_out.listen(1)
 
-    chunks = []
-    chunks_to_join = 20
-    chunks_collected = 0
-    chunk_size = 512
-    receiving = True
-    predictions_total = 0
+    print('streaming at %s:%s' % (host_out, port_out))
+    client = sock_out.accept()
+    print('accepted connection from %s' % str(client[1]))
 
+    raw = b''
     seq_len = mods_model.get_sequence_len()
     buffer = pd.DataFrame()
+    predictions_total = 0
 
-    while receiving:
-        chunk = sock_in.recv(chunk_size)
-        print('chunk: %d B' % len(chunk))
-        if not chunk:
-            # end of the stream
-            print('end of the input stream')
-            receiving = False
-        else:
-            chunks.append(chunk)
-            chunks_collected += 1
-            print('chunks: %d' % chunks_collected)
-        if chunks_collected == chunks_to_join or not receiving:
-            # join collected chunks
-            raw = b''.join(chunks)
-            # the beginning of the complete data
-            beg = raw.find(b'\n') + 1
-            # the end of the complete data
-            end = raw.rfind(b'\n') + 1
-            # completed raw lines
-            raw_complete = raw[beg:end]
-            # store the incomplete line for the next loop
-            chunks = [raw[end:]]
-            chunks_collected = 0
-            # create pandas dataframe
-            df = pd.read_csv(
-                io.BytesIO(raw_complete),
-                sep='\t',
-                header=None,
-                usecols=params_in['columns'],
-                skiprows=0,
-                skipfooter=0,
-                engine='python',
-                skip_blank_lines=True
-            )
-            print('new rows: %d rows' % len(df))
-            for col in df:
-                df[col] = [np.nan if x == '-' else pd.to_numeric(x, errors='coerce') for x in df[col]]
-            # append the dataframe to the buffer
-            buffer = buffer.append(df)
-            print('buffer: %d rows' % len(buffer))
-        # there must be at least 'seq_len' rows in the buffer to make time series generator and predict
-        if len(buffer) >= seq_len:
+    while True:
+
+        recvd = sock_in.recv(4096)
+        print('recvd: %d B' % len(recvd))
+
+        if not recvd:
+            print('no data received from the input stream')
+            break
+
+        # join previous incomplete line with currently received data
+        print('raw: %d B' % len(raw))
+        raw = raw + recvd
+        print('raw + recvd: %d B' % len(raw))
+
+        # the beginning of the complete data
+        beg = raw.find(b'\n') + 1
+        # the end of the complete data
+        end = raw.rfind(b'\n') + 1
+        print('(beg, end): (%d, %d)' % (beg, end))
+
+        if beg == end:
+            # not enough lines
+            continue
+
+        # completed raw lines
+        raw_complete = raw[beg:end]
+        print('raw_complete: %d B' % len(raw_complete))
+
+        # store the incomplete line for the next loop
+        raw = raw[end:]
+        print('raw (to the next step): %d B' % len(raw))
+
+        # create pandas dataframe
+        df = pd.read_csv(
+            io.BytesIO(raw_complete),
+            sep='\t',
+            header=None,
+            usecols=params_in['columns'],
+            skiprows=0,
+            skipfooter=0,
+            engine='python',
+            skip_blank_lines=True
+        )
+        print('new rows: %d rows' % len(df))
+
+        for col in df:
+            df[col] = [np.nan if x == '-' else pd.to_numeric(x, errors='coerce') for x in df[col]]
+
+        # append the dataframe to the buffer
+        buffer = buffer.append(df)
+        print('buffer: %d rows' % len(buffer))
+
+        # there must be more than 'seq_len' rows in the buffer to make time series generator and predict
+        # todo: check the '> seq_len + 1', not sure about it. '> seq_len' gives error:
+        # ValueError: `start_index+length=6 > end_index=5` is disallowed, as no part of the sequence would be left to be used as current step.
+        if len(buffer) > seq_len + 1:
+
+            # PREDICT
+            print('predicting on %d rows' % len(buffer))
             predictions = mods_model.predict(buffer)
             predictions_total += 1
             buffer = pd.DataFrame()
+
+            # STDOUT message
             message = json.dumps({'status': 'ok', 'predictions': predictions.tolist()})
             print(message)
+
+            # stream output
             tsv = pd.DataFrame(predictions).to_csv(None, sep="\t", index=False, header=False)
             tsv = tsv.encode(encoding_out)
+
             try:
-                sock_out.send(tsv)
+                client[0].send(tsv)
             except Exception as e:
-                print(e)
-                receiving = False
-    sock_out.shutdown()
+                print('could not send data to client: %s' % e)
+                break
+
+    print('stopping streaming...')
+    client[0].close()
+
+    sock_out.shutdown(socket.SHUT_RDWR)
     sock_out.close()
-    sock_in.shutdown()
+
+    sock_in.shutdown(socket.SHUT_RDWR)
     sock_in.close()
+
     return {
         'status': 'ok',
         'predictions_total': predictions_total
