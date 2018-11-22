@@ -389,6 +389,8 @@ class Streamer(Thread):
         self.__stream = stream
         self.__max_clients = max_clients
         self.__clients = [None] * max_clients
+        self.__clients_count = 0
+        self.__streamed = False
 
     def add_client(self, client):
         self.__lock.acquire()
@@ -396,6 +398,7 @@ class Streamer(Thread):
         for i in range(0, len(self.__clients)):
             if not self.__clients[i]:
                 self.__clients[i] = client
+                self.__clients_count += 1
                 added = True
                 break
         self.__lock.release()
@@ -425,16 +428,22 @@ class Streamer(Thread):
         except Exception as e:
             print(e)
         self.__clients[id] = None
+        self.__clients_count -= 1
 
     def run(self):
         while True:
             data = self.__stream.recv(4096)
             self.__lock.acquire()
+            if self.__streamed and self.__clients_count <= 0:
+                print('all clients disconnected. quitting ...')
+                self.__lock.release()
+                return
             for i in range(0, len(self.__clients)):
                 if not self.__clients[i]:
                     continue
                 sock = self.__clients[i][0]
                 try:
+                    self.__streamed = True
                     sock.send(data)
                 except Exception as e:
                     print(e)
@@ -456,55 +465,22 @@ def pipe(host_in, port_in, host_out, port_out):
     sock_out.listen(8)
     print('streaming at %s:%s' % (host_out, port_out))
     try:
-        while True:
+        while streamer.is_alive():
             client = sock_out.accept()
             if not streamer.add_client(client):
                 print('could not accept connection from %s: maximum number of clients reached' % str(client[1]))
+                client[0].shutdown(socket.SHUT_RDWR)
+                client[0].close()
             else:
                 print('accepted connection from %s' % str(client[1]))
     except:
         streamer.shutdown_close()
-    streamer.stop()
+    print('stopping streaming...')
     streamer.join()
-
-    #
-    # (sock_client, (host_client, port_client)) = sock_out.accept()
-    # print('accepted connection: %s:%s' % (host_client, port_client))
-    # rocknroll = True
-    # while rocknroll:
-    #     try:
-    #         recvd = sock_in.recv(4096)
-    #         if not recvd:
-    #             rocknroll = False
-    #         sock_client.send(recvd)
-    #     except Exception as e:
-    #         rocknroll = False
-    #         print(e)
-    # sock_client.shutdown()
-    # sock_client.close()
-    # sock_out.shutdown()
-    # sock_out.close()
-    # sock_in.shutdown()
-    # sock_in.close()
-
-
-# def pipe(host_in, port_in, host_out, port_out):
-#     # INPUT
-#     sock_in = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#     sock_in.connect((host_in, port_in))
-#     # OUTPUT
-#     sock_out = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#     sock_out.connect((host_out, port_out))
-#     while True:
-#         try:
-#             recvd = sock_in.recv(4096)
-#             sock_out.send(recvd)
-#         except Exception as e:
-#             print(e)
-#             sock_out.shutdown()
-#             sock_out.close()
-#             sock_in.shutdown()
-#             sock_in.close()
+    sock_out.shutdown(socket.SHUT_RDWR)
+    sock_out.close()
+    sock_in.shutdown(socket.SHUT_RDWR)
+    sock_in.close()
 
 
 def predict_stream(*args):
