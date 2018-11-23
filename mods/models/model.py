@@ -113,7 +113,8 @@ class MODSModel:
     def __load_config(self, zip, file):
         print('Loading model config')
         with zip.open(file) as f:
-            self.config = json.load(f)
+            data = f.read()
+            self.config = json.loads(data.decode('ut-f8'))
         print('Model config:\n%s' % json.dumps(self.config, indent=True))
 
     def __load_model(self, zip, config):
