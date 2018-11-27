@@ -403,7 +403,7 @@ def predict_stream(*args):
                 "out": {
                     "host": "127.0.0.1",
                     "port": 9998,
-                    "encoding": "utf-8",
+                    "encoding": "utf-8"
                 }
             }
     """
