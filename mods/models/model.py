@@ -408,7 +408,6 @@ def predict_stream(*args):
             }
     """
     print('args: %s' % args)
-    # return Response(stream_with_context(bullshit(100)))
 
     params = json.loads(args[0])
 
