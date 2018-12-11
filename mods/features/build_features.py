@@ -7,10 +7,7 @@ which runs in the similar way for Hadoop cluster and local machine
 but with different performance and scalability.
 
 @@author: stefan dlugolinsky
-@author: giangnguyen 
-
-@@author: stefan dlugolinsky
-@author: giang nguyen
+@author: giangnguyen
 """
 
 # import project config.py

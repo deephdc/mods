@@ -57,7 +57,7 @@ def decompressing(ffn, fn_log):
 # find /path/to/dir/ -type f -exec rename 's/[:]/_/g' '{}' \;
 def gzip_to_parquet(dir_logs, dir_parquet):
     print(dir_logs, dir_parquet)
-    fn_excluded = ['current', 'loaded_scripts']
+    fn_excluded = ['current', 'loaded_scripts', 'stderr', 'stdout', 'packet_filter']
 
     for root, directories, filenames in os.walk(dir_logs):
         
