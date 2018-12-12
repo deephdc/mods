@@ -1,6 +1,8 @@
 mods
 ==============================
 
+[![Build Status](https://jenkins.indigo-datacloud.eu:8080/buildStatus/icon?job=Pipeline-as-code/DEEP-OC-org/mods/master)](https://jenkins.indigo-datacloud.eu:8080/job/Pipeline-as-code/job/DEEP-OC-org/job/mods/job/master/)
+
 MODS - Massive Online Data Streams
 
 Project Organization
@@ -18,7 +20,7 @@ Project Organization
     ├── models             <- Trained and serialized models, model predictions, or model summaries
     │
     ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-    │                         the creator's initials (if many user development), 
+    │                         the creator's initials (if many user development),
     │                         and a short `_` delimited description, e.g.
     │                         `1.0-jqp-initial_data_exploration.ipynb`.
     │
