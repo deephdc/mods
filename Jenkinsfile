@@ -59,7 +59,7 @@ pipeline {
             }
         }
 
-        stage("Re-build DEEP-OC-dogs_breed_det Docker image") {
+        stage("Re-build DEEP-OC-mods Docker image") {
             steps {
                 script {
                     def job_result = JenkinsBuildJob("${env.job_location}")
