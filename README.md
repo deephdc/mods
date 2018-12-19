@@ -1,9 +1,22 @@
-mods
+DEEP Open Catalogue: Massive Online Data Streams (MODS)
 ==============================
+
+**Project:** This work is part of the [DEEP Hybrid-DataCloud](https://deep-hybrid-datacloud.eu/) project that has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 777435.
 
 [![Build Status](https://jenkins.indigo-datacloud.eu:8080/buildStatus/icon?job=Pipeline-as-code/DEEP-OC-org/mods/master)](https://jenkins.indigo-datacloud.eu:8080/job/Pipeline-as-code/job/DEEP-OC-org/job/mods/job/master/)
 
-MODS - Massive Online Data Streams
+To start using this framework run:
+
+```bash
+git clone https://github.com/indigo-dc/mods
+cd mods
+pip install -e .
+```
+
+**Requirements:**
+ 
+ - This project has been tested in Ubuntu 18.04 with Python 3.6.5. Further package requirements are described in the `requirements.txt` file.
+- It is a requirement to have
 
 
 Project Organization
@@ -58,3 +71,23 @@ Project Organization
 --------
 
 <p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. #cookiecutterdatascience</small></p>
+
+## Workflow
+
+### 1. Data preprocessing
+
+#### 1.1 Prepare the dataset 
+
+#### 1.2 Build features
+
+### 2. Train and test the neural network
+
+#### 2.1 Set the configuration 
+
+#### 2.1 Training
+
+### 3. DEEPaaS API
+
+
+
+
