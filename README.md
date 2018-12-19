@@ -16,7 +16,7 @@ pip install -e .
 **Requirements:**
  
  - This project has been tested in Ubuntu 18.04 with Python 3.6. Further package requirements are described in the `requirements.txt` file.
-- It is a requirement to have
+- (TBD later)
 
 
 Project Organization
@@ -87,7 +87,3 @@ Project Organization
 #### 2.1 Training
 
 ### 3. DEEPaaS API
-
-
-
-
