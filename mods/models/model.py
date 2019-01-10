@@ -536,3 +536,17 @@ def train(*args):
     """
     message = 'Not implemented in the model (train)'
     return message
+
+def get_train_args():
+    return {
+        'multivariate': {
+            'default': 2,
+            'help': '',
+            'required': True
+        },
+        'sequence_len': {
+            'default': 6,
+            'help': '',
+            'required': True
+        }
+    }
