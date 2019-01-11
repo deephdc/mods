@@ -22,8 +22,6 @@ Train models with first order differential to monitor changes
 @author: stefan dlugolinsky
 """
 
-import pkg_resources
-
 import io
 import json
 import os
@@ -32,10 +30,11 @@ import sys
 
 import numpy as np
 import pandas as pd
+import pkg_resources
 
 # import project config.py
 import mods.config as cfg
-from mods.models import mods_model as MODS
+import mods.models.mods_model as MODS
 
 # import utilities
 # import mods.utils as utl
