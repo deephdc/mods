@@ -42,7 +42,7 @@ import mods.models.mods_model as MODS
 
 # load model
 model_filename = os.path.join(cfg.app_models, cfg.default_model)
-mods_model = MODS(model_filename)
+mods_model = MODS.mods_model(model_filename)
 
 if not mods_model:
     print('Could not load model: %s' % model_filename)
