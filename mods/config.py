@@ -47,6 +47,9 @@ app_checkpoints = BASE_DIR + '/checkpoints/'
 app_visualization = BASE_DIR + '/visualization/'
 
 default_model = 'serie_mock_1h_10m-seq-6.zip'
+MODS_RemoteStorage = 'deepnc:/Datasets/mods/'
+MODS_DataDir = 'data'
+MODS_FeatureSetFile = 'features-20180414-20181015-win-1_hour-slide-1_hour.tsv'
 
 # Feature data
 feature_filename = 'features.tsv'

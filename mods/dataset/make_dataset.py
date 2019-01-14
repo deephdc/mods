@@ -6,6 +6,23 @@ import logging
 from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
 import mods.config as cfg
+import mods.dataset.data_utils as dutils
+
+
+def prepare_data():
+    """ Function to prepare data
+    """
+    data_dir = cfg.MODS_DataDir
+    feature_set_file = cfg.MODS_FeatureSetFile
+    status_feature_set, _ = dutils.maybe_download_data(data_dir=data_dir,
+                                                       data_file=feature_set_file)
+
+    if not status_feature_set:
+        dutils.maybe_download_and_unzip(
+            data_dir=data_dir,
+            data_file=feature_set_file + '.zip')
+    else:
+        print("[INFO] %s exists" % (cfg.MODS_FeatureSetFile))
 
 
 def main(input_filepath, output_filepath):

@@ -35,10 +35,10 @@ import pkg_resources
 # import project config.py
 import mods.config as cfg
 import mods.models.mods_model as MODS
+import mods.dataset.make_dataset as mdata
 
 # import utilities
-# import mods.utils as utl
-
+import mods.utils as utl
 
 # load model
 model_filename = os.path.join(cfg.app_models, cfg.default_model)
@@ -249,6 +249,10 @@ def train(*args):
     """
     message = 'Not implemented in the model (train)'
     print('---\nargs:\n%s\n---' % args)
+
+    # uncomment to get data via rclone
+    # mdata.prepare_data()
+
     return message
 
 
