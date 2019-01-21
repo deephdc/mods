@@ -8,7 +8,7 @@ DEEP Open Catalogue: Massive Online Data Streams (MODS)
 To start using this framework run:
 
 ```bash
-git clone https://github.com/indigo-dc/mods
+git clone git@github.com:deephdc/mods.git
 cd mods
 pip install -e .
 ```
