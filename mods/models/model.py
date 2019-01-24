@@ -271,8 +271,9 @@ def train(*args):
     # uncomment to get data via rclone
     mdata.prepare_data()
 
-    m = MODS.mods_model(os.path.join(cfg.app_models, 'train-test'))
+    m = MODS.mods_model(os.path.join(cfg.app_models, args.model_name))
 
+    # TODO: add 'usecols' in args and parse it
     df_train = m.load_data(
         path='data/features-20180414-20181015-win-1_hour-slide-10_minutes.tsv',
         usecols=['number_of_conn', 'sum_orig_kbytes']
@@ -282,25 +283,61 @@ def train(*args):
     m.train(
         df_train=df_train,
         df_test=None,
-        df_validation=None,
-        epochs=10,
-        sequence_len=6,
-        multivariate=2,
-        model_type='LSTM'
+        epochs=args.epochs,
+        sequence_len=args.sequence_len,
+        multivariate=args.multivariate,
+        model_type=args.model_type
     )
+
+    m.save(os.path.join(cfg.app_models, args.model_name))
 
     return message
 
 
 def get_train_args():
     return {
+        'model_name': {
+            'default': '',
+            'help': 'e.g. model.zip',
+            'required': True
+        },
         'multivariate': {
-            'default': 2,
+            'default': cfg.multivariate,
             'help': '',
             'required': True
         },
         'sequence_len': {
-            'default': 6,
+            'default': cfg.sequence_len,
+            'help': '',
+            'required': True
+        },
+        'model_delta': {
+            'default': cfg.model_delta,
+            'help': '',
+            'required': True
+        },
+        'interpolate': {
+            'default': cfg.interpolate,
+            'help': '',
+            'required': True
+        },
+        'model_type': {
+            'default': cfg.model_type,
+            'help': '',
+            'required': True
+        },
+        'epochs': {
+            'default': cfg.epochs,
+            'help': '',
+            'required': True
+        },
+        'epochs_patience': {
+            'default': cfg.epochs_patience,
+            'help': '',
+            'required': True
+        },
+        'blocks': {
+            'default': cfg.blocks,
             'help': '',
             'required': True
         }

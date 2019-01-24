@@ -76,11 +76,13 @@ cols_included = ['number_of_conn', 'sum_orig_bytes']
 split_ratio = 0.67                      # train:test = 2:1
 batch_size = 1                          # delta (6), without_delta(1)
 sequence_len = 6                        # sequence lenght
+multivariate = 2
 
 
 # model properties
 model_type  = 'LSTM'                    # 'LSTM', 'bidirect', 'seq2seq', 'GRU', 'CNN', 'MLP'
 model_delta = True
+interpolate = True
 blocks = 6
 epochs = 50
 epochs_patience = 10
