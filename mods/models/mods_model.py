@@ -56,6 +56,7 @@ class mods_model:
     __MULTIVARIATE = 'multivariate'
     __SEQUENCE_LEN = 'sequence_len'
     __MODEL_DELTA = 'model_delta'
+    __EPOCHS = 'epochs'
     # scaler
     __SCALER = 'scaler'
     # sample data
@@ -71,15 +72,13 @@ class mods_model:
         self.name = os.path.basename(file)
         self.config = None
         self.model = None
-        self.scaler = None
+        self.__scaler = None
         self.sample_data = None
         if os.path.isfile(file):
             self.__load(file)
+            self.__init()
         else:
             self.config = self.__default_config()
-            self.model = self.create_model()
-            self.scaler = MinMaxScaler(feature_range=(0, 1))
-        self.__init()
 
     # saves the contents of the original file (e.g. file in a zip) into a temp file and runs func over it
     def __func_over_tempfile(self, orig_file, func, mode='wb', *args, **kwargs):
@@ -119,7 +118,7 @@ class mods_model:
     def __load_scaler(self, zip, config):
         print('Loading scaler')
         with zip.open(config[mods_model.__FILE]) as f:
-            self.scaler = joblib.load(f)
+            self.__scaler = joblib.load(f)
         print('Scaler loaded')
 
     def __load_sample_data(self, zip, config):
@@ -134,13 +133,25 @@ class mods_model:
                                            )
         print('Sample data loaded:\n%s' % self.sample_data)
 
+    def load_data(self, path, sep='\t', skiprows=0, skipfooter=0, engine='python',
+                  usecols=lambda col: col in ['number_of_conn', 'sum_orig_kbytes']):
+        df = pd.read_csv(open(path),
+                         sep=sep,
+                         skiprows=skiprows,
+                         skipfooter=skipfooter,
+                         engine=engine,
+                         usecols=usecols
+                         )
+        return df
+
     def __default_config(self):
         return {
             mods_model.__MODEL: {
                 mods_model.__FILE: 'model.h5',
                 mods_model.__MULTIVARIATE: len(cfg.cols_included),
                 mods_model.__SEQUENCE_LEN: cfg.sequence_len,
-                mods_model.__MODEL_DELTA: cfg.model_delta
+                mods_model.__MODEL_DELTA: cfg.model_delta,
+                mods_model.__EPOCHS: cfg.epochs,
             },
             mods_model.__SCALER: {
                 mods_model.__FILE: 'scaler.pkl'
@@ -176,12 +187,28 @@ class mods_model:
     def isdelta(self):
         return self.cfg_model()[mods_model.__MODEL_DELTA]
 
-    def create_model(self,
-                     multivariate=None,
-                     sequence_len=None,
-                     model_type=cfg.model_type,
-                     model_delta=cfg.model_delta,
-                     blocks=cfg.blocks):
+    def set_epochs(self, epochs):
+        self.cfg_model()[mods_model.__EPOCHS] = epochs
+
+    def get_epochs(self, epochs):
+        return self.cfg_model()[mods_model.__EPOCHS]
+
+    def get_scaler(self):
+        if not self.__scaler:
+            self.__scaler = MinMaxScaler(feature_range=(0, 1))
+        return self.__scaler
+
+    def train(self,
+              df_train,
+              df_test,
+              df_validation,
+              epochs=cfg.epochs,
+              epochs_patience=cfg.epochs_patience,
+              multivariate=None,
+              sequence_len=None,
+              model_type=cfg.model_type,
+              model_delta=cfg.model_delta,
+              blocks=cfg.blocks):
 
         if multivariate:
             self.set_multivariate(multivariate)
@@ -218,7 +245,9 @@ class mods_model:
         else:  # default LSTM
             h = LSTM(cfg.blocks)(x)
             # h = LSTM(cfg.blocks)(h)         # stacked
+
         y = Dense(units=multivariate, activation='sigmoid')(h)  # 'softmax'
+
         self.model = Model(inputs=x, outputs=y)
 
         # Drawing model
@@ -231,16 +260,31 @@ class mods_model:
 
         # Checkpointing and earlystopping
         filepath = cfg.app_checkpoints + self.name + '-{epoch:02d}.hdf5'
-        checkpoints = ModelCheckpoint(filepath, monitor='loss',
-                                      save_best_only=True,
-                                      mode=max,
-                                      verbose=1
-                                      )
-        earlystops = EarlyStopping(monitor='loss',
-                                   patience=cfg.epochs_patience,
-                                   verbose=1
-                                   )
+        checkpoints = ModelCheckpoint(
+            filepath,
+            monitor='loss',
+            save_best_only=True,
+            mode=max,
+            verbose=1
+        )
+        earlystops = EarlyStopping(
+            monitor='loss',
+            patience=epochs_patience,
+            verbose=1
+        )
         callbacks_list = [checkpoints, earlystops]
+
+        df_train.interpolate(inplace=True)
+        df_train = df_train.values.astype('float32')
+        df_train = self.transform(df_train)
+        df_train = self.normalize(df_train, self.get_scaler())
+        tsg_train = self.get_tsg(df_train)
+
+        self.model.fit_generator(
+            tsg_train,
+            epochs=epochs,
+            callbacks=callbacks_list
+        )
 
     def __init(self):
         print('Initializing model')
@@ -270,14 +314,14 @@ class mods_model:
             return prediction
 
     # normalizes data
-    def normalize(self, df):
+    def normalize(self, df, scaler):
         # Scale all metrics but each separately
-        df = self.scaler.fit_transform(df)
+        df = scaler.fit_transform(df)
         return df
 
     # inverse method to @normalize
     def inverse_normalize(self, df):
-        return self.scaler.inverse_transform(df)
+        return self.get_scaler().inverse_transform(df)
 
     # returns time series generator
     def get_tsg(self, df):
@@ -297,7 +341,7 @@ class mods_model:
         trans = self.transform(interpol)
         # print('transformed:\n%s' % transf)
 
-        norm = self.normalize(trans)
+        norm = self.normalize(trans, self.get_scaler())
         # print('normalized:\n%s' % norm)
 
         tsg = self.get_tsg(norm)

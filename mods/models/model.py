@@ -22,11 +22,13 @@ Train models with first order differential to monitor changes
 @author: stefan dlugolinsky
 """
 
+import argparse
 import io
 import json
 import os
 import socket
 import sys
+import time
 
 import numpy as np
 import pandas as pd
@@ -34,19 +36,27 @@ import pkg_resources
 
 # import project config.py
 import mods.config as cfg
-import mods.models.mods_model as MODS
 import mods.dataset.make_dataset as mdata
+import mods.models.mods_model as MODS
 
 # import utilities
-import mods.utils as utl
 
 # load model
-model_filename = os.path.join(cfg.app_models, cfg.default_model)
-mods_model = MODS.mods_model(model_filename)
+# model_filename = os.path.join(cfg.app_models, cfg.default_model)
+# mods_model = MODS.mods_model(model_filename)
+#
+# if not mods_model:
+#     print('Could not load model: %s' % model_filename)
+#     sys.exit(1)
 
-if not mods_model:
-    print('Could not load model: %s' % model_filename)
-    sys.exit(1)
+mods_model = None
+
+
+def get_model(model_filename=os.path.join(cfg.app_models, cfg.default_model)):
+    global mods_model
+    if not mods_model:
+        mods_model = MODS.mods_model(model_filename)
+    return mods_model
 
 
 def get_metadata():
@@ -89,8 +99,16 @@ def predict_data(*args):
         for data in args:
             message = {'status': 'ok', 'predictions': []}
             df = pd.read_csv(io.BytesIO(data[0]), sep='\t', skiprows=0, skipfooter=0, engine='python')
-            predictions = mods_model.predict(df)
+            predictions = get_model().predict(df)
             message['predictions'] = predictions.tolist()
+    return message
+
+
+def predict_url(*args):
+    """
+    Function to make prediction on a local file
+    """
+    message = 'Not implemented in the model (predict_url)'
     return message
 
 
@@ -147,7 +165,7 @@ def predict_stream(*args):
     print('accepted connection from %s' % str(client[1]))
 
     raw = b''
-    seq_len = mods_model.get_sequence_len()
+    seq_len = get_model().get_sequence_len()
     buffer = pd.DataFrame()
     predictions_total = 0
 
@@ -210,7 +228,7 @@ def predict_stream(*args):
 
             # PREDICT
             print('predicting on %d rows' % len(buffer))
-            predictions = mods_model.predict(buffer)
+            predictions = get_model().predict(buffer)
             predictions_total += 1
             buffer = pd.DataFrame()
 
@@ -251,7 +269,25 @@ def train(*args):
     print('---\nargs:\n%s\n---' % args)
 
     # uncomment to get data via rclone
-    # mdata.prepare_data()
+    mdata.prepare_data()
+
+    m = MODS.mods_model(os.path.join(cfg.app_models, 'train-test'))
+
+    df_train = m.load_data(
+        path='data/features-20180414-20181015-win-1_hour-slide-10_minutes.tsv',
+        usecols=['number_of_conn', 'sum_orig_kbytes']
+    )
+    print(df_train)
+
+    m.train(
+        df_train=df_train,
+        df_test=None,
+        df_validation=None,
+        epochs=10,
+        sequence_len=6,
+        multivariate=2,
+        model_type='LSTM'
+    )
 
     return message
 
@@ -269,3 +305,41 @@ def get_train_args():
             'required': True
         }
     }
+
+
+# during development it might be practical
+# to check your code from the command line
+def main():
+    """
+       Runs above-described functions depending on input parameters
+       (see below an example)
+    """
+
+    if args.method == 'get_metadata':
+        get_metadata()
+    elif args.method == 'predict_file':
+        predict_file(args.file)
+    elif args.method == 'predict_data':
+        predict_data(args.file)
+    elif args.method == 'predict_url':
+        predict_url(args.url)
+    elif args.method == 'train':
+        start = time.time()
+        train(args.n_epochs)
+        print("Elapsed time:  ", time.time() - start)
+    else:
+        get_metadata()
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Model parameters')
+    parser.add_argument('--method', type=str, default="get_metadata",
+                        help='Method to use: get_metadata (default), \
+                        predict_file, predict_data, predict_url, train')
+    parser.add_argument('--file', type=str, help='File to do prediction on, full path')
+    parser.add_argument('--url', type=str, help='URL with the image to do prediction on')
+    parser.add_argument('--n_epochs', type=int, default=15,
+                        help='Number of epochs to train on')
+    args = parser.parse_args()
+
+    main()
