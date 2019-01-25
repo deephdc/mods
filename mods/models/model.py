@@ -288,14 +288,14 @@ def train(*args):
     m.train(
         df_train=df_train,
         df_test=None,
-        multivariate=args.multivariate,
-        sequence_len=args.sequence_len,
-        # model_delta=args.model_delta,
-        # interpolate=args.interpolate,
-        # model_type=args.model_type,
-        # n_epochs=args.n_epochs,
-        # epochs_patience=args.epochs_patience,
-        # blocks=args.blocks
+        multivariate=int(args.multivariate),
+        sequence_len=int(args.sequence_len),
+        # model_delta=bool(args.model_delta),
+        # interpolate=bool(args.interpolate),
+        # model_type=str(args.model_type),
+        # n_epochs=int(args.n_epochs),
+        # epochs_patience=int(args.epochs_patience),
+        # blocks=int(args.blocks)
     )
 
     m.save(os.path.join(cfg.app_models, args.model_name))
