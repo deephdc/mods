@@ -268,14 +268,19 @@ def train(*args):
     message = 'Not implemented in the model (train)'
     print('---\nargs:\n%s\n---' % args)
 
+    args = args[0]
+
     # uncomment to get data via rclone
-    mdata.prepare_data()
+    # mdata.prepare_data()
 
     m = MODS.mods_model(os.path.join(cfg.app_models, args.model_name))
 
+    # TODO: read path from user input
+    df_train_path = os.path.join(cfg.app_data, 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv')
+
     # TODO: add 'usecols' in args and parse it
     df_train = m.load_data(
-        path='data/features-20180414-20181015-win-1_hour-slide-10_minutes.tsv',
+        path=df_train_path,
         usecols=['number_of_conn', 'sum_orig_kbytes']
     )
     print(df_train)
@@ -297,7 +302,7 @@ def train(*args):
 def get_train_args():
     return {
         'model_name': {
-            'default': '',
+            'default': 'model.zip',
             'help': 'e.g. model.zip',
             'required': True
         },
@@ -311,16 +316,16 @@ def get_train_args():
             'help': '',
             'required': True
         },
-        'model_delta': {
-            'default': cfg.model_delta,
-            'help': '',
-            'required': True
-        },
-        'interpolate': {
-            'default': cfg.interpolate,
-            'help': '',
-            'required': True
-        },
+        # 'model_delta': {
+        #     'default': cfg.model_delta,
+        #     'help': '',
+        #     'required': True
+        # },
+        # 'interpolate': {
+        #     'default': cfg.interpolate,
+        #     'help': '',
+        #     'required': True
+        # },
         'model_type': {
             'default': cfg.model_type,
             'help': '',

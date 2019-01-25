@@ -297,27 +297,50 @@ class mods_model:
             epochs_patience=cfg.epochs_patience,
             blocks=cfg.blocks
     ):
-        multivariate = self.get_multivariate() if multivariate is None else self.set_multivariate(multivariate)
-        sequence_len = self.get_sequence_len() if sequence_len is None else self.set_sequence_len(sequence_len)
-        model_delta = self.isdelta() if model_delta is None else self.set_model_delta(model_delta)
-        interpolate = self.get_interpolate() if interpolate is None else self.set_interpolate(interpolate)
-        model_type = self.get_model_type() if model_type is None else self.set_model_type(model_type)
-        epochs = self.get_epochs() if epochs is None else self.set_epochs(epochs)
-        epochs_patience = self.get_epochs_patience() if epochs_patience is None else self.set_epochs_patience(
-            epochs_patience)
-        blocks = self.get_blocks() if blocks is None else self.set_blocks(blocks)
+        if multivariate is None:
+            multivariate = self.get_multivariate()
+        else:
+            self.set_multivariate(multivariate)
+        if sequence_len is None:
+            sequence_len = self.get_sequence_len()
+        else:
+            self.set_sequence_len(sequence_len)
+        if model_delta is None:
+            model_delta = self.isdelta()
+        else:
+            self.set_model_delta(model_delta)
+        if interpolate is None:
+            interpolate = self.get_interpolate()
+        else:
+            self.set_interpolate(interpolate)
+        if model_type is None:
+            model_type = self.get_model_type()
+        else:
+            self.set_model_type(model_type)
+        if epochs is None:
+            epochs = self.get_epochs()
+        else:
+            self.set_epochs(epochs)
+        if epochs_patience is None:
+            epochs_patience = self.get_epochs_patience()
+        else:
+            self.set_epochs_patience(epochs_patience)
+        if blocks is None:
+            blocks = self.get_blocks()
+        else:
+            self.set_blocks(blocks)
 
         # Define model
         # TODO: divide into multiple model classes according to model_type
         x = Input(shape=(sequence_len, multivariate))
         if model_type == 'GRU':
-            h = GRU(cfg.blocks)(x)
+            h = GRU(blocks)(x)
         elif model_type == 'bidirect':
-            h = Bidirectional(LSTM(cfg.blocks))(x)
+            h = Bidirectional(LSTM(blocks))(x)
         elif model_type == 'seq2seq':
-            h = LSTM(cfg.blocks)(x)
+            h = LSTM(blocks)(x)
             h = RepeatVector(sequence_len)(h)
-            h = LSTM(cfg.blocks, return_sequences=True)(h)
+            h = LSTM(blocks, return_sequences=True)(h)
             h = Flatten()(h)
         elif model_type == 'CNN':
             h = Conv1D(filters=64, kernel_size=2, activation='relu')(x)
@@ -329,7 +352,7 @@ class mods_model:
             h = Flatten()(h)
         else:  # default LSTM
             h = LSTM(blocks)(x)
-            # h = LSTM(cfg.blocks)(h)         # stacked
+            # h = LSTM(blocks)(h)         # stacked
 
         y = Dense(units=multivariate, activation='sigmoid')(h)  # 'softmax'
 
