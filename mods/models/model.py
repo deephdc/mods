@@ -288,10 +288,14 @@ def train(*args):
     m.train(
         df_train=df_train,
         df_test=None,
-        epochs=args.epochs,
-        sequence_len=args.sequence_len,
         multivariate=args.multivariate,
-        model_type=args.model_type
+        sequence_len=args.sequence_len,
+        # model_delta=args.model_delta,
+        # interpolate=args.interpolate,
+        # model_type=args.model_type,
+        # n_epochs=args.n_epochs,
+        # epochs_patience=args.epochs_patience,
+        # blocks=args.blocks
     )
 
     m.save(os.path.join(cfg.app_models, args.model_name))
@@ -326,26 +330,26 @@ def get_train_args():
         #     'help': '',
         #     'required': True
         # },
-        'model_type': {
-            'default': cfg.model_type,
-            'help': '',
-            'required': True
-        },
-        'epochs': {
-            'default': cfg.epochs,
-            'help': '',
-            'required': True
-        },
-        'epochs_patience': {
-            'default': cfg.epochs_patience,
-            'help': '',
-            'required': True
-        },
-        'blocks': {
-            'default': cfg.blocks,
-            'help': '',
-            'required': True
-        }
+        # 'model_type': {
+        #     'default': cfg.model_type,
+        #     'help': '',
+        #     'required': True
+        # },
+        # 'n_epochs': {
+        #     'default': cfg.n_epochs,
+        #     'help': '',
+        #     'required': True
+        # },
+        # 'epochs_patience': {
+        #     'default': cfg.epochs_patience,
+        #     'help': '',
+        #     'required': True
+        # },
+        # 'blocks': {
+        #     'default': cfg.blocks,
+        #     'help': '',
+        #     'required': True
+        # }
     }
 
 
@@ -367,7 +371,7 @@ def main():
         predict_url(args.url)
     elif args.method == 'train':
         start = time.time()
-        train(args.n_epochs)
+        train(args)
         print("Elapsed time:  ", time.time() - start)
     else:
         get_metadata()
@@ -380,8 +384,15 @@ if __name__ == '__main__':
                         predict_file, predict_data, predict_url, train')
     parser.add_argument('--file', type=str, help='File to do prediction on, full path')
     parser.add_argument('--url', type=str, help='URL with the image to do prediction on')
-    parser.add_argument('--n_epochs', type=int, default=15,
-                        help='Number of epochs to train on')
+    parser.add_argument('--model-name', type=str, default='model.zip', help='Name of the model; e.g., model.zip')
+    parser.add_argument('--multivariate', type=int, default=cfg.multivariate, help='')
+    parser.add_argument('--sequence-len', type=int, default=cfg.sequence_len, help='')
+    parser.add_argument('--model-delta', type=bool, default=cfg.model_delta, help='')
+    parser.add_argument('--interpolate', type=bool, default=cfg.interpolate, help='')
+    parser.add_argument('--model-type', type=str, default=cfg.model_type, help='')
+    parser.add_argument('--n-epochs', type=int, default=cfg.n_epochs, help='Number of epochs to train on')
+    parser.add_argument('--epochs-patience', type=int, default=cfg.epochs_patience, help='')
+    parser.add_argument('--blocks', type=int, default=cfg.blocks, help='')
     args = parser.parse_args()
 
     main()

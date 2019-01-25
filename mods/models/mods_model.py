@@ -205,7 +205,7 @@ class mods_model:
                 mods_model.__MODEL_DELTA: cfg.model_delta,
                 mods_model.__INTERPOLATE: cfg.interpolate,
                 mods_model.__MODEL_TYPE: cfg.model_type,
-                mods_model.__EPOCHS: cfg.epochs,
+                mods_model.__EPOCHS: cfg.n_epochs,
                 mods_model.__EPOCHS_PATIENCE: cfg.epochs_patience,
                 mods_model.__BLOCKS: cfg.blocks
             },
@@ -293,7 +293,7 @@ class mods_model:
             model_delta=cfg.model_delta,
             interpolate=cfg.interpolate,
             model_type=cfg.model_type,
-            epochs=cfg.epochs,
+            n_epochs=cfg.n_epochs,
             epochs_patience=cfg.epochs_patience,
             blocks=cfg.blocks
     ):
@@ -317,10 +317,10 @@ class mods_model:
             model_type = self.get_model_type()
         else:
             self.set_model_type(model_type)
-        if epochs is None:
-            epochs = self.get_epochs()
+        if n_epochs is None:
+            n_epochs = self.get_epochs()
         else:
-            self.set_epochs(epochs)
+            self.set_epochs(n_epochs)
         if epochs_patience is None:
             epochs_patience = self.get_epochs_patience()
         else:
@@ -396,7 +396,7 @@ class mods_model:
 
         self.model.fit_generator(
             tsg_train,
-            epochs=epochs,
+            epochs=n_epochs,
             callbacks=callbacks_list
         )
 

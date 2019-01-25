@@ -84,7 +84,7 @@ model_type  = 'LSTM'                    # 'LSTM', 'bidirect', 'seq2seq', 'GRU', 
 model_delta = True
 interpolate = True
 blocks = 6
-epochs = 50
+n_epochs = 50
 epochs_patience = 10
 
 
