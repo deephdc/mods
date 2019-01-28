@@ -278,10 +278,16 @@ def train(*args):
     # TODO: read path from user input
     df_train_path = os.path.join(cfg.app_data, 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv')
 
-    # TODO: add 'usecols' in args and parse it
+    # parse a comma-separated list of column names
+    if isinstance(args.usecols, str):
+        usecols = args.usecols.split(',')
+        usecols = [col.strip() for col in usecols]
+    else:
+        usecols = args.usecols
+
     df_train = m.load_data(
         path=df_train_path,
-        usecols=['number_of_conn', 'sum_orig_kbytes']
+        usecols=usecols
     )
     print(df_train)
 
@@ -290,12 +296,12 @@ def train(*args):
         df_test=None,
         multivariate=int(args.multivariate),
         sequence_len=int(args.sequence_len),
-        # model_delta=bool(args.model_delta),
-        # interpolate=bool(args.interpolate),
-        # model_type=str(args.model_type),
-        # n_epochs=int(args.n_epochs),
-        # epochs_patience=int(args.epochs_patience),
-        # blocks=int(args.blocks)
+        model_delta=bool(args.model_delta),
+        interpolate=bool(args.interpolate),
+        model_type=str(args.model_type),
+        n_epochs=int(args.n_epochs),
+        epochs_patience=int(args.epochs_patience),
+        blocks=int(args.blocks)
     )
 
     m.save(os.path.join(cfg.app_models, args.model_name))
@@ -320,36 +326,36 @@ def get_train_args():
             'help': '',
             'required': True
         },
-        # 'model_delta': {
-        #     'default': cfg.model_delta,
-        #     'help': '',
-        #     'required': True
-        # },
-        # 'interpolate': {
-        #     'default': cfg.interpolate,
-        #     'help': '',
-        #     'required': True
-        # },
-        # 'model_type': {
-        #     'default': cfg.model_type,
-        #     'help': '',
-        #     'required': True
-        # },
-        # 'n_epochs': {
-        #     'default': cfg.n_epochs,
-        #     'help': '',
-        #     'required': True
-        # },
-        # 'epochs_patience': {
-        #     'default': cfg.epochs_patience,
-        #     'help': '',
-        #     'required': True
-        # },
-        # 'blocks': {
-        #     'default': cfg.blocks,
-        #     'help': '',
-        #     'required': True
-        # }
+        'model_delta': {
+            'default': cfg.model_delta,
+            'help': '',
+            'required': True
+        },
+        'interpolate': {
+            'default': cfg.interpolate,
+            'help': '',
+            'required': True
+        },
+        'model_type': {
+            'default': cfg.model_type,
+            'help': '',
+            'required': True
+        },
+        'n_epochs': {
+            'default': cfg.n_epochs,
+            'help': '',
+            'required': True
+        },
+        'epochs_patience': {
+            'default': cfg.epochs_patience,
+            'help': '',
+            'required': True
+        },
+        'blocks': {
+            'default': cfg.blocks,
+            'help': '',
+            'required': True
+        }
     }
 
 
@@ -393,6 +399,10 @@ if __name__ == '__main__':
     parser.add_argument('--n-epochs', type=int, default=cfg.n_epochs, help='Number of epochs to train on')
     parser.add_argument('--epochs-patience', type=int, default=cfg.epochs_patience, help='')
     parser.add_argument('--blocks', type=int, default=cfg.blocks, help='')
+    parser.add_argument('--usecols', type=str, default=cfg.usecols,
+                        help='a list of column names separated by comma; e.g., number_of_conn,sum_orig_kbytes')
+    parser.add_argument('--data-train', type=str, default=cfg.usecols,
+                        help='a list of column names separated by comma; e.g., number_of_conn,sum_orig_kbytes')
     args = parser.parse_args()
 
     main()

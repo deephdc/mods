@@ -97,13 +97,18 @@ class mods_model:
         os.remove(fname)
         return result
 
+    def __get_sample_data_cfg(self):
+        if mods_model.__SAMPLE_DATA in self.config:
+            return self.config[mods_model.__SAMPLE_DATA]
+        return None
+
     def save(self, file):
         print('Saving model: %s' % file)
         with ZipFile(file, mode='w') as zip:
             self.__save_config(zip, 'config.json')
             self.__save_model(zip, self.config[mods_model.__MODEL])
             self.__save_scaler(zip, self.config[mods_model.__SCALER])
-            self.__save_sample_data(zip, self.config[mods_model.__SAMPLE_DATA])
+            self.__save_sample_data(zip, self.__get_sample_data_cfg())
         print('Model saved')
 
     def __load(self, file):
@@ -112,7 +117,7 @@ class mods_model:
             self.__load_config(zip, 'config.json')
             self.__load_model(zip, self.config[mods_model.__MODEL])
             self.__load_scaler(zip, self.config[mods_model.__SCALER])
-            self.__load_sample_data(zip, self.config[mods_model.__SAMPLE_DATA])
+            self.__load_sample_data(zip, self.__get_sample_data_cfg())
         print('Model loaded')
 
     def __save_config(self, zip, file):
@@ -156,6 +161,8 @@ class mods_model:
         print('Scaler loaded')
 
     def __save_sample_data(self, zip, sample_data_config):
+        if sample_data_config is None:
+            return
         if not self.sample_data:
             print('No sample data was set')
             return
@@ -172,6 +179,8 @@ class mods_model:
         print('Sample data saved:\n%s' % self.sample_data)
 
     def __load_sample_data(self, zip, sample_data_config):
+        if sample_data_config is None:
+            return
         print('Loading sample data')
         with zip.open(sample_data_config[mods_model.__FILE]) as f:
             self.sample_data = pd.read_csv(
@@ -200,7 +209,7 @@ class mods_model:
         return {
             mods_model.__MODEL: {
                 mods_model.__FILE: 'model.h5',
-                mods_model.__MULTIVARIATE: len(cfg.cols_included),
+                mods_model.__MULTIVARIATE: len(cfg.usecols),
                 mods_model.__SEQUENCE_LEN: cfg.sequence_len,
                 mods_model.__MODEL_DELTA: cfg.model_delta,
                 mods_model.__INTERPOLATE: cfg.interpolate,
@@ -211,14 +220,6 @@ class mods_model:
             },
             mods_model.__SCALER: {
                 mods_model.__FILE: 'scaler.pkl'
-            },
-            mods_model.__SAMPLE_DATA: {
-                mods_model.__FILE: 'sample_data.tsv',
-                mods_model.__SEP: '\t',
-                mods_model.__SKIPROWS: 0,
-                mods_model.__SKIPFOOTER: 0,
-                mods_model.__ENGINE: 'python',
-                mods_model.__USECOLS: cfg.cols_included
             }
         }
 
@@ -405,7 +406,8 @@ class mods_model:
 
     def __init(self):
         print('Initializing model')
-        self.predict(self.sample_data)
+        if self.sample_data is not None:
+            self.predict(self.sample_data)
         print('Model initialized')
 
     # First order differential for numpy array      y' = d(y)/d(t) = f(y,t)
