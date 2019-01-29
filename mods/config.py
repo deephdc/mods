@@ -64,12 +64,12 @@ slide_duration = '10 minutes'
 column_separator = '\t'                                                     # for tsv
 # column_separator = ','                                                    # for csv
 
-# cols_included = ['Close']                                                 # yahoo_finance_stock.csv
-# cols_included = ['number_of_conn', 'sum_orig_bytes', 'sum_resp_bytes']
-cols_included = ['number_of_conn', 'sum_orig_bytes']
-# cols_included = ['sum_orig_bytes', 'sum_resp_bytes']
-# cols_included = ['number_of_conn']
-# cols_included = ['sum_orig_bytes']
+# usecols = ['Close']                                                 # yahoo_finance_stock.csv
+# usecols = ['number_of_conn', 'sum_orig_bytes', 'sum_resp_bytes']
+usecols = ['number_of_conn', 'sum_orig_kbytes']
+# usecols = ['sum_orig_bytes', 'sum_resp_bytes']
+# usecols = ['number_of_conn']
+# usecols = ['sum_orig_bytes']
 
 
 # ML and time series datasets
