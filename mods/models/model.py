@@ -401,8 +401,7 @@ if __name__ == '__main__':
     parser.add_argument('--blocks', type=int, default=cfg.blocks, help='')
     parser.add_argument('--usecols', type=str, default=cfg.usecols,
                         help='a list of column names separated by comma; e.g., number_of_conn,sum_orig_kbytes')
-    parser.add_argument('--data-train', type=str, default=cfg.usecols,
-                        help='a list of column names separated by comma; e.g., number_of_conn,sum_orig_kbytes')
+    parser.add_argument('--data-train', type=str, default=cfg.data_train, help='')
     args = parser.parse_args()
 
     main()
