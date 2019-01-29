@@ -22,13 +22,10 @@ Train models with first order differential to monitor changes
 @author: stefan dlugolinsky
 """
 
-import argparse
 import io
 import json
 import os
 import socket
-import sys
-import time
 
 import numpy as np
 import pandas as pd
@@ -36,7 +33,6 @@ import pkg_resources
 
 # import project config.py
 import mods.config as cfg
-import mods.dataset.make_dataset as mdata
 import mods.models.mods_model as MODS
 
 # import utilities
@@ -86,7 +82,13 @@ def predict_file(*args):
     """
     Function to make prediction on a local file
     """
-    message = 'Not implemented in the model (predict_file)'
+    message = 'Error reading input data'
+    if args:
+        for file in args:
+            message = {'status': 'ok', 'predictions': []}
+            df = pd.read_csv(file, sep='\t', skiprows=0, skipfooter=0, engine='python')
+            predictions = get_model().predict(df)
+            message['predictions'] = predictions.tolist()
     return message
 
 
@@ -273,27 +275,47 @@ def train(*args):
     # uncomment to get data via rclone
     # mdata.prepare_data()
 
-    m = MODS.mods_model(os.path.join(cfg.app_models, args.model_name))
+    # model name
+    model_name = args.model
+    if model_name is None:
+        model_name = cfg.default_model
+    if not model_name.endswith('.zip'):
+        model_name += '.zip'
 
-    # TODO: read path from user input
-    df_train_path = os.path.join(cfg.app_data, 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv')
+    # models directory
+    dir_models = cfg.app_models
+    if args.dir_models is not None:
+        dir_models = args.dir_models
 
-    # parse a comma-separated list of column names
-    if isinstance(args.usecols, str):
+    m = MODS.mods_model(os.path.join(dir_models, model_name))
+
+    # data directory
+    dir_data = cfg.app_data
+    if args.dir_data is not None:
+        dir_data = args.dir_data
+
+    # training data
+    file_data = args.data
+    if file_data is None:
+        file_data = cfg.data_train
+    df_train_path = os.path.join(dir_data, file_data)
+
+    # column names to use in training data
+    usecols = args.usecols
+    if usecols is None:
+        usecols = cfg.usecols
+    if isinstance(usecols, str):
         usecols = args.usecols.split(',')
         usecols = [col.strip() for col in usecols]
-    else:
-        usecols = args.usecols
 
+    # loading training data
     df_train = m.load_data(
         path=df_train_path,
         usecols=usecols
     )
-    print(df_train)
 
     m.train(
         df_train=df_train,
-        df_test=None,
         multivariate=int(args.multivariate),
         sequence_len=int(args.sequence_len),
         model_delta=bool(args.model_delta),
@@ -304,7 +326,7 @@ def train(*args):
         blocks=int(args.blocks)
     )
 
-    m.save(os.path.join(cfg.app_models, args.model_name))
+    m.save()
 
     return message
 
@@ -312,8 +334,8 @@ def train(*args):
 def get_train_args():
     return {
         'model_name': {
-            'default': 'model.zip',
-            'help': 'e.g. model.zip',
+            'default': cfg.default_model,
+            'help': 'Name of the model (e.g. model-v1.1). The model will be saved as a zip file.',
             'required': True
         },
         'multivariate': {
@@ -343,7 +365,7 @@ def get_train_args():
         },
         'n_epochs': {
             'default': cfg.n_epochs,
-            'help': '',
+            'help': 'Number of training epochs.',
             'required': True
         },
         'epochs_patience': {
@@ -355,53 +377,10 @@ def get_train_args():
             'default': cfg.blocks,
             'help': '',
             'required': True
+        },
+        'usecols': {
+            'default': cfg.usecols,
+            'help': 'A list of column names separated by comma; e.g., number_of_conn,sum_orig_kbytes.',
+            'required': True
         }
     }
-
-
-# during development it might be practical
-# to check your code from the command line
-def main():
-    """
-       Runs above-described functions depending on input parameters
-       (see below an example)
-    """
-
-    if args.method == 'get_metadata':
-        get_metadata()
-    elif args.method == 'predict_file':
-        predict_file(args.file)
-    elif args.method == 'predict_data':
-        predict_data(args.file)
-    elif args.method == 'predict_url':
-        predict_url(args.url)
-    elif args.method == 'train':
-        start = time.time()
-        train(args)
-        print("Elapsed time:  ", time.time() - start)
-    else:
-        get_metadata()
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Model parameters')
-    parser.add_argument('--method', type=str, default="get_metadata",
-                        help='Method to use: get_metadata (default), \
-                        predict_file, predict_data, predict_url, train')
-    parser.add_argument('--file', type=str, help='File to do prediction on, full path')
-    parser.add_argument('--url', type=str, help='URL with the image to do prediction on')
-    parser.add_argument('--model-name', type=str, default='model.zip', help='Name of the model; e.g., model.zip')
-    parser.add_argument('--multivariate', type=int, default=cfg.multivariate, help='')
-    parser.add_argument('--sequence-len', type=int, default=cfg.sequence_len, help='')
-    parser.add_argument('--model-delta', type=bool, default=cfg.model_delta, help='')
-    parser.add_argument('--interpolate', type=bool, default=cfg.interpolate, help='')
-    parser.add_argument('--model-type', type=str, default=cfg.model_type, help='')
-    parser.add_argument('--n-epochs', type=int, default=cfg.n_epochs, help='Number of epochs to train on')
-    parser.add_argument('--epochs-patience', type=int, default=cfg.epochs_patience, help='')
-    parser.add_argument('--blocks', type=int, default=cfg.blocks, help='')
-    parser.add_argument('--usecols', type=str, default=cfg.usecols,
-                        help='a list of column names separated by comma; e.g., number_of_conn,sum_orig_kbytes')
-    parser.add_argument('--data-train', type=str, default=cfg.data_train, help='')
-    args = parser.parse_args()
-
-    main()

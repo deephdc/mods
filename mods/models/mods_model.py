@@ -102,9 +102,9 @@ class mods_model:
             return self.config[mods_model.__SAMPLE_DATA]
         return None
 
-    def save(self, file):
-        print('Saving model: %s' % file)
-        with ZipFile(file, mode='w') as zip:
+    def save(self):
+        print('Saving model: %s' % self.file)
+        with ZipFile(self.file, mode='w') as zip:
             self.__save_config(zip, 'config.json')
             self.__save_model(zip, self.config[mods_model.__MODEL])
             self.__save_scaler(zip, self.config[mods_model.__SCALER])
@@ -163,7 +163,7 @@ class mods_model:
     def __save_sample_data(self, zip, sample_data_config):
         if sample_data_config is None:
             return
-        if not self.sample_data:
+        if self.sample_data is None:
             print('No sample data was set')
             return
         print('Saving sample data')
@@ -288,7 +288,6 @@ class mods_model:
     def train(
             self,
             df_train,
-            df_test,
             multivariate=cfg.multivariate,
             sequence_len=cfg.sequence_len,
             model_delta=cfg.model_delta,
@@ -383,7 +382,7 @@ class mods_model:
         )
         callbacks_list = [checkpoints, earlystops]
 
-        if interpolate:
+        if self.get_interpolate():
             df_train.interpolate(inplace=True)
 
         df_train = df_train.values.astype('float32')
@@ -453,9 +452,10 @@ class mods_model:
 
     def predict(self, df):
 
-        interpol = df.interpolate()
-        interpol = interpol.values.astype('float32')
-        # print('interpolated:\n%s' % interpol)
+        if self.get_interpolate():
+            interpol = df.interpolate()
+            interpol = interpol.values.astype('float32')
+            # print('interpolated:\n%s' % interpol)
 
         trans = self.transform(interpol)
         # print('transformed:\n%s' % transf)
