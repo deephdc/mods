@@ -46,7 +46,6 @@ app_models = BASE_DIR + '/models/'
 app_checkpoints = BASE_DIR + '/checkpoints/'
 app_visualization = BASE_DIR + '/visualization/'
 
-default_model = 'default-1h-10m-seq6.zip'
 MODS_RemoteStorage = 'deepnc:/Datasets/mods/'
 MODS_DataDir = 'data'
 MODS_FeatureSetFile = 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv'
@@ -54,6 +53,9 @@ MODS_FeatureSetFileTest = 'features-20180414-20181015-win-1_hour-slide-10_minute
 
 data_train = path.join(app_data_features,MODS_FeatureSetFile)
 data_test = path.join(app_data_features,MODS_FeatureSetFileTest)
+
+model_name_help = 'Name of the model (e.g. model-v1.1). The model will be saved as a zip file.'
+model_name = 'default-1h-10m-seq6.zip'
 
 # Feature data
 feature_filename = 'features.tsv'
@@ -68,6 +70,7 @@ slide_duration = '10 minutes'
 column_separator = '\t'                                                     # for tsv
 # column_separator = ','                                                    # for csv
 
+usecols_help = 'A list of column names separated by comma; e.g., number_of_conn,sum_orig_kbytes.'
 # usecols = ['Close']                                                 # yahoo_finance_stock.csv
 # usecols = ['number_of_conn', 'sum_orig_bytes', 'sum_resp_bytes']
 usecols = ['number_of_conn', 'sum_orig_kbytes']
@@ -79,16 +82,24 @@ usecols = ['number_of_conn', 'sum_orig_kbytes']
 # ML and time series datasets
 split_ratio = 0.67                      # train:test = 2:1
 batch_size = 1                          # delta (6), without_delta(1)
+sequence_len_help = 'Length of the sequence in time serie'
 sequence_len = 6                        # sequence lenght
+multivariate_help = ''
 multivariate = 2
 
 
 # model properties
+model_type_help = ''
 model_type  = 'LSTM'                    # 'LSTM', 'bidirect', 'seq2seq', 'GRU', 'CNN', 'MLP'
+model_delta_help = ''
 model_delta = True
+interpolate_help = ''
 interpolate = True
+blocks_help = ''
 blocks = 6
+n_epochs_help = 'Number of training epochs.'
 n_epochs = 50
+epochs_patience_help = ''
 epochs_patience = 10
 
 

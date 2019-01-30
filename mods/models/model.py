@@ -48,7 +48,7 @@ import mods.models.mods_model as MODS
 mods_model = None
 
 
-def get_model(model_filename=os.path.join(cfg.app_models, cfg.default_model)):
+def get_model(model_filename=os.path.join(cfg.app_models, cfg.model_name)):
     global mods_model
     if not mods_model:
         mods_model = MODS.mods_model(model_filename)
@@ -86,8 +86,13 @@ def predict_file(*args):
     if args:
         for file in args:
             message = {'status': 'ok', 'predictions': []}
-            df = pd.read_csv(file, sep='\t', skiprows=0, skipfooter=0, engine='python')
-            predictions = get_model().predict(df)
+            predictions = get_model().predict_file_or_buffer(
+                file,
+                sep='\t',
+                skiprows=0,
+                skipfooter=0,
+                engine='python'
+            )
             message['predictions'] = predictions.tolist()
     return message
 
@@ -100,8 +105,14 @@ def predict_data(*args):
     if args:
         for data in args:
             message = {'status': 'ok', 'predictions': []}
-            df = pd.read_csv(io.BytesIO(data[0]), sep='\t', skiprows=0, skipfooter=0, engine='python')
-            predictions = get_model().predict(df)
+            buffer = io.BytesIO(data[0])
+            predictions = get_model().predict_file_or_buffer(
+                buffer,
+                sep='\t',
+                skiprows=0,
+                skipfooter=0,
+                engine='python'
+            )
             message['predictions'] = predictions.tolist()
     return message
 
@@ -278,7 +289,7 @@ def train(*args):
     # model name
     model_name = args.model
     if model_name is None:
-        model_name = cfg.default_model
+        model_name = cfg.model_name
     if not model_name.endswith('.zip'):
         model_name += '.zip'
 
@@ -334,53 +345,53 @@ def train(*args):
 def get_train_args():
     return {
         'model_name': {
-            'default': cfg.default_model,
-            'help': 'Name of the model (e.g. model-v1.1). The model will be saved as a zip file.',
+            'default': cfg.model_name,
+            'help': cfg.model_name_help,
             'required': True
         },
         'multivariate': {
             'default': cfg.multivariate,
-            'help': '',
+            'help': cfg.multivariate_help,
             'required': True
         },
         'sequence_len': {
             'default': cfg.sequence_len,
-            'help': '',
+            'help': cfg.sequence_len_help,
             'required': True
         },
         'model_delta': {
             'default': cfg.model_delta,
-            'help': '',
+            'help': cfg.model_delta_help,
             'required': True
         },
         'interpolate': {
             'default': cfg.interpolate,
-            'help': '',
+            'help': cfg.interpolate_help,
             'required': True
         },
         'model_type': {
             'default': cfg.model_type,
-            'help': '',
+            'help': cfg.model_type_help,
             'required': True
         },
         'n_epochs': {
             'default': cfg.n_epochs,
-            'help': 'Number of training epochs.',
+            'help': cfg.n_epochs_help,
             'required': True
         },
         'epochs_patience': {
             'default': cfg.epochs_patience,
-            'help': '',
+            'help': cfg.epochs_patience_help,
             'required': True
         },
         'blocks': {
             'default': cfg.blocks,
-            'help': '',
+            'help': cfg.blocks_help,
             'required': True
         },
         'usecols': {
             'default': cfg.usecols,
-            'help': 'A list of column names separated by comma; e.g., number_of_conn,sum_orig_kbytes.',
+            'help': cfg.usecols_help,
             'required': True
         }
     }

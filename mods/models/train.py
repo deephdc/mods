@@ -43,23 +43,22 @@ def main():
 
 
 if __name__ == '__main__':
-    train_args = m.get_train_args()
     parser = argparse.ArgumentParser(description='Model parameters')
     parser.add_argument('data', type=str, default=cfg.data_train, help='Training data.')
-    parser.add_argument('model', type=str, help=train_args['model_name']['help'])
+    parser.add_argument('model', type=str, help=cfg.model_name_help)
     parser.add_argument('--dir-models', type=str, default='', help='Directory, where to store trained model.')
     parser.add_argument('--dir-data', type=str, default='', help='Directory containing training data.')
-    parser.add_argument('--multivariate', type=int, default=cfg.multivariate, help=train_args['multivariate']['help'])
-    parser.add_argument('--sequence-len', type=int, default=cfg.sequence_len, help=train_args['sequence_len']['help'])
-    parser.add_argument('--model-delta', action='store_true', help=train_args['model_delta']['help'])
-    parser.add_argument('--interpolate', action='store_true', help=train_args['interpolate']['help'])
-    parser.add_argument('--model-type', type=str, default=cfg.model_type, help=train_args['model_type']['help'])
-    parser.add_argument('--n-epochs', type=int, default=cfg.n_epochs, help=train_args['n_epochs']['help'])
-    parser.add_argument('--epochs-patience', type=int, default=cfg.epochs_patience,
-                        help=train_args['epochs_patience']['help'])
-    parser.add_argument('--blocks', type=int, default=cfg.blocks, help=train_args['blocks']['help'])
-    parser.add_argument('--usecols', type=str, default=cfg.usecols, help=train_args['usecols']['help'])
+    parser.add_argument('--multivariate', type=int, default=cfg.multivariate, help=cfg.multivariate_help)
+    parser.add_argument('--sequence-len', type=int, default=cfg.sequence_len, help=cfg.sequence_len_help)
+    parser.add_argument('--model-delta', action='store_true', help=cfg.model_delta_help)
+    parser.add_argument('--interpolate', action='store_true', help=cfg.interpolate_help)
+    parser.add_argument('--model-type', type=str, default=cfg.model_type, help=cfg.model_type_help)
+    parser.add_argument('--n-epochs', type=int, default=cfg.n_epochs, help=cfg.n_epochs_help)
+    parser.add_argument('--epochs-patience', type=int, default=cfg.epochs_patience, help=cfg.epochs_patience_help)
+    parser.add_argument('--blocks', type=int, default=cfg.blocks, help=cfg.blocks_help)
+
+    # pd - pandas
+    parser.add_argument('--usecols', type=str, default=cfg.usecols, help=cfg.usecols_help)
 
     args = parser.parse_args()
-
     main()

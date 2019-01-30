@@ -23,11 +23,12 @@ Train models with first order differential to monitor changes
 """
 
 import argparse
+import io
 import time
 
 # import project config.py
 import mods.config as cfg
-import mods.models.model as MODEL
+from mods.models.mods_model import mods_model as MODEL
 
 
 # during development it might be practical
@@ -37,31 +38,48 @@ def main():
        Runs above-described functions depending on input parameters
        (see below an example)
     """
+
     start = time.time()
-    MODEL.get_model(args.model)
+    m = MODEL(args.model)
+    kwargs = {k.replace('pd_', ''): v for k, v in vars(args).items()}
+
     ret = ''
     if args.file is not None:
-        ret = MODEL.predict_file(args.file)
+        ret = m.predict_file_or_buffer(args.file, **kwargs)
     elif args.url is not None:
-        ret = MODEL.predict_url(args.url)
+        ret = m.predict_url(args.url)
     elif args.data is not None:
-        ret = MODEL.predict_data([str(args.data).encode('utf-8')])
+        buffer = io.StringIO(args.data)
+        ret = m.predict_file_or_buffer(buffer, **kwargs)
     else:
-        MODEL.get_metadata()
+        # MODEL.get_metadata()
         return
     print(ret)
     print("Elapsed time:  ", time.time() - start)
 
 
+__data_help = """
+String with data to predict on.
+
+An, example on how to read data 
+from a file into a command line
+argument:
+
+--data "`data=''; while read line; do data=$data$line$'\n'; done; echo \"$data\"`"
+"""
+
 if __name__ == '__main__':
-    train_args = MODEL.get_train_args()
     parser = argparse.ArgumentParser(description='Model parameters')
-    parser.add_argument('model', type=str, default=cfg.default_model, help=train_args['model_name']['help'])
+
+    parser.add_argument('model', type=str, default=cfg.model_name, help=cfg.model_name_help)
     parser.add_argument('--file', type=str, help='File to do prediction on, full path')
     parser.add_argument('--url', type=str, help='URL with the data to do prediction on')
-    parser.add_argument('--data', type=str,
-                        help='String with data to predict on. An, example on how to read data from a file into a command line argument: --data "`data=\'\'; while read line; do data=$data$line$\'\\n\'; done; echo \\"$data\\"`" model.zip')
+    parser.add_argument('--data', type=str, help=__data_help)
+    parser.add_argument('--pd-usecols', type=str, default=cfg.usecols, help=cfg.usecols_help)
+    parser.add_argument('--pd-sep', type=str, default='\t', help='')
+    parser.add_argument('--pd-skiprows', type=int, default=0, help='')
+    parser.add_argument('--pd-skipfooter', type=int, default=0, help='')
+    parser.add_argument('--pd-engine', type=str, default='python', help='')
 
     args = parser.parse_args()
-
     main()

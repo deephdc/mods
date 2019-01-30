@@ -314,3 +314,11 @@ def load_model_metadata(metadata_filename):
     except Exception as e:
         print(e)
     return None
+
+
+def parse_int_or_str(val):
+    val = val.strip()
+    try:
+        return int(val)
+    except Exception:
+        return str(val)

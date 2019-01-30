@@ -46,6 +46,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 # import project config.py
 import mods.config as cfg
+import mods.utils as utl
 
 
 class mods_model:
@@ -362,10 +363,11 @@ class mods_model:
         print(self.model.summary())
 
         # Compile model
-        self.model.compile(loss='mean_squared_error',
-                           optimizer='adam',  # 'adagrad', 'rmsprop'
-                           metrics=['mse', 'mae', 'mape'])  # 'cosine'
-
+        self.model.compile(
+            loss='mean_squared_error',
+            optimizer='adam',  # 'adagrad', 'rmsprop'
+            metrics=['mse', 'mae', 'mape']  # 'cosine'
+        )
         # Checkpointing and earlystopping
         filepath = cfg.app_checkpoints + self.name + '-{epoch:02d}.hdf5'
         checkpoints = ModelCheckpoint(
@@ -474,3 +476,21 @@ class mods_model:
         # print('inverse transformed:\n%s' % invtrans)
 
         return invtrans
+
+    # This function wraps pandas._read_csv(), reads the csv data and calls predict() on them
+    def predict_file_or_buffer(self, *args, **kwargs):
+        if kwargs is not None:
+            kwargs = {k: v for k, v in kwargs.items() if k in [
+                'usecols', 'sep', 'skiprows', 'skipfooter', 'engine'
+            ]}
+            if 'usecols' in kwargs:
+                if isinstance(kwargs['usecols'], str):
+                    kwargs['usecols'] = [
+                        utl.parse_int_or_str(col)
+                        for col in kwargs['usecols'].split(',')
+                    ]
+        df = pd.read_csv(*args, **kwargs)
+        return self.predict(df)
+
+    def predict_url(self, url):
+        pass
