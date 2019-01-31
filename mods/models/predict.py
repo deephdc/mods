@@ -80,6 +80,7 @@ if __name__ == '__main__':
     parser.add_argument('--pd-skiprows', type=int, default=0, help='')
     parser.add_argument('--pd-skipfooter', type=int, default=0, help='')
     parser.add_argument('--pd-engine', type=str, default='python', help='')
+    parser.add_argument('--pd-header', type=str, default='0', help='')
 
     args = parser.parse_args()
     main()

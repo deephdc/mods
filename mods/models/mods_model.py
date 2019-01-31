@@ -194,15 +194,24 @@ class mods_model:
             )
         print('Sample data loaded:\n%s' % self.sample_data)
 
-    def load_data(self, path, sep='\t', skiprows=0, skipfooter=0, engine='python',
-                  usecols=lambda col: col in ['number_of_conn', 'sum_orig_kbytes']):
+    def load_data(
+            self,
+            path,
+            sep='\t',
+            skiprows=0,
+            skipfooter=0,
+            engine='python',
+            usecols=lambda col: col in ['number_of_conn', 'sum_orig_kbytes'],
+            header=True
+    ):
         df = pd.read_csv(
             open(path),
             sep=sep,
             skiprows=skiprows,
             skipfooter=skipfooter,
             engine=engine,
-            usecols=usecols
+            usecols=usecols,
+            header=header
         )
         return df
 
@@ -481,7 +490,7 @@ class mods_model:
     def predict_file_or_buffer(self, *args, **kwargs):
         if kwargs is not None:
             kwargs = {k: v for k, v in kwargs.items() if k in [
-                'usecols', 'sep', 'skiprows', 'skipfooter', 'engine'
+                'usecols', 'sep', 'skiprows', 'skipfooter', 'engine', 'header'
             ]}
             if 'usecols' in kwargs:
                 if isinstance(kwargs['usecols'], str):
@@ -489,6 +498,15 @@ class mods_model:
                         utl.parse_int_or_str(col)
                         for col in kwargs['usecols'].split(',')
                     ]
+            if 'header' in kwargs:
+                if isinstance(kwargs['header'], str):
+                    kwargs['header'] = [
+                        utl.parse_int_or_str(col)
+                        for col in kwargs['header'].split(',')
+                    ]
+                    if len(kwargs['header']) == 1:
+                        kwargs['header'] = kwargs['header'][0]
+            print('HEADER: %s' % kwargs['header'])
         df = pd.read_csv(*args, **kwargs)
         return self.predict(df)
 
