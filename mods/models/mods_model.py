@@ -201,9 +201,10 @@ class mods_model:
             skiprows=0,
             skipfooter=0,
             engine='python',
-            usecols=lambda col: col in ['number_of_conn', 'sum_orig_kbytes'],
-            header=True
+            usecols=['number_of_conn', 'sum_orig_kbytes'],
+            header=0
     ):
+        print(path)
         df = pd.read_csv(
             open(path),
             sep=sep,

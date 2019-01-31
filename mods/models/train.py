@@ -38,13 +38,14 @@ def main():
        (see below an example)
     """
     start = time.time()
-    m.train(args)
+    kwargs = {k.replace('pd_', ''): v for k, v in vars(args).items()}
+    m.train(kwargs)
     print("Elapsed time:  ", time.time() - start)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Model parameters')
-    parser.add_argument('data', type=str, default=cfg.data_train, help='Training data.')
+    parser.add_argument('data', type=str, help=cfg.data_train_help)
     parser.add_argument('model', type=str, help=cfg.model_name_help)
     parser.add_argument('--dir-models', type=str, default='', help='Directory, where to store trained model.')
     parser.add_argument('--dir-data', type=str, default='', help='Directory containing training data.')
@@ -58,7 +59,12 @@ if __name__ == '__main__':
     parser.add_argument('--blocks', type=int, default=cfg.blocks, help=cfg.blocks_help)
 
     # pd - pandas
-    parser.add_argument('--usecols', type=str, default=cfg.usecols, help=cfg.usecols_help)
+    parser.add_argument('--pd-usecols', type=str, default=cfg.usecols, help=cfg.usecols_help)
+    parser.add_argument('--pd-sep', type=str, default='\t', help='')
+    parser.add_argument('--pd-skiprows', type=int, default=0, help='')
+    parser.add_argument('--pd-skipfooter', type=int, default=0, help='')
+    parser.add_argument('--pd-engine', type=str, default='python', help='')
+    parser.add_argument('--pd-header', type=str, default='0', help='')
 
     args = parser.parse_args()
     main()

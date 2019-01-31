@@ -34,6 +34,7 @@ import pkg_resources
 # import project config.py
 import mods.config as cfg
 import mods.models.mods_model as MODS
+import mods.utils as utl
 
 # import utilities
 
@@ -279,62 +280,76 @@ def train(*args):
     Train network
     """
     message = 'Not implemented in the model (train)'
-    print('---\nargs:\n%s\n---' % args)
-
     args = args[0]
+    print('---\nargs:\n%s\n---' % args)
 
     # uncomment to get data via rclone
     # mdata.prepare_data()
 
     # model name
-    model_name = args.model
-    if model_name is None:
-        model_name = cfg.model_name
-    if not model_name.endswith('.zip'):
-        model_name += '.zip'
+    if 'model' not in args:
+        args['model'] = cfg.model_name
+    if not args['model'].endswith('.zip'):
+        args['model'] += '.zip'
 
     # models directory
-    dir_models = cfg.app_models
-    if args.dir_models is not None:
-        dir_models = args.dir_models
+    if 'dir_models' not in args:
+        args['dir_models'] = cfg.app_models
 
-    m = MODS.mods_model(os.path.join(dir_models, model_name))
+    m = MODS.mods_model(os.path.join(args['dir_models'], args['model']))
 
     # data directory
-    dir_data = cfg.app_data
-    if args.dir_data is not None:
-        dir_data = args.dir_data
+    if 'dir_data' not in args:
+        args['dir_data'] = cfg.app_data
 
-    # training data
-    file_data = args.data
-    if file_data is None:
-        file_data = cfg.data_train
-    df_train_path = os.path.join(dir_data, file_data)
+    # training data location
+    if 'data' not in args:
+        args['data'] = cfg.data_train
 
     # column names to use in training data
-    usecols = args.usecols
-    if usecols is None:
-        usecols = cfg.usecols
-    if isinstance(usecols, str):
-        usecols = args.usecols.split(',')
-        usecols = [col.strip() for col in usecols]
+    if 'usecols' not in args:
+        args['usecols'] = cfg.usecols
+    if isinstance(args['usecols'], str):
+        args['usecols'] = [
+            utl.parse_int_or_str(col)
+            for col in args['usecols'].split(',')
+        ]
+    if 'header' not in args:
+        args['header'] = cfg.header
 
     # loading training data
     df_train = m.load_data(
-        path=df_train_path,
-        usecols=usecols
+        path=os.path.join(args['dir_data'], args['data']),
+        usecols=args['usecols']
     )
+
+    if 'multivariate' not in args:
+        args['multivariate'] = cfg.multivariate
+    if 'sequence_len' not in args:
+        args['sequence_len'] = cfg.sequence_len
+    if 'model_delta' not in args:
+        args['model_delta'] = cfg.model_delta
+    if 'interpolate' not in args:
+        args['interpolate'] = cfg.interpolate
+    if 'model_type' not in args:
+        args['model_type'] = cfg.model_type
+    if 'n_epochs' not in args:
+        args['n_epochs'] = cfg.n_epochs
+    if 'epochs_patience' not in args:
+        args['epochs_patience'] = cfg.epochs_patience
+    if 'blocks' not in args:
+        args['blocks'] = cfg.blocks
 
     m.train(
         df_train=df_train,
-        multivariate=int(args.multivariate),
-        sequence_len=int(args.sequence_len),
-        model_delta=bool(args.model_delta),
-        interpolate=bool(args.interpolate),
-        model_type=str(args.model_type),
-        n_epochs=int(args.n_epochs),
-        epochs_patience=int(args.epochs_patience),
-        blocks=int(args.blocks)
+        multivariate=int(args['multivariate']),
+        sequence_len=int(args['sequence_len']),
+        model_delta=bool(args['model_delta']),
+        interpolate=bool(args['interpolate']),
+        model_type=str(args['model_type']),
+        n_epochs=int(args['n_epochs']),
+        epochs_patience=int(args['epochs_patience']),
+        blocks=int(args['blocks'])
     )
 
     m.save()
@@ -343,8 +358,13 @@ def train(*args):
 
 
 def get_train_args():
-    return {
-        'model_name': {
+    args = {
+        'data': {
+            'default': cfg.data_train,
+            'help': cfg.data_train_help,
+            'required': True
+        },
+        'model': {
             'default': cfg.model_name,
             'help': cfg.model_name_help,
             'required': True
@@ -395,3 +415,4 @@ def get_train_args():
             'required': True
         }
     }
+    return {}

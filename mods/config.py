@@ -51,6 +51,7 @@ MODS_DataDir = 'data'
 MODS_FeatureSetFile = 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv'
 MODS_FeatureSetFileTest = 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv'
 
+data_train_help = ''
 data_train = path.join(app_data_features,MODS_FeatureSetFile)
 data_test = path.join(app_data_features,MODS_FeatureSetFileTest)
 
@@ -77,6 +78,7 @@ usecols = ['number_of_conn', 'sum_orig_kbytes']
 # usecols = ['sum_orig_bytes', 'sum_resp_bytes']
 # usecols = ['number_of_conn']
 # usecols = ['sum_orig_bytes']
+header = None
 
 
 # ML and time series datasets
