@@ -26,8 +26,7 @@ import argparse
 import time
 
 # import project config.py
-import mods.config as cfg
-import mods.models.model as m
+import mods.models.api as api
 
 
 # during development it might be practical
@@ -38,33 +37,25 @@ def main():
        (see below an example)
     """
     start = time.time()
-    kwargs = {k.replace('pd_', ''): v for k, v in vars(args).items()}
-    m.train(kwargs)
+    api.train(args)
     print("Elapsed time:  ", time.time() - start)
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Model parameters')
-    parser.add_argument('data', type=str, help=cfg.data_train_help)
-    parser.add_argument('model', type=str, help=cfg.model_name_help)
-    parser.add_argument('--dir-models', type=str, default='', help='Directory, where to store trained model.')
-    parser.add_argument('--dir-data', type=str, default='', help='Directory containing training data.')
-    parser.add_argument('--multivariate', type=int, default=cfg.multivariate, help=cfg.multivariate_help)
-    parser.add_argument('--sequence-len', type=int, default=cfg.sequence_len, help=cfg.sequence_len_help)
-    parser.add_argument('--model-delta', action='store_true', help=cfg.model_delta_help)
-    parser.add_argument('--interpolate', action='store_true', help=cfg.interpolate_help)
-    parser.add_argument('--model-type', type=str, default=cfg.model_type, help=cfg.model_type_help)
-    parser.add_argument('--n-epochs', type=int, default=cfg.n_epochs, help=cfg.n_epochs_help)
-    parser.add_argument('--epochs-patience', type=int, default=cfg.epochs_patience, help=cfg.epochs_patience_help)
-    parser.add_argument('--blocks', type=int, default=cfg.blocks, help=cfg.blocks_help)
 
-    # pd - pandas
-    parser.add_argument('--pd-usecols', type=str, default=cfg.usecols, help=cfg.usecols_help)
-    parser.add_argument('--pd-sep', type=str, default='\t', help='')
-    parser.add_argument('--pd-skiprows', type=int, default=0, help='')
-    parser.add_argument('--pd-skipfooter', type=int, default=0, help='')
-    parser.add_argument('--pd-engine', type=str, default='python', help='')
-    parser.add_argument('--pd-header', type=str, default='0', help='')
+    parser = argparse.ArgumentParser(description='Model parameters')
+
+    train_args = api.get_train_args()
+
+    for key, val in train_args.items():
+        parser.add_argument('--%s' % key,
+                            default=val['default'],
+                            type=type(val['default']),  # may just put str
+                            help=val['help'])
+        print(key, val)
+        print(type(val['default']))
 
     args = parser.parse_args()
+    print("Vars:", vars(args))
+
     main()

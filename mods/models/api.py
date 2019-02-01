@@ -30,6 +30,7 @@ import socket
 import numpy as np
 import pandas as pd
 import pkg_resources
+import yaml
 
 # import project config.py
 import mods.config as cfg
@@ -85,10 +86,11 @@ def predict_file(*args):
     """
     message = 'Error reading input data'
     if args:
-        for file in args:
+        for arg in args:
             message = {'status': 'ok', 'predictions': []}
+            print('FILE: %s' % arg.file)
             predictions = get_model().predict_file_or_buffer(
-                file,
+                arg.file,
                 sep='\t',
                 skiprows=0,
                 skipfooter=0,
@@ -275,144 +277,76 @@ def predict_stream(*args):
     }
 
 
-def train(*args):
+def get_train_args():
+    train_args = cfg.set_train_args()
+
+    # convert default values and possible 'choices' into strings
+    for key, val in train_args.items():
+        val['default'] = str(val['default'])  # yaml.safe_dump(val['default']) #json.dumps(val['default'])
+        if 'choices' in val:
+            val['choices'] = [str(item) for item in val['choices']]
+        print(val['default'], type(val['default']))
+
+    return train_args
+
+
+def get_predict_args():
+    predict_args = cfg.set_predict_args()
+
+    # convert default values and possible 'choices' into strings
+    for key, val in predict_args.items():
+        val['default'] = str(val['default'])  # yaml.safe_dump(val['default']) #json.dumps(val['default'])
+        if 'choices' in val:
+            val['choices'] = [str(item) for item in val['choices']]
+        print(val['default'], type(val['default']))
+
+    return predict_args
+
+
+def train(train_args):
     """
     Train network
     """
-    message = 'Not implemented in the model (train)'
-    args = args[0]
-    print('---\nargs:\n%s\n---' % args)
+
+    print("train_args:", train_args)
+
+    data = yaml.safe_load(train_args.data)
+    model_name = yaml.safe_load(train_args.model_name)
+    multivariate = yaml.safe_load(train_args.multivariate)
+    sequence_len = yaml.safe_load(train_args.sequence_len)
+    model_delta = yaml.safe_load(train_args.model_delta)
+    interpolate = yaml.safe_load(train_args.interpolate)
+    model_type = yaml.safe_load(train_args.model_type)
+    num_epochs = yaml.safe_load(train_args.num_epochs)
+    epochs_patience = yaml.safe_load(train_args.epochs_patience)
+    blocks = yaml.safe_load(train_args.blocks)
+    pd_usecols = [utl.parse_int_or_str(col) for col in yaml.safe_load(train_args.pd_usecols).split(',')]
+    pd_header = yaml.safe_load(train_args.pd_header)
 
     # uncomment to get data via rclone
     # mdata.prepare_data()
 
-    # model name
-    if 'model' not in args:
-        args['model'] = cfg.model_name
-    if not args['model'].endswith('.zip'):
-        args['model'] += '.zip'
-
-    # models directory
-    if 'dir_models' not in args:
-        args['dir_models'] = cfg.app_models
-
-    m = MODS.mods_model(os.path.join(args['dir_models'], args['model']))
-
-    # data directory
-    if 'dir_data' not in args:
-        args['dir_data'] = cfg.app_data
-
-    # training data location
-    if 'data' not in args:
-        args['data'] = cfg.data_train
-
-    # column names to use in training data
-    if 'usecols' not in args:
-        args['usecols'] = cfg.usecols
-    if isinstance(args['usecols'], str):
-        args['usecols'] = [
-            utl.parse_int_or_str(col)
-            for col in args['usecols'].split(',')
-        ]
-    if 'header' not in args:
-        args['header'] = cfg.header
+    m = MODS.mods_model(model_name)
 
     # loading training data
     df_train = m.load_data(
-        path=os.path.join(args['dir_data'], args['data']),
-        usecols=args['usecols']
+        path=data,
+        pd_usecols=pd_usecols,
+        pd_header=pd_header
     )
-
-    if 'multivariate' not in args:
-        args['multivariate'] = cfg.multivariate
-    if 'sequence_len' not in args:
-        args['sequence_len'] = cfg.sequence_len
-    if 'model_delta' not in args:
-        args['model_delta'] = cfg.model_delta
-    if 'interpolate' not in args:
-        args['interpolate'] = cfg.interpolate
-    if 'model_type' not in args:
-        args['model_type'] = cfg.model_type
-    if 'n_epochs' not in args:
-        args['n_epochs'] = cfg.n_epochs
-    if 'epochs_patience' not in args:
-        args['epochs_patience'] = cfg.epochs_patience
-    if 'blocks' not in args:
-        args['blocks'] = cfg.blocks
 
     m.train(
         df_train=df_train,
-        multivariate=int(args['multivariate']),
-        sequence_len=int(args['sequence_len']),
-        model_delta=bool(args['model_delta']),
-        interpolate=bool(args['interpolate']),
-        model_type=str(args['model_type']),
-        n_epochs=int(args['n_epochs']),
-        epochs_patience=int(args['epochs_patience']),
-        blocks=int(args['blocks'])
+        multivariate=multivariate,
+        sequence_len=sequence_len,
+        model_delta=model_delta,
+        interpolate=interpolate,
+        model_type=model_type,
+        num_epochs=num_epochs,
+        epochs_patience=epochs_patience,
+        blocks=blocks
     )
 
     m.save()
 
-    return message
-
-
-def get_train_args():
-    args = {
-        'data': {
-            'default': cfg.data_train,
-            'help': cfg.data_train_help,
-            'required': True
-        },
-        'model': {
-            'default': cfg.model_name,
-            'help': cfg.model_name_help,
-            'required': True
-        },
-        'multivariate': {
-            'default': cfg.multivariate,
-            'help': cfg.multivariate_help,
-            'required': True
-        },
-        'sequence_len': {
-            'default': cfg.sequence_len,
-            'help': cfg.sequence_len_help,
-            'required': True
-        },
-        'model_delta': {
-            'default': cfg.model_delta,
-            'help': cfg.model_delta_help,
-            'required': True
-        },
-        'interpolate': {
-            'default': cfg.interpolate,
-            'help': cfg.interpolate_help,
-            'required': True
-        },
-        'model_type': {
-            'default': cfg.model_type,
-            'help': cfg.model_type_help,
-            'required': True
-        },
-        'n_epochs': {
-            'default': cfg.n_epochs,
-            'help': cfg.n_epochs_help,
-            'required': True
-        },
-        'epochs_patience': {
-            'default': cfg.epochs_patience,
-            'help': cfg.epochs_patience_help,
-            'required': True
-        },
-        'blocks': {
-            'default': cfg.blocks,
-            'help': cfg.blocks_help,
-            'required': True
-        },
-        'usecols': {
-            'default': cfg.usecols,
-            'help': cfg.usecols_help,
-            'required': True
-        }
-    }
-    return {}
+    return "OK"

@@ -23,12 +23,10 @@ Train models with first order differential to monitor changes
 """
 
 import argparse
-import io
 import time
 
 # import project config.py
-import mods.config as cfg
-from mods.models.mods_model import mods_model as MODEL
+import mods.models.api as api
 
 
 # during development it might be practical
@@ -40,20 +38,15 @@ def main():
     """
 
     start = time.time()
-    m = MODEL(args.model)
-    kwargs = {k.replace('pd_', ''): v for k, v in vars(args).items()}
-
     ret = ''
     if args.file is not None:
-        ret = m.predict_file_or_buffer(args.file, **kwargs)
+        ret = api.predict_file(args)
     elif args.url is not None:
-        ret = m.predict_url(args.url)
-    elif args.data is not None:
-        buffer = io.StringIO(args.data)
-        ret = m.predict_file_or_buffer(buffer, **kwargs)
+        ret = api.predict_url(args)
+    # elif args.data is not None:
+    #     ret = api.predict_data(args)
     else:
-        # MODEL.get_metadata()
-        return
+        ret = api.get_metadata()
     print(ret)
     print("Elapsed time:  ", time.time() - start)
 
@@ -69,18 +62,24 @@ argument:
 """
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser(description='Model parameters')
 
-    parser.add_argument('model', type=str, default=cfg.model_name, help=cfg.model_name_help)
+    train_args = api.get_predict_args()
+
+    for key, val in train_args.items():
+        parser.add_argument('--%s' % key,
+                            default=val['default'],
+                            type=type(val['default']),  # may just put str
+                            help=val['help'])
+        print(key, val)
+        print(type(val['default']))
+
     parser.add_argument('--file', type=str, help='File to do prediction on, full path')
     parser.add_argument('--url', type=str, help='URL with the data to do prediction on')
-    parser.add_argument('--data', type=str, help=__data_help)
-    parser.add_argument('--pd-usecols', type=str, default=cfg.usecols, help=cfg.usecols_help)
-    parser.add_argument('--pd-sep', type=str, default='\t', help='')
-    parser.add_argument('--pd-skiprows', type=int, default=0, help='')
-    parser.add_argument('--pd-skipfooter', type=int, default=0, help='')
-    parser.add_argument('--pd-engine', type=str, default='python', help='')
-    parser.add_argument('--pd-header', type=str, default='0', help='')
+    # parser.add_argument('--data', type=str, help='String with data to do prediction on')
 
     args = parser.parse_args()
+    print("Vars:", vars(args))
+
     main()

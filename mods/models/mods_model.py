@@ -201,8 +201,8 @@ class mods_model:
             skiprows=0,
             skipfooter=0,
             engine='python',
-            usecols=['number_of_conn', 'sum_orig_kbytes'],
-            header=0
+            pd_usecols=lambda col: [col for col in ['number_of_conn', 'sum_orig_kbytes']],
+            pd_header=0
     ):
         print(path)
         df = pd.read_csv(
@@ -211,8 +211,8 @@ class mods_model:
             skiprows=skiprows,
             skipfooter=skipfooter,
             engine=engine,
-            usecols=usecols,
-            header=header
+            usecols=pd_usecols,
+            header=pd_header
         )
         return df
 
@@ -220,12 +220,12 @@ class mods_model:
         return {
             mods_model.__MODEL: {
                 mods_model.__FILE: 'model.h5',
-                mods_model.__MULTIVARIATE: len(cfg.usecols),
+                mods_model.__MULTIVARIATE: len(cfg.pd_usecols),
                 mods_model.__SEQUENCE_LEN: cfg.sequence_len,
                 mods_model.__MODEL_DELTA: cfg.model_delta,
                 mods_model.__INTERPOLATE: cfg.interpolate,
                 mods_model.__MODEL_TYPE: cfg.model_type,
-                mods_model.__EPOCHS: cfg.n_epochs,
+                mods_model.__EPOCHS: cfg.num_epochs,
                 mods_model.__EPOCHS_PATIENCE: cfg.epochs_patience,
                 mods_model.__BLOCKS: cfg.blocks
             },
@@ -304,7 +304,7 @@ class mods_model:
             model_delta=cfg.model_delta,
             interpolate=cfg.interpolate,
             model_type=cfg.model_type,
-            n_epochs=cfg.n_epochs,
+            num_epochs=cfg.num_epochs,
             epochs_patience=cfg.epochs_patience,
             blocks=cfg.blocks
     ):
@@ -328,10 +328,10 @@ class mods_model:
             model_type = self.get_model_type()
         else:
             self.set_model_type(model_type)
-        if n_epochs is None:
-            n_epochs = self.get_epochs()
+        if num_epochs is None:
+            num_epochs = self.get_epochs()
         else:
-            self.set_epochs(n_epochs)
+            self.set_epochs(num_epochs)
         if epochs_patience is None:
             epochs_patience = self.get_epochs_patience()
         else:
@@ -408,7 +408,7 @@ class mods_model:
 
         self.model.fit_generator(
             tsg_train,
-            epochs=n_epochs,
+            epochs=num_epochs,
             callbacks=callbacks_list
         )
 
@@ -464,6 +464,7 @@ class mods_model:
 
     def predict(self, df):
 
+        interpol = df
         if self.get_interpolate():
             interpol = df.interpolate()
             interpol = interpol.values.astype('float32')
@@ -491,23 +492,23 @@ class mods_model:
     def predict_file_or_buffer(self, *args, **kwargs):
         if kwargs is not None:
             kwargs = {k: v for k, v in kwargs.items() if k in [
-                'usecols', 'sep', 'skiprows', 'skipfooter', 'engine', 'header'
+                'pd_usecols', 'pd_sep', 'pd_skiprows', 'pd_skipfooter', 'pd_engine', 'pd_header'
             ]}
-            if 'usecols' in kwargs:
-                if isinstance(kwargs['usecols'], str):
-                    kwargs['usecols'] = [
+            if 'pd_usecols' in kwargs:
+                if isinstance(kwargs['pd_usecols'], str):
+                    kwargs['pd_usecols'] = [
                         utl.parse_int_or_str(col)
-                        for col in kwargs['usecols'].split(',')
+                        for col in kwargs['pd_usecols'].split(',')
                     ]
-            if 'header' in kwargs:
-                if isinstance(kwargs['header'], str):
-                    kwargs['header'] = [
+            if 'pd_header' in kwargs:
+                if isinstance(kwargs['pd_header'], str):
+                    kwargs['pd_header'] = [
                         utl.parse_int_or_str(col)
-                        for col in kwargs['header'].split(',')
+                        for col in kwargs['pd_header'].split(',')
                     ]
-                    if len(kwargs['header']) == 1:
-                        kwargs['header'] = kwargs['header'][0]
-            print('HEADER: %s' % kwargs['header'])
+                    if len(kwargs['pd_header']) == 1:
+                        kwargs['pd_header'] = kwargs['pd_header'][0]
+            # print('HEADER: %s' % kwargs['pd_header'])
         df = pd.read_csv(*args, **kwargs)
         return self.predict(df)
 

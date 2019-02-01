@@ -28,35 +28,24 @@ from os.path import expanduser
 # identify basedir for the package
 BASE_DIR = path.dirname(path.normpath(path.dirname(__file__)))
 
-
 # Data repository
-DATA_DIR = expanduser("~") + '/data/deep-dm/'           # app_data_raw
+DATA_DIR = expanduser("~") + '/data/deep-dm/'  # app_data_raw
 # Data dirs
 dir_logs = DATA_DIR + 'logs/'
 dir_parquet = DATA_DIR + 'logs_parquet/'
 dir_cleaned = DATA_DIR + 'logs_cleaned/'
 log_header_lines = 8
 
-
 # Application dirs
 app_data = BASE_DIR + '/data/'
 app_data_raw = BASE_DIR + '/data/raw/'  # ln -s ...
-app_data_features = BASE_DIR + '/data/features/'        # extracted features
+app_data_features = BASE_DIR + '/data/features/'  # extracted features
 app_models = BASE_DIR + '/models/'
 app_checkpoints = BASE_DIR + '/checkpoints/'
 app_visualization = BASE_DIR + '/visualization/'
 
 MODS_RemoteStorage = 'deepnc:/Datasets/mods/'
 MODS_DataDir = 'data'
-MODS_FeatureSetFile = 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv'
-MODS_FeatureSetFileTest = 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv'
-
-data_train_help = ''
-data_train = path.join(app_data_features,MODS_FeatureSetFile)
-data_test = path.join(app_data_features,MODS_FeatureSetFileTest)
-
-model_name_help = 'Name of the model (e.g. model-v1.1). The model will be saved as a zip file.'
-model_name = 'default-1h-10m-seq6.zip'
 
 # Feature data
 feature_filename = 'features.tsv'
@@ -68,42 +57,12 @@ window_duration = '1 hour'
 slide_duration = '10 minutes'
 
 # ML data
-column_separator = '\t'                                                     # for tsv
+column_separator = '\t'  # for tsv
 # column_separator = ','                                                    # for csv
 
-usecols_help = 'A list of column names separated by comma; e.g., number_of_conn,sum_orig_kbytes.'
-# usecols = ['Close']                                                 # yahoo_finance_stock.csv
-# usecols = ['number_of_conn', 'sum_orig_bytes', 'sum_resp_bytes']
-usecols = ['number_of_conn', 'sum_orig_kbytes']
-# usecols = ['sum_orig_bytes', 'sum_resp_bytes']
-# usecols = ['number_of_conn']
-# usecols = ['sum_orig_bytes']
-header = None
-
-
 # ML and time series datasets
-split_ratio = 0.67                      # train:test = 2:1
-batch_size = 1                          # delta (6), without_delta(1)
-sequence_len_help = 'Length of the sequence in time serie'
-sequence_len = 6                        # sequence lenght
-multivariate_help = ''
-multivariate = 2
-
-
-# model properties
-model_type_help = ''
-model_type  = 'LSTM'                    # 'LSTM', 'bidirect', 'seq2seq', 'GRU', 'CNN', 'MLP'
-model_delta_help = ''
-model_delta = True
-interpolate_help = ''
-interpolate = True
-blocks_help = ''
-blocks = 6
-n_epochs_help = 'Number of training epochs.'
-n_epochs = 50
-epochs_patience_help = ''
-epochs_patience = 10
-
+split_ratio = 0.67  # train:test = 2:1
+batch_size = 1  # delta (6), without_delta(1)
 
 # Auxiliary
 rate_RMSE = True
@@ -117,3 +76,142 @@ fig_size_y = 4
 format_string = '%Y-%m-%d %H:%M:%S'
 format_string_parquet = '%Y-%m-%d %H_%M_%S'  # parquet format without ":"
 timezone = 3600
+
+# pandas defaults
+pd_usecols = ['number_of_conn', 'sum_orig_kbytes']
+pd_sep = '\t'
+pd_skiprows = 0
+pd_skipfooter = 0
+pd_engine = 'python'
+pd_header = 0
+
+# training defaults
+data_train = path.join(app_data_features, 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv')
+multivariate = len(pd_usecols)
+sequence_len = 6
+model_delta = True
+interpolate = True
+model_types = ['LSTM', 'bidirect', 'seq2seq', 'GRU', 'CNN', 'MLP']
+model_type = model_types[0]
+num_epochs = 50
+epochs_patience = 10
+blocks = 6
+
+# prediction defaults
+data_test = path.join(app_data_features, 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv')
+
+# common defaults
+model_name = 'mods-20180414-20181015-w1h-s10m'
+
+
+def set_pandas_args():
+    pandas_args = {
+        'pd_usecols': {
+            'default': ','.join(pd_usecols),
+            'help': 'A list of column names separated by comma; e.g., number_of_conn,sum_orig_kbytes',
+            'required': False
+        },
+        # 'pd_sep': {
+        #     'default': pd_sep,
+        #     'help': '',
+        #     'required': False
+        # },
+        'pd_skiprows': {
+            'default': pd_skiprows,
+            'help': '',
+            'required': False
+        },
+        'pd_skipfooter': {
+            'default': pd_skipfooter,
+            'help': '',
+            'required': False
+        },
+        # 'pd_engine': {
+        #     'default': pd_engine,
+        #     'help': '',
+        #     'required': False
+        # },
+        'pd_header': {
+            'default': pd_header,
+            'help': '',
+            'required': False
+        }
+    }
+    return pandas_args
+
+
+def set_train_args():
+    train_args = {
+        'model_name': {
+            'default': model_name,
+            'help': 'Name of the trained model',
+            'type': str,
+            'required': False
+        },
+        'data': {
+            'default': data_train,
+            'help': 'Training data to train on',
+            'required': False
+        },
+        'multivariate': {
+            'default': multivariate,
+            'help': '',
+            'required': False
+        },
+        'sequence_len': {
+            'default': sequence_len,
+            'help': '',
+            'required': False
+        },
+        'model_delta': {
+            'default': model_delta,
+            'help': '',
+            'required': False
+        },
+        'interpolate': {
+            'default': interpolate,
+            'help': '',
+            'required': False
+        },
+        'model_type': {
+            'default': model_type,
+            'choices': model_types,
+            'help': '',
+            'required': False
+        },
+        'num_epochs': {
+            'default': num_epochs,
+            'help': 'Number of epochs to train on',
+            'required': False
+        },
+        'epochs_patience': {
+            'default': epochs_patience,
+            'help': '',
+            'required': False
+        },
+        'blocks': {
+            'default': blocks,
+            'help': '',
+            'required': False
+        }
+    }
+    train_args.update(set_pandas_args())
+    return train_args
+
+
+def set_predict_args():
+    predict_args = {
+        'model_name': {
+            'default': model_name,
+            'help': 'Name of the trained model',
+            'type': str,
+            'required': False
+        },
+        'data': {
+            'default': data_train,
+            'help': 'Training data to train on',
+            'required': False
+        }
+    }
+    predict_args.update(set_pandas_args())
+    return predict_args
