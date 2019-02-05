@@ -98,10 +98,10 @@ epochs_patience = 10
 blocks = 6
 
 # prediction defaults
-data_test = path.join(app_data_features, 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv')
+data_test = path.join(app_data, 'test/w1h-s10m.tsv')
 
 # common defaults
-model_name = 'mods-20180414-20181015-w1h-s10m'
+model_name = path.join(app_models, 'mods-20180414-20181015-w1h-s10m.zip')
 
 
 def set_pandas_args():
@@ -144,7 +144,7 @@ def set_train_args():
     train_args = {
         'model_name': {
             'default': model_name,
-            'help': 'Name of the trained model',
+            'help': 'Name of the model to train',
             'type': str,
             'required': False
         },
@@ -203,7 +203,7 @@ def set_predict_args():
     predict_args = {
         'model_name': {
             'default': model_name,
-            'help': 'Name of the trained model',
+            'help': 'Name of the model used for prediction',
             'type': str,
             'required': False
         },

@@ -183,16 +183,19 @@ class mods_model:
         if sample_data_config is None:
             return
         print('Loading sample data')
-        with zip.open(sample_data_config[mods_model.__FILE]) as f:
-            self.sample_data = pd.read_csv(
-                io.TextIOWrapper(f),
-                sep=sample_data_config[mods_model.__SEP],
-                skiprows=sample_data_config[mods_model.__SKIPROWS],
-                skipfooter=sample_data_config[mods_model.__SKIPFOOTER],
-                engine=sample_data_config[mods_model.__ENGINE],
-                usecols=lambda col: col in sample_data_config[mods_model.__USECOLS]
-            )
-        print('Sample data loaded:\n%s' % self.sample_data)
+        try:
+            with zip.open(sample_data_config[mods_model.__FILE]) as f:
+                self.sample_data = pd.read_csv(
+                    io.TextIOWrapper(f),
+                    sep=sample_data_config[mods_model.__SEP],
+                    skiprows=sample_data_config[mods_model.__SKIPROWS],
+                    skipfooter=sample_data_config[mods_model.__SKIPFOOTER],
+                    engine=sample_data_config[mods_model.__ENGINE],
+                    usecols=lambda col: col in sample_data_config[mods_model.__USECOLS]
+                )
+            print('Sample data loaded:\n%s' % self.sample_data)
+        except Exception as e:
+            print('Sample data not loaded: %s' % e)
 
     def load_data(
             self,
@@ -492,22 +495,22 @@ class mods_model:
     def predict_file_or_buffer(self, *args, **kwargs):
         if kwargs is not None:
             kwargs = {k: v for k, v in kwargs.items() if k in [
-                'pd_usecols', 'pd_sep', 'pd_skiprows', 'pd_skipfooter', 'pd_engine', 'pd_header'
+                'usecols', 'sep', 'skiprows', 'skipfooter', 'engine', 'header'
             ]}
-            if 'pd_usecols' in kwargs:
-                if isinstance(kwargs['pd_usecols'], str):
-                    kwargs['pd_usecols'] = [
+            if 'usecols' in kwargs:
+                if isinstance(kwargs['usecols'], str):
+                    kwargs['usecols'] = [
                         utl.parse_int_or_str(col)
-                        for col in kwargs['pd_usecols'].split(',')
+                        for col in kwargs['usecols'].split(',')
                     ]
-            if 'pd_header' in kwargs:
-                if isinstance(kwargs['pd_header'], str):
-                    kwargs['pd_header'] = [
+            if 'header' in kwargs:
+                if isinstance(kwargs['header'], str):
+                    kwargs['header'] = [
                         utl.parse_int_or_str(col)
-                        for col in kwargs['pd_header'].split(',')
+                        for col in kwargs['header'].split(',')
                     ]
-                    if len(kwargs['pd_header']) == 1:
-                        kwargs['pd_header'] = kwargs['pd_header'][0]
+                    if len(kwargs['header']) == 1:
+                        kwargs['header'] = kwargs['header'][0]
             # print('HEADER: %s' % kwargs['pd_header'])
         df = pd.read_csv(*args, **kwargs)
         return self.predict(df)

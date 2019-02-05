@@ -31,11 +31,13 @@ import numpy as np
 import pandas as pd
 import pkg_resources
 import yaml
+from keras import backend
 
 # import project config.py
 import mods.config as cfg
 import mods.models.mods_model as MODS
 import mods.utils as utl
+
 
 # import utilities
 
@@ -47,14 +49,16 @@ import mods.utils as utl
 #     print('Could not load model: %s' % model_filename)
 #     sys.exit(1)
 
-mods_model = None
+# mods_model = None
 
 
 def get_model(model_filename=os.path.join(cfg.app_models, cfg.model_name)):
-    global mods_model
-    if not mods_model:
-        mods_model = MODS.mods_model(model_filename)
-    return mods_model
+    # global mods_model
+    # if not mods_model:
+    #     mods_model = MODS.mods_model(model_filename)
+    # return mods_model
+    backend.clear_session()
+    return MODS.mods_model(model_filename)
 
 
 def get_metadata():
@@ -84,19 +88,33 @@ def predict_file(*args):
     """
     Function to make prediction on a local file
     """
+
     message = 'Error reading input data'
+
     if args:
         for arg in args:
             message = {'status': 'ok', 'predictions': []}
-            print('FILE: %s' % arg.file)
-            predictions = get_model().predict_file_or_buffer(
-                arg.file,
+            model_name = yaml.safe_load(arg.model_name)
+
+            data = yaml.safe_load(arg.file)
+
+            usecols = [utl.parse_int_or_str(col) for col in yaml.safe_load(arg.pd_usecols).split(',')]
+            skiprows = yaml.safe_load(arg.pd_skiprows)
+            skipfooter = yaml.safe_load(arg.pd_skipfooter)
+            header = yaml.safe_load(arg.pd_header)
+
+            predictions = get_model(model_name).predict_file_or_buffer(
+                data,
+                usecols=usecols,
                 sep='\t',
-                skiprows=0,
-                skipfooter=0,
-                engine='python'
+                skiprows=skiprows,
+                skipfooter=skipfooter,
+                engine='python',
+                header=header
             )
+
             message['predictions'] = predictions.tolist()
+
     return message
 
 
@@ -104,19 +122,33 @@ def predict_data(*args):
     """
     Function to make prediction on an uploaded file
     """
+
     message = 'Error reading input data'
+
     if args:
-        for data in args:
+        for arg in args:
             message = {'status': 'ok', 'predictions': []}
-            buffer = io.BytesIO(data[0])
+
+            buffer = io.BytesIO(arg[0])
+
+            usecols = cfg.pd_usecols
+            sep = cfg.pd_sep
+            skiprows = cfg.pd_skiprows
+            skipfooter = cfg.pd_skipfooter
+            header = cfg.pd_header
+
             predictions = get_model().predict_file_or_buffer(
                 buffer,
-                sep='\t',
-                skiprows=0,
-                skipfooter=0,
-                engine='python'
+                usecols=usecols,
+                sep=sep,
+                skiprows=skiprows,
+                skipfooter=skipfooter,
+                engine='python',
+                header=header
             )
+
             message['predictions'] = predictions.tolist()
+
     return message
 
 
@@ -326,7 +358,7 @@ def train(train_args):
     # uncomment to get data via rclone
     # mdata.prepare_data()
 
-    m = MODS.mods_model(model_name)
+    m = get_model(model_name)
 
     # loading training data
     df_train = m.load_data(

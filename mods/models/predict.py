@@ -25,7 +25,7 @@ Train models with first order differential to monitor changes
 import argparse
 import time
 
-# import project config.py
+import mods.config as cfg
 import mods.models.api as api
 
 
@@ -65,9 +65,9 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Model parameters')
 
-    train_args = api.get_predict_args()
+    predict_args = api.get_predict_args()
 
-    for key, val in train_args.items():
+    for key, val in predict_args.items():
         parser.add_argument('--%s' % key,
                             default=val['default'],
                             type=type(val['default']),  # may just put str
@@ -75,7 +75,7 @@ if __name__ == '__main__':
         print(key, val)
         print(type(val['default']))
 
-    parser.add_argument('--file', type=str, help='File to do prediction on, full path')
+    parser.add_argument('--file', type=str, default=cfg.data_test, help='File to do prediction on, full path')
     parser.add_argument('--url', type=str, help='URL with the data to do prediction on')
     # parser.add_argument('--data', type=str, help='String with data to do prediction on')
 
