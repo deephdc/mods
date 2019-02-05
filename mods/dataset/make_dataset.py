@@ -4,25 +4,37 @@
 """
 import logging
 from pathlib import Path
+
 from dotenv import find_dotenv, load_dotenv
-import mods.config as cfg
+
 import mods.dataset.data_utils as dutils
 
 
 def prepare_data():
     """ Function to prepare data
     """
-    data_dir = cfg.MODS_DataDir
-    feature_set_file = cfg.MODS_FeatureSetFile
-    status_feature_set, _ = dutils.maybe_download_data(data_dir=data_dir,
-                                                       data_file=feature_set_file)
 
-    if not status_feature_set:
-        dutils.maybe_download_and_unzip(
-            data_dir=data_dir,
-            data_file=feature_set_file + '.zip')
-    else:
-        print("[INFO] %s exists" % (cfg.MODS_FeatureSetFile))
+    features_dir = 'data/features'
+    features_file = 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv'
+
+    status_feature_set, _ = dutils.maybe_download_data(
+        data_dir=features_dir,
+        data_file=features_file
+    )
+
+    if status_feature_set:
+        print("[INFO] %s, %s  exists" % (features_dir, features_file))
+
+    test_dir = 'data/test'
+    test_file = 'w1h-s10m.tsv'
+
+    status_test_set, _ = dutils.maybe_download_data(
+        data_dir=test_dir,
+        data_file=test_file
+    )
+
+    if status_test_set:
+        print("[INFO] %s, %s  exists" % (test_dir, test_file))
 
 
 def main(input_filepath, output_filepath):

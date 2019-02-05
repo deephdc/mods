@@ -37,6 +37,7 @@ from keras import backend
 import mods.config as cfg
 import mods.models.mods_model as MODS
 import mods.utils as utl
+import mods.dataset.make_dataset as mdata
 
 
 # import utilities
@@ -89,6 +90,8 @@ def predict_file(*args):
     Function to make prediction on a local file
     """
 
+    mdata.prepare_data()
+
     message = 'Error reading input data'
 
     if args:
@@ -122,6 +125,8 @@ def predict_data(*args):
     """
     Function to make prediction on an uploaded file
     """
+
+    mdata.prepare_data()
 
     message = 'Error reading input data'
 
@@ -356,7 +361,7 @@ def train(train_args):
     pd_header = yaml.safe_load(train_args.pd_header)
 
     # uncomment to get data via rclone
-    # mdata.prepare_data()
+    mdata.prepare_data()
 
     m = get_model(model_name)
 

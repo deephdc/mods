@@ -85,7 +85,7 @@ def rclone_copy(src_path, dest_dir, src_type='file', verbose=False):
 
 
 def maybe_download_data(remote_storage=cfg.MODS_RemoteStorage,
-                        data_dir='data',
+                        data_dir='data/features',
                         data_file='features-20180414-20181015-win-1_hour-slide-1_hour.tsv'):
     """
     Download data if it does not exist locally.
@@ -126,7 +126,7 @@ def maybe_download_data(remote_storage=cfg.MODS_RemoteStorage,
 
 def maybe_download_and_unzip(data_storage=cfg.MODS_RemoteStorage,
                              data_dir='data',
-                             data_file='features-20180414-20181015-win-1_hour-slide-1_hour.tsv.zip'):
+                             data_file='features/features-20180414-20181015-win-1_hour-slide-10_minutes.tsv.zip'):
     """Download and extract the zip archive.
     """
 
