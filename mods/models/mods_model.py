@@ -404,7 +404,7 @@ class mods_model:
         if self.get_interpolate():
             df_train.interpolate(inplace=True)
 
-	# Data transformation
+        # Data transformation
         df_train = df_train.values.astype('float32')
         df_train = self.transform(df_train)
         df_train = self.normalize(df_train, self.get_scaler())
