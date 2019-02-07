@@ -22,8 +22,20 @@ MODS configuration file
 @author: stefan dlugolinsky
 """
 
+import fnmatch
+import os
 from os import path
 from os.path import expanduser
+
+
+def list_dir(dir, pattern='*.tsv'):
+    listOfFiles = os.listdir(dir)
+    tsv_files = []
+    for entry in listOfFiles:
+        if fnmatch.fnmatch(entry, pattern):
+            tsv_files.append(os.path.join(dir, entry))
+    return tsv_files
+
 
 # identify basedir for the package
 BASE_DIR = path.dirname(path.normpath(path.dirname(__file__)))
@@ -86,7 +98,8 @@ pd_engine = 'python'
 pd_header = 0
 
 # training defaults
-data_train = path.join(app_data_features, 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv')
+data_train_all = list_dir(app_data_features, '*.tsv')
+data_train = data_train_all[0] if len(data_train_all) > 0 else None
 multivariate = len(pd_usecols)
 sequence_len = 6
 model_delta = True
@@ -150,6 +163,7 @@ def set_train_args():
         },
         'data': {
             'default': data_train,
+            'choices': data_train_all,
             'help': 'Training data to train on',
             'required': False
         },
