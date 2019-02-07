@@ -397,9 +397,14 @@ class mods_model:
         )
         callbacks_list = [checkpoints, earlystops]
 
+        # Replace None by 0
+        df_train.replace('None', 0, inplace=True)
+
+        # Add missing values
         if self.get_interpolate():
             df_train.interpolate(inplace=True)
 
+	# Data transformation
         df_train = df_train.values.astype('float32')
         df_train = self.transform(df_train)
         df_train = self.normalize(df_train, self.get_scaler())
