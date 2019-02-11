@@ -56,7 +56,7 @@ app_models = BASE_DIR + '/models/'
 app_checkpoints = BASE_DIR + '/checkpoints/'
 app_visualization = BASE_DIR + '/visualization/'
 
-MODS_RemoteStorage = 'deepnc:/Datasets/mods/'
+MODS_RemoteStorage = 'deepnc:/mods/'
 MODS_DataDir = 'data'
 
 # Feature data
