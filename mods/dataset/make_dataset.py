@@ -7,34 +7,24 @@ from pathlib import Path
 
 from dotenv import find_dotenv, load_dotenv
 
+import mods.config as cfg
 import mods.dataset.data_utils as dutils
 
 
-def prepare_data():
+def prepare_data(
+        remote_data_dir=cfg.app_data_remote,
+        local_data_dir=cfg.app_data
+):
     """ Function to prepare data
     """
-
-    features_dir = 'data/features'
-    features_file = 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv'
-
-    status_feature_set, _ = dutils.maybe_download_data(
-        data_dir=features_dir,
-        data_file=features_file
+    output, error = dutils.rclone_call(
+        src_path=remote_data_dir,
+        dest_dir=local_data_dir
     )
-
-    if status_feature_set:
-        print("[INFO] %s, %s  exists" % (features_dir, features_file))
-
-    test_dir = 'data/test'
-    test_file = 'w1h-s10m.tsv'
-
-    status_test_set, _ = dutils.maybe_download_data(
-        data_dir=test_dir,
-        data_file=test_file
-    )
-
-    if status_test_set:
-        print("[INFO] %s, %s  exists" % (test_dir, test_file))
+    print('rclone copy: %s -> %s:\n%s' % (remote_data_dir, local_data_dir, output))
+    if error:
+        print('rclone error: %s' % error)
+    return output, error
 
 
 def main(input_filepath, output_filepath):

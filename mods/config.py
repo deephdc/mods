@@ -50,14 +50,12 @@ log_header_lines = 8
 
 # Application dirs
 app_data = BASE_DIR + '/data/'
+app_data_remote = 'deepnc:mods/data'
 app_data_raw = BASE_DIR + '/data/raw/'  # ln -s ...
 app_data_features = BASE_DIR + '/data/features/'  # extracted features
 app_models = BASE_DIR + '/models/'
 app_checkpoints = BASE_DIR + '/checkpoints/'
 app_visualization = BASE_DIR + '/visualization/'
-
-MODS_RemoteStorage = 'deepnc:/mods/'
-MODS_DataDir = 'data'
 
 # Feature data
 feature_filename = 'features.tsv'
@@ -98,8 +96,9 @@ pd_engine = 'python'
 pd_header = 0
 
 # training defaults
+data_train_default = os.path.join(app_data_features, 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv')
 data_train_all = list_dir(app_data_features, '*.tsv')
-data_train = data_train_all[0] if len(data_train_all) > 0 else None
+data_train = data_train_all[0] if len(data_train_all) > 0 else data_train_default
 multivariate = len(pd_usecols)
 sequence_len = 6
 model_delta = True
