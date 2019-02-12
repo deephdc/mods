@@ -35,31 +35,19 @@ from keras import backend
 
 # import project config.py
 import mods.config as cfg
+import mods.dataset.make_dataset as mdata
 import mods.models.mods_model as MODS
 import mods.utils as utl
-import mods.dataset.make_dataset as mdata
 
 
-# import utilities
-
-# load model
-# model_filename = os.path.join(cfg.app_models, cfg.default_model)
-# mods_model = MODS.mods_model(model_filename)
-#
-# if not mods_model:
-#     print('Could not load model: %s' % model_filename)
-#     sys.exit(1)
-
-# mods_model = None
-
-
-def get_model(model_filename=os.path.join(cfg.app_models, cfg.model_name)):
-    # global mods_model
-    # if not mods_model:
-    #     mods_model = MODS.mods_model(model_filename)
-    # return mods_model
+def get_model(
+        model_name=cfg.model_name,
+        models_dir=cfg.app_models
+):
     backend.clear_session()
-    return MODS.mods_model(model_filename)
+    if not model_name.lower().endswith('.zip'):
+        model_name += '.zip'
+    return MODS.mods_model(os.path.join(models_dir, model_name))
 
 
 def get_metadata():
@@ -85,7 +73,7 @@ def get_metadata():
     return meta
 
 
-def predict_file(*args):
+def predict_file(*args, **kwargs):
     """
     Function to make prediction on a local file
     """
@@ -106,7 +94,21 @@ def predict_file(*args):
             skipfooter = yaml.safe_load(arg.pd_skipfooter)
             header = yaml.safe_load(arg.pd_header)
 
-            predictions = get_model(model_name).predict_file_or_buffer(
+            # support full paths for command line calls
+            models_dir = cfg.app_models
+            full_paths = kwargs['full_paths'] if 'full_paths' in kwargs else False
+            if full_paths:
+                models_dir = os.path.dirname(model_name)
+                model_name = os.path.basename(model_name)
+                if data == cfg.data_train:
+                    data = os.path.join(cfg.app_data_features, data)
+            else:
+                data = os.path.join(cfg.app_data_features, data)
+
+            predictions = get_model(
+                models_dir=models_dir,
+                model_name=model_name
+            ).predict_file_or_buffer(
                 data,
                 usecols=usecols,
                 sep='\t',
@@ -121,7 +123,7 @@ def predict_file(*args):
     return message
 
 
-def predict_data(*args):
+def predict_data(*args, **kwargs):
     """
     Function to make prediction on an uploaded file
     """
@@ -134,6 +136,11 @@ def predict_data(*args):
         for arg in args:
             message = {'status': 'ok', 'predictions': []}
 
+            try:
+                model_name = yaml.safe_load(arg.model_name)
+            except Exception:
+                model_name = cfg.model_name
+
             buffer = io.BytesIO(arg[0])
 
             usecols = cfg.pd_usecols
@@ -142,7 +149,17 @@ def predict_data(*args):
             skipfooter = cfg.pd_skipfooter
             header = cfg.pd_header
 
-            predictions = get_model().predict_file_or_buffer(
+            # support full paths for command line calls
+            models_dir = cfg.app_models
+            full_paths = kwargs['full_paths'] if 'full_paths' in kwargs else False
+            if full_paths:
+                models_dir = os.path.dirname(model_name)
+                model_name = os.path.basename(model_name)
+
+            predictions = get_model(
+                models_dir=models_dir,
+                model_name=model_name
+            ).predict_file_or_buffer(
                 buffer,
                 usecols=usecols,
                 sep=sep,
@@ -340,12 +357,13 @@ def get_predict_args():
     return predict_args
 
 
-def train(train_args):
+def train(train_args, **kwargs):
     """
     Train network
     """
 
     print("train_args:", train_args)
+    print("kwargs:", kwargs)
 
     data = yaml.safe_load(train_args.data)
     model_name = yaml.safe_load(train_args.model_name)
@@ -360,10 +378,23 @@ def train(train_args):
     pd_usecols = [utl.parse_int_or_str(col) for col in yaml.safe_load(train_args.pd_usecols).split(',')]
     pd_header = yaml.safe_load(train_args.pd_header)
 
-    # uncomment to get data via rclone
+    # support full paths for command line calls
+    models_dir = cfg.app_models
+    full_paths = kwargs['full_paths'] if 'full_paths' in kwargs else False
+    if full_paths:
+        models_dir = os.path.dirname(model_name)
+        model_name = os.path.basename(model_name)
+        if data == cfg.data_train:
+            data = os.path.join(cfg.app_data_features, data)
+    else:
+        data = os.path.join(cfg.app_data_features, data)
+
     mdata.prepare_data()
 
-    m = get_model(model_name)
+    m = get_model(
+        models_dir=models_dir,
+        model_name=model_name
+    )
 
     # loading training data
     df_train = m.load_data(

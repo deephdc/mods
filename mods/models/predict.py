@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,9 +41,9 @@ def main():
     start = time.time()
     ret = ''
     if args.file is not None:
-        ret = api.predict_file(args)
+        ret = api.predict_file(args, full_paths=True)
     elif args.url is not None:
-        ret = api.predict_url(args)
+        ret = api.predict_url(args, full_paths=True)
     # elif args.data is not None:
     #     ret = api.predict_data(args)
     else:

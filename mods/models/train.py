@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,8 +37,9 @@ def main():
        Runs above-described functions depending on input parameters
        (see below an example)
     """
+
     start = time.time()
-    api.train(args)
+    api.train(args, full_paths=True)
     print("Elapsed time:  ", time.time() - start)
 
 

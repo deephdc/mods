@@ -33,7 +33,7 @@ def list_dir(dir, pattern='*.tsv'):
     tsv_files = []
     for entry in listOfFiles:
         if fnmatch.fnmatch(entry, pattern):
-            tsv_files.append(os.path.join(dir, entry))
+            tsv_files.append(entry)
     return tsv_files
 
 
@@ -107,9 +107,8 @@ pd_header = 0
 
 
 # training defaults
-data_train_default = os.path.join(app_data_features, 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv')
 data_train_all = list_dir(app_data_features, '*.tsv')
-data_train = data_train_all[0] if len(data_train_all) > 0 else data_train_default
+data_train = 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv'
 multivariate = len(pd_usecols)
 sequence_len = 6
 model_delta = True
@@ -126,7 +125,7 @@ data_test = path.join(app_data, 'test/w1h-s10m.tsv')
 
 
 # common defaults
-model_name = path.join(app_models, 'mods-20180414-20181015-w1h-s10m.zip')
+model_name = 'mods-20180414-20181015-w1h-s10m'
 
 
 def set_pandas_args():
