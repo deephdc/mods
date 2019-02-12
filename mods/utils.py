@@ -44,7 +44,7 @@ import keras
 # from mods import config as mc
 import mods.config as cfg
 
-matplotlib.style.use('ggplot')
+# matplotlib.style.use('ggplot')
 
 
 # %matplotlib inline
@@ -109,6 +109,27 @@ def rate_cosine(a, b):
     for i in range(a.shape[1]):
         score.append(cosine_similarity(a[:, i].reshape(1, -1),
                                        b[:, i].reshape(1, -1)))
+    return score
+
+
+# @giang: MAPE = np.mean(np.abs((A-F)/A)) * 100
+# division by zero
+def mape(a, f):
+    score = []
+    for i in range(a.shape[1]):
+        score.append(
+                np.mean(np.abs((a[:,i]-f[:,i])/a[:,i]))*100 )
+    return score
+
+
+# @giang: SMAPE = 100/len(A) * np.sum(2 * np.abs(F-A) / (np.abs(A) + np.abs(F)) )
+# division by zero
+def smape(a, f):
+    score = []
+    for i in range(a.shape[1]):
+        score.append(
+                100/len(a[:,i]) *
+                np.sum(2*np.abs(f[:,i]-a[:,i])/(np.abs(a[:,i])+np.abs(f[:,i]))) )
     return score
 
 
