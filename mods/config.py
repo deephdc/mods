@@ -50,10 +50,11 @@ log_header_lines = 8
 
 # Application dirs
 app_data = BASE_DIR + '/data/'
-app_data_remote = 'deepnc:mods/data'
+app_data_remote = 'deepnc:/mods/data'
 app_data_raw = BASE_DIR + '/data/raw/'  # ln -s ...
 app_data_features = BASE_DIR + '/data/features/'  # extracted features
 app_models = BASE_DIR + '/models/'
+app_models_remote = 'deepnc:/mods/models/'
 app_checkpoints = BASE_DIR + '/checkpoints/'
 app_visualization = BASE_DIR + '/visualization/'
 

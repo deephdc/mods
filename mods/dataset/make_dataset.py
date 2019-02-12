@@ -13,18 +13,25 @@ import mods.dataset.data_utils as dutils
 
 def prepare_data(
         remote_data_dir=cfg.app_data_remote,
-        local_data_dir=cfg.app_data
+        local_data_dir=cfg.app_data,
+        remote_models_dir=cfg.app_models_remote,
+        local_models_dir=cfg.app_models
 ):
     """ Function to prepare data
     """
-    output, error = dutils.rclone_call(
+    out, err = dutils.rclone_call(
         src_path=remote_data_dir,
-        dest_dir=local_data_dir
+        dest_dir=local_data_dir,
+        cmd='copy'
     )
-    print('rclone copy: %s -> %s:\n%s' % (remote_data_dir, local_data_dir, output))
-    if error:
-        print('rclone error: %s' % error)
-    return output, error
+    print('rclone_copy(%s, %s):\nout: %s\nerr: %s' % (remote_data_dir, local_data_dir, out, err))
+
+    out, err = dutils.rclone_call(
+        src_path=remote_models_dir,
+        dest_dir=local_models_dir,
+        cmd='copy'
+    )
+    print('rclone_copy(%s, %s):\nout: %s\nerr: %s' % (remote_models_dir, local_models_dir, out, err))
 
 
 def main(input_filepath, output_filepath):
