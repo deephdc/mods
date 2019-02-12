@@ -40,6 +40,7 @@ def list_dir(dir, pattern='*.tsv'):
 # identify basedir for the package
 BASE_DIR = path.dirname(path.normpath(path.dirname(__file__)))
 
+
 # Data repository
 DATA_DIR = expanduser("~") + '/data/deep-dm/'  # app_data_raw
 # Data dirs
@@ -47,6 +48,7 @@ dir_logs = DATA_DIR + 'logs/'
 dir_parquet = DATA_DIR + 'logs_parquet/'
 dir_cleaned = DATA_DIR + 'logs_cleaned/'
 log_header_lines = 8
+
 
 # Application dirs
 app_data = BASE_DIR + '/data/'
@@ -58,6 +60,7 @@ app_models_remote = 'deepnc:/mods/models/'
 app_checkpoints = BASE_DIR + '/checkpoints/'
 app_visualization = BASE_DIR + '/visualization/'
 
+
 # Feature data
 feature_filename = 'features.tsv'
 # time_range_begin = '2018-04-14'         # begin <= time_range < end
@@ -67,26 +70,32 @@ time_range_end = '2018-10-15'
 window_duration = '1 hour'
 slide_duration = '10 minutes'
 
+
 # ML data
 column_separator = '\t'  # for tsv
 # column_separator = ','                                                    # for csv
+
 
 # ML and time series datasets
 split_ratio = 0.67  # train:test = 2:1
 batch_size = 1  # delta (6), without_delta(1)
 
+
 # Auxiliary
 rate_RMSE = True
+
 
 # Auxiliary: plotting
 drawing = True
 fig_size_x = 15  # max 2^16 pixels = 650 inch
 fig_size_y = 4
 
+
 # Auxiliary: DayTime format
 format_string = '%Y-%m-%d %H:%M:%S'
 format_string_parquet = '%Y-%m-%d %H_%M_%S'  # parquet format without ":"
 timezone = 3600
+
 
 # pandas defaults
 pd_usecols = ['number_of_conn', 'sum_orig_kbytes']
@@ -95,6 +104,7 @@ pd_skiprows = 0
 pd_skipfooter = 0
 pd_engine = 'python'
 pd_header = 0
+
 
 # training defaults
 data_train_default = os.path.join(app_data_features, 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv')
@@ -110,8 +120,10 @@ num_epochs = 50
 epochs_patience = 10
 blocks = 6
 
+
 # prediction defaults
 data_test = path.join(app_data, 'test/w1h-s10m.tsv')
+
 
 # common defaults
 model_name = path.join(app_models, 'mods-20180414-20181015-w1h-s10m.zip')
