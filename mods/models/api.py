@@ -35,6 +35,7 @@ from keras import backend
 
 # import project config.py
 import mods.config as cfg
+import mods.dataset.data_utils as dutils
 import mods.dataset.make_dataset as mdata
 import mods.models.mods_model as MODS
 import mods.utils as utl
@@ -45,9 +46,9 @@ def get_model(
         models_dir=cfg.app_models
 ):
     backend.clear_session()
-    if not model_name.lower().endswith('.zip'):
-        model_name += '.zip'
-    return MODS.mods_model(os.path.join(models_dir, model_name))
+    m = MODS.mods_model(model_name)
+    m.load(os.path.join(models_dir, model_name))
+    return m
 
 
 def get_metadata():
@@ -97,13 +98,17 @@ def predict_file(*args, **kwargs):
             # support full paths for command line calls
             models_dir = cfg.app_models
             full_paths = kwargs['full_paths'] if 'full_paths' in kwargs else False
+
             if full_paths:
-                models_dir = os.path.dirname(model_name)
-                model_name = os.path.basename(model_name)
-                if data == cfg.data_train:
-                    data = os.path.join(cfg.app_data_features, data)
+                if model_name == cfg.model_name:
+                    models_dir = cfg.app_models
+                else:
+                    models_dir = os.path.dirname(model_name)
+                    model_name = os.path.basename(model_name)
+                if data == cfg.data_predict:
+                    data = os.path.join(cfg.app_data_predict, data)
             else:
-                data = os.path.join(cfg.app_data_features, data)
+                data = os.path.join(cfg.app_data_predict, data)
 
             predictions = get_model(
                 models_dir=models_dir,
@@ -153,8 +158,11 @@ def predict_data(*args, **kwargs):
             models_dir = cfg.app_models
             full_paths = kwargs['full_paths'] if 'full_paths' in kwargs else False
             if full_paths:
-                models_dir = os.path.dirname(model_name)
-                model_name = os.path.basename(model_name)
+                if model_name == cfg.model_name:
+                    models_dir = cfg.app_models
+                else:
+                    models_dir = os.path.dirname(model_name)
+                    model_name = os.path.basename(model_name)
 
             predictions = get_model(
                 models_dir=models_dir,
@@ -391,10 +399,7 @@ def train(train_args, **kwargs):
 
     mdata.prepare_data()
 
-    m = get_model(
-        models_dir=models_dir,
-        model_name=model_name
-    )
+    m = MODS.mods_model(model_name)
 
     # loading training data
     df_train = m.load_data(
@@ -415,6 +420,74 @@ def train(train_args, **kwargs):
         blocks=blocks
     )
 
-    m.save()
+    # save model locally
+    file = m.save(os.path.join(models_dir, model_name))
+    dir_remote = cfg.app_models_remote
+
+    # upload model using rclone
+    out, err = dutils.rclone_call(
+        src_path=file,
+        dest_dir=dir_remote,
+        cmd='copy'
+    )
+    print('rclone_copy(%s, %s):\nout: %s\nerr: %s' % (file, dir_remote, out, err))
 
     return "OK"
+
+
+def test_file(*args, **kwargs):
+    """
+    Function to make test on a local file
+    """
+
+    mdata.prepare_data()
+
+    message = 'Error reading input data'
+
+    if args:
+        for arg in args:
+            message = {'status': 'ok', 'predictions': []}
+            model_name = yaml.safe_load(arg.model_name)
+
+            data = yaml.safe_load(arg.file)
+
+            pd_usecols = [utl.parse_int_or_str(col) for col in yaml.safe_load(arg.pd_usecols).split(',')]
+            pd_skiprows = yaml.safe_load(arg.pd_skiprows)
+            pd_skipfooter = yaml.safe_load(arg.pd_skipfooter)
+            pd_header = yaml.safe_load(arg.pd_header)
+
+            # support full paths for command line calls
+            models_dir = cfg.app_models
+            full_paths = kwargs['full_paths'] if 'full_paths' in kwargs else False
+            if full_paths:
+                if model_name == cfg.model_name:
+                    models_dir = cfg.app_models
+                else:
+                    models_dir = os.path.dirname(model_name)
+                    model_name = os.path.basename(model_name)
+                if data == cfg.data_test:
+                    data = os.path.join(cfg.app_data_test, data)
+            else:
+                data = os.path.join(cfg.app_data_test, data)
+
+            m = get_model(
+                models_dir=models_dir,
+                model_name=model_name
+            )
+
+            print(m.model)
+
+            df_test = m.load_data(
+                path=data,
+                pd_usecols=pd_usecols,
+                pd_header=pd_header
+            )
+
+            test_tsg = m.get_tsg(df_test)
+            eval = m.model.evaluate_generator(test_tsg)
+
+            # Evaluate model on test_tsg
+            print('\nModel evaluation metrics=', m.metrics_names)
+            print(eval)
+
+    return message

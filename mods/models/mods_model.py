@@ -72,18 +72,13 @@ class mods_model:
     __ENGINE = 'engine'
     __USECOLS = 'usecols'
 
-    def __init__(self, file):
-        self.file = file
-        self.name = os.path.basename(file)
+    def __init__(self, name):
+        self.name = name
         self.config = None
         self.model = None
         self.__scaler = None
         self.sample_data = None
-        if os.path.isfile(file):
-            self.__load(file)
-            self.__init()
-        else:
-            self.config = self.__default_config()
+        self.config = self.__default_config()
 
     # saves the contents of the original file (e.g. file in a zip) into a temp file and runs func over it
     def __func_over_tempfile(self, orig_file, func, mode='wb', *args, **kwargs):
@@ -103,23 +98,31 @@ class mods_model:
             return self.config[mods_model.__SAMPLE_DATA]
         return None
 
-    def save(self):
-        print('Saving model: %s' % self.file)
-        with ZipFile(self.file, mode='w') as zip:
+    def save(self, file):
+        if not file.lower().endswith('.zip'):
+            file += '.zip'
+        print('Saving model: %s' % file)
+        with ZipFile(file, mode='w') as zip:
             self.__save_config(zip, 'config.json')
             self.__save_model(zip, self.config[mods_model.__MODEL])
             self.__save_scaler(zip, self.config[mods_model.__SCALER])
             self.__save_sample_data(zip, self.__get_sample_data_cfg())
+            zip.close()
         print('Model saved')
+        return file
 
-    def __load(self, file):
+    def load(self, file):
+        if not file.lower().endswith('.zip'):
+            file += '.zip'
         print('Loading model: %s' % file)
         with ZipFile(file) as zip:
             self.__load_config(zip, 'config.json')
             self.__load_model(zip, self.config[mods_model.__MODEL])
             self.__load_scaler(zip, self.config[mods_model.__SCALER])
             self.__load_sample_data(zip, self.__get_sample_data_cfg())
+            zip.close()
         print('Model loaded')
+        self.__init()
 
     def __save_config(self, zip, file):
         with zip.open(file, mode='w') as f:

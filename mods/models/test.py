@@ -41,9 +41,9 @@ def main():
     start = time.time()
     ret = ''
     if args.file is not None:
-        ret = api.predict_file(args, full_paths=True)
+        ret = api.test_file(args, full_paths=True)
     elif args.url is not None:
-        ret = api.predict_url(args, full_paths=True)
+        ret = api.test_url(args, full_paths=True)
     # elif args.data is not None:
     #     ret = api.predict_data(args)
     else:
@@ -53,7 +53,7 @@ def main():
 
 
 __data_help = """
-String with data to predict on.
+String with data to test on.
 
 An, example on how to read data 
 from a file into a command line
@@ -76,7 +76,7 @@ if __name__ == '__main__':
         print(key, val)
         print(type(val['default']))
 
-    parser.add_argument('--file', type=str, default=cfg.data_predict, help='File to do prediction on, full path')
+    parser.add_argument('--file', type=str, default=cfg.data_test, help='File to do test on')
     parser.add_argument('--url', type=str, help='URL with the data to do prediction on')
     # parser.add_argument('--data', type=str, help='String with data to do prediction on')
 

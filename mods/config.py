@@ -52,9 +52,11 @@ log_header_lines = 8
 
 # Application dirs
 app_data = BASE_DIR + '/data/'
-app_data_remote = 'deepnc:/mods/data'
+app_data_remote = 'deepnc:/mods/data/'
 app_data_raw = BASE_DIR + '/data/raw/'  # ln -s ...
 app_data_features = BASE_DIR + '/data/features/'  # extracted features
+app_data_test = BASE_DIR + '/data/test/'
+app_data_predict = BASE_DIR + '/data/predict/'
 app_models = BASE_DIR + '/models/'
 app_models_remote = 'deepnc:/mods/models/'
 app_checkpoints = BASE_DIR + '/checkpoints/'
@@ -121,7 +123,11 @@ blocks = 6
 
 
 # prediction defaults
-data_test = path.join(app_data, 'test/w1h-s10m.tsv')
+data_predict = 'sample-w1h-s10m.tsv'
+
+
+# test defaults
+data_test = 'w1h-s10m.tsv'
 
 
 # common defaults
@@ -233,8 +239,25 @@ def set_predict_args():
             'required': False
         },
         'data': {
-            'default': data_train,
-            'help': 'Training data to train on',
+            'default': data_predict,
+            'help': 'Data to predict on',
+            'required': False
+        }
+    }
+    predict_args.update(set_pandas_args())
+    return predict_args
+
+def set_test_args():
+    predict_args = {
+        'model_name': {
+            'default': model_name,
+            'help': 'Name of the model used for a test',
+            'type': str,
+            'required': False
+        },
+        'data': {
+            'default': data_test,
+            'help': 'Data to test on',
             'required': False
         }
     }
