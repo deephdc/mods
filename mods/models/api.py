@@ -399,6 +399,7 @@ def train(train_args, **kwargs):
 
     mdata.prepare_data()
 
+    backend.clear_session()
     m = MODS.mods_model(model_name)
 
     # loading training data
