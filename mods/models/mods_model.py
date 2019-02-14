@@ -207,8 +207,8 @@ class mods_model:
             skiprows=0,
             skipfooter=0,
             engine='python',
-            pd_usecols=lambda col: [col for col in ['number_of_conn', 'sum_orig_kbytes']],
-            pd_header=0
+            usecols=lambda col: [col for col in ['number_of_conn', 'sum_orig_kbytes']],
+            header=0
     ):
         print(path)
         df = pd.read_csv(
@@ -217,8 +217,8 @@ class mods_model:
             skiprows=skiprows,
             skipfooter=skipfooter,
             engine=engine,
-            usecols=pd_usecols,
-            header=pd_header
+            usecols=usecols,
+            header=header
         )
         return df
 
@@ -525,3 +525,20 @@ class mods_model:
 
     def predict_url(self, url):
         pass
+
+    def eval(self, df):
+        interpol = df
+        if self.get_interpolate():
+            interpol = df.interpolate()
+            interpol = interpol.values.astype('float32')
+            # print('interpolated:\n%s' % interpol)
+
+        trans = self.transform(interpol)
+        # print('transformed:\n%s' % transf)
+
+        norm = self.normalize(trans, self.get_scaler())
+        # print('normalized:\n%s' % norm)
+
+        tsg = self.get_tsg(norm)
+
+        return self.model.evaluate_generator(tsg)

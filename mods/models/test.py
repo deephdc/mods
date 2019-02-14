@@ -73,14 +73,11 @@ if __name__ == '__main__':
                             default=val['default'],
                             type=type(val['default']),  # may just put str
                             help=val['help'])
-        print(key, val)
-        print(type(val['default']))
 
     parser.add_argument('--file', type=str, default=cfg.data_test, help='File to do test on')
     parser.add_argument('--url', type=str, help='URL with the data to do prediction on')
     # parser.add_argument('--data', type=str, help='String with data to do prediction on')
 
     args = parser.parse_args()
-    print("Vars:", vars(args))
 
     main()

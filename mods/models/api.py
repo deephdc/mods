@@ -405,8 +405,8 @@ def train(train_args, **kwargs):
     # loading training data
     df_train = m.load_data(
         path=data,
-        pd_usecols=pd_usecols,
-        pd_header=pd_header
+        usecols=pd_usecols,
+        header=pd_header
     )
 
     m.train(
@@ -441,54 +441,74 @@ def test_file(*args, **kwargs):
     Function to make test on a local file
     """
 
+    # prepare data
     mdata.prepare_data()
 
-    message = 'Error reading input data'
+    message = {
+        'status': 'error',
+        'message': 'Error reading input data'
+    }
 
-    if args:
-        for arg in args:
-            message = {'status': 'ok', 'predictions': []}
-            model_name = yaml.safe_load(arg.model_name)
+    if not args:
+        return message
 
-            data = yaml.safe_load(arg.file)
+    messages = []
 
-            pd_usecols = [utl.parse_int_or_str(col) for col in yaml.safe_load(arg.pd_usecols).split(',')]
-            pd_skiprows = yaml.safe_load(arg.pd_skiprows)
-            pd_skipfooter = yaml.safe_load(arg.pd_skipfooter)
-            pd_header = yaml.safe_load(arg.pd_header)
+    for arg in args:
 
-            # support full paths for command line calls
-            models_dir = cfg.app_models
-            full_paths = kwargs['full_paths'] if 'full_paths' in kwargs else False
-            if full_paths:
-                if model_name == cfg.model_name:
-                    models_dir = cfg.app_models
-                else:
-                    models_dir = os.path.dirname(model_name)
-                    model_name = os.path.basename(model_name)
-                if data == cfg.data_test:
-                    data = os.path.join(cfg.app_data_test, data)
-            else:
-                data = os.path.join(cfg.app_data_test, data)
+        dir_models = cfg.app_models
+        model_name = yaml.safe_load(arg.model_name)
+        dir_data = cfg.app_data_test
+        data = yaml.safe_load(arg.file)
+        usecols = [utl.parse_int_or_str(col) for col in yaml.safe_load(arg.pd_usecols).split(',')]
+        skiprows = yaml.safe_load(arg.pd_skiprows)
+        skipfooter = yaml.safe_load(arg.pd_skipfooter)
+        header = yaml.safe_load(arg.pd_header)
 
-            m = get_model(
-                models_dir=models_dir,
-                model_name=model_name
-            )
+        # support full paths for command line calls
+        if 'full_paths' in kwargs and kwargs['full_paths']:
+            if model_name != cfg.model_name:
+                dir_models = os.path.dirname(model_name)
+                model_name = os.path.basename(model_name)
+            if data != cfg.data_test:
+                dir_data = os.path.dirname(data)
+                data = os.path.basename(data)
 
-            print(m.model)
+        # important!
+        backend.clear_session()
 
-            df_test = m.load_data(
-                path=data,
-                pd_usecols=pd_usecols,
-                pd_header=pd_header
-            )
+        # load model
+        file_model = os.path.join(
+            dir_models,
+            model_name
+        ) + ('.zip' if not model_name.lower().endswith('.zip') else '')
+        m = MODS.mods_model(model_name)
+        m.load(file_model)
 
-            test_tsg = m.get_tsg(df_test)
-            eval = m.model.evaluate_generator(test_tsg)
+        # load data
+        df_test = m.load_data(
+            path=os.path.join(dir_data, data),
+            usecols=usecols,
+            skiprows=skiprows,
+            skipfooter=skipfooter,
+            header=header
+        )
 
-            # Evaluate model on test_tsg
-            print('\nModel evaluation metrics=', m.metrics_names)
-            print(eval)
+        eval_result = m.eval(df_test)
 
-    return message
+        i = 0
+        result = {}
+        for metric in m.model.metrics_names:
+            result[metric] = eval_result[i]
+            i += 1
+
+        messages.append({
+            'status': 'ok',
+            'dir_models': dir_models,
+            'model_name': model_name,
+            'test_data': data,
+            'usecols': usecols,
+            'evaluation': result
+        })
+
+    return messages
