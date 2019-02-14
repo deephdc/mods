@@ -100,9 +100,9 @@ timezone = 3600
 
 
 # pandas defaults
-# pd_usecols = ['number_of_conn', 'sum_orig_kbytes']
+pd_usecols = ['number_of_conn', 'sum_orig_kbytes']
 # pd_usecols = ['number_of_conn']
-pd_usecols = ['sum_orig_kbytes']
+# pd_usecols = ['sum_orig_kbytes']
 pd_sep = '\t'
 pd_skiprows = 0
 pd_skipfooter = 0
