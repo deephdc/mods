@@ -80,3 +80,6 @@ target/
 
 # Mac OS-specific storage files
 .DS_Store
+
+# checkpoints
+checkpoints/*.hdf5
