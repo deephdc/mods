@@ -15,3 +15,5 @@ scikit-learn
 matplotlib
 seaborn
 deepaas
+pyyaml
+bat

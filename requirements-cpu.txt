@@ -16,3 +16,4 @@ matplotlib
 seaborn
 deepaas
 pyyaml
+bat

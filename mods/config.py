@@ -88,7 +88,7 @@ rate_RMSE = True
 
 
 # Auxiliary: plotting
-drawing = True
+plot = False
 fig_size_x = 15  # max 2^16 pixels = 650 inch
 fig_size_y = 4
 
@@ -101,6 +101,8 @@ timezone = 3600
 
 # pandas defaults
 pd_usecols = ['number_of_conn', 'sum_orig_kbytes']
+# pd_usecols = ['number_of_conn']
+# pd_usecols = ['sum_orig_kbytes']
 pd_sep = '\t'
 pd_skiprows = 0
 pd_skipfooter = 0
