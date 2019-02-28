@@ -1,0 +1,19 @@
+# external requirements
+Sphinx
+coverage
+awscli
+python-dotenv>=0.5.1
+pandas
+h5py
+tensorflow
+keras
+gevent
+requests
+numpy
+sympy
+scikit-learn
+matplotlib
+seaborn
+deepaas==0.2.0
+pyyaml
+
