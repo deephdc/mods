@@ -13,6 +13,6 @@ sympy
 scikit-learn
 matplotlib
 seaborn
-deepaas
+deepaas==0.2.0
 pyyaml
 
