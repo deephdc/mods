@@ -5,13 +5,14 @@ awscli
 python-dotenv>=0.5.1
 pandas
 h5py
-tensorflow
 keras
-gevent
+gevent==1.2.1
 requests
 numpy
+sympy
 scikit-learn
 matplotlib
 seaborn
 deepaas==0.2.0
 pyyaml
+
