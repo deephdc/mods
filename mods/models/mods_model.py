@@ -72,6 +72,7 @@ class mods_model:
     __ENGINE = 'engine'
     __USECOLS = 'usecols'
 
+
     def __init__(self, name):
         self.name = name
         self.config = None
@@ -80,54 +81,67 @@ class mods_model:
         self.sample_data = None
         self.config = self.__default_config()
 
+
     # saves the contents of the original file (e.g. file in a zip) into a temp file and runs func over it
     def __func_over_tempfile(self, orig_file, func, mode='wb', *args, **kwargs):
         # create temp file
         _, fname = tempfile.mkstemp()
+
         with open(fname, mode) as tf:
             # extract model to the temp file
             tf.write(orig_file.read())
+
             # call the func over the temp file
             result = func(fname, *args, **kwargs)
+
         # remove the temp file
         os.remove(fname)
         return result
+
 
     def __get_sample_data_cfg(self):
         if mods_model.__SAMPLE_DATA in self.config:
             return self.config[mods_model.__SAMPLE_DATA]
         return None
 
+
     def save(self, file):
         if not file.lower().endswith('.zip'):
             file += '.zip'
         print('Saving model: %s' % file)
+
         with ZipFile(file, mode='w') as zip:
             self.__save_config(zip, 'config.json')
             self.__save_model(zip, self.config[mods_model.__MODEL])
             self.__save_scaler(zip, self.config[mods_model.__SCALER])
             self.__save_sample_data(zip, self.__get_sample_data_cfg())
             zip.close()
+
         print('Model saved')
         return file
+
 
     def load(self, file):
         if not file.lower().endswith('.zip'):
             file += '.zip'
         print('Loading model: %s' % file)
+
         with ZipFile(file) as zip:
             self.__load_config(zip, 'config.json')
             self.__load_model(zip, self.config[mods_model.__MODEL])
             self.__load_scaler(zip, self.config[mods_model.__SCALER])
             self.__load_sample_data(zip, self.__get_sample_data_cfg())
             zip.close()
+
         print('Model loaded')
         self.__init()
+
 
     def __save_config(self, zip, file):
         with zip.open(file, mode='w') as f:
             data = json.dumps(self.config)
             f.write(bytes(data, 'utf-8'))
+
 
     def __load_config(self, zip, file):
         print('Loading model config')
@@ -135,6 +149,7 @@ class mods_model:
             data = f.read()
             self.config = json.loads(data.decode('utf-8'))
         print('Model config:\n%s' % json.dumps(self.config, indent=True))
+
 
     def __save_model(self, zip, model_config):
         print('Saving keras model')
@@ -144,11 +159,13 @@ class mods_model:
         os.remove(fname)
         print('Keras model saved')
 
+
     def __load_model(self, zip, model_config):
         print('Loading keras model')
         with zip.open(model_config[mods_model.__FILE]) as f:
             self.model = self.__func_over_tempfile(f, keras.models.load_model)
         print('Keras model loaded')
+
 
     def __save_scaler(self, zip, scaler_config):
         print('Saving scaler')
@@ -158,19 +175,23 @@ class mods_model:
         os.remove(fname)
         print('Scaler saved')
 
+
     def __load_scaler(self, zip, scaler_config):
         print('Loading scaler')
         with zip.open(scaler_config[mods_model.__FILE]) as f:
             self.__scaler = joblib.load(f)
         print('Scaler loaded')
 
+
     def __save_sample_data(self, zip, sample_data_config):
         if sample_data_config is None:
             return
+
         if self.sample_data is None:
             print('No sample data was set')
             return
         print('Saving sample data')
+
         with zip.open(sample_data_config[mods_model.__FILE], mode='w') as f:
             self.sample_data.to_csv(
                 io.TextIOWrapper(f),
@@ -182,10 +203,12 @@ class mods_model:
             )
         print('Sample data saved:\n%s' % self.sample_data)
 
+
     def __load_sample_data(self, zip, sample_data_config):
         if sample_data_config is None:
             return
         print('Loading sample data')
+
         try:
             with zip.open(sample_data_config[mods_model.__FILE]) as f:
                 self.sample_data = pd.read_csv(
@@ -199,6 +222,7 @@ class mods_model:
             print('Sample data loaded:\n%s' % self.sample_data)
         except Exception as e:
             print('Sample data not loaded: %s' % e)
+
 
     def load_data(
             self,
@@ -222,6 +246,7 @@ class mods_model:
         )
         return df
 
+
     def __default_config(self):
         return {
             mods_model.__MODEL: {
@@ -240,67 +265,88 @@ class mods_model:
             }
         }
 
+
     def cfg_model(self):
         return self.config[mods_model.__MODEL]
+
 
     def set_multivariate(self, multivariate):
         self.cfg_model()[mods_model.__MULTIVARIATE] = multivariate
 
+
     def get_multivariate(self):
         return self.cfg_model()[mods_model.__MULTIVARIATE]
+
 
     def set_sequence_len(self, sequence_len):
         self.cfg_model()[mods_model.__SEQUENCE_LEN] = sequence_len
 
+
     def get_sequence_len(self):
         return self.cfg_model()[mods_model.__SEQUENCE_LEN]
+
 
     def set_model_delta(self, model_delta):
         self.cfg_model()[mods_model.__MODEL_DELTA] = model_delta
 
+
     def isdelta(self):
         return self.cfg_model()[mods_model.__MODEL_DELTA]
+
 
     def set_interpolate(self, interpolate):
         self.cfg_model()[mods_model.__INTERPOLATE] = interpolate
 
+
     def get_interpolate(self):
         return self.cfg_model()[mods_model.__INTERPOLATE]
+
 
     def set_model_type(self, model_type):
         self.cfg_model()[mods_model.__MODEL_TYPE] = model_type
 
+
     def get_model_type(self):
         return self.cfg_model()[mods_model.__MODEL_TYPE]
+
 
     def set_epochs(self, epochs):
         self.cfg_model()[mods_model.__EPOCHS] = epochs
 
+
     def get_epochs(self):
         return self.cfg_model()[mods_model.__EPOCHS]
+
 
     def set_epochs_patience(self, epochs_patience):
         self.cfg_model()[mods_model.__EPOCHS_PATIENCE] = epochs_patience
 
+
     def get_epochs_patience(self):
         return self.cfg_model()[mods_model.__EPOCHS_PATIENCE]
+
 
     def set_blocks(self, blocks):
         self.cfg_model()[mods_model.__BLOCKS] = blocks
 
+
     def get_blocks(self):
         return self.cfg_model()[mods_model.__BLOCKS]
+
 
     def get_scaler(self):
         if not self.__scaler:
             self.__scaler = MinMaxScaler(feature_range=(0, 1))
         return self.__scaler
 
+
     def set_scaler(self, scaler):
         self.__scaler = scaler
 
+
     def set_sample_data(self, df):
         self.sample_data = df
+
 
     def train(
             self,
@@ -318,30 +364,37 @@ class mods_model:
             multivariate = self.get_multivariate()
         else:
             self.set_multivariate(multivariate)
+
         if sequence_len is None:
             sequence_len = self.get_sequence_len()
         else:
             self.set_sequence_len(sequence_len)
+
         if model_delta is None:
             model_delta = self.isdelta()
         else:
             self.set_model_delta(model_delta)
+
         if interpolate is None:
             interpolate = self.get_interpolate()
         else:
             self.set_interpolate(interpolate)
+
         if model_type is None:
             model_type = self.get_model_type()
         else:
             self.set_model_type(model_type)
+
         if num_epochs is None:
             num_epochs = self.get_epochs()
         else:
             self.set_epochs(num_epochs)
+
         if epochs_patience is None:
             epochs_patience = self.get_epochs_patience()
         else:
             self.set_epochs_patience(epochs_patience)
+
         if blocks is None:
             blocks = self.get_blocks()
         else:
@@ -384,6 +437,7 @@ class mods_model:
             optimizer='adam',  # 'adagrad', 'rmsprop'
             metrics=['mse', 'mae', 'mape']  # 'cosine'
         )
+
         # Checkpointing and earlystopping
         filepath = cfg.app_checkpoints + self.name + '-{epoch:02d}.hdf5'
         checkpoints = ModelCheckpoint(
@@ -393,11 +447,13 @@ class mods_model:
             mode=max,
             verbose=1
         )
+
         earlystops = EarlyStopping(
             monitor='loss',
             patience=epochs_patience,
             verbose=1
         )
+
         callbacks_list = [checkpoints, earlystops]
 
         # Replace None by 0
@@ -423,8 +479,10 @@ class mods_model:
             callbacks=callbacks_list
         )
 
+
     def plot(self, *args):
         print('this method is not yet implemented')
+
 
     def __init(self):
         print('Initializing model')
@@ -432,11 +490,13 @@ class mods_model:
             self.predict(self.sample_data)
         print('Model initialized')
 
+
     # First order differential for numpy array      y' = d(y)/d(t) = f(y,t)
     # be carefull                                   len(dt) == len(data)-1
     # e.g., [5,2,9,1] --> [2-5,9-2,1-9] == [-3,7,-8]
     def delta(self, df):
         return df[1:] - df[:-1]
+
 
     def transform(self, df):
         if self.isdelta():
@@ -444,6 +504,7 @@ class mods_model:
         else:
             # bucketing, taxo, fuzzy
             return df
+
 
     def inverse_transform(self, original, transformed, prediction):
         if self.isdelta():
@@ -454,15 +515,18 @@ class mods_model:
         else:
             return prediction
 
+
     # normalizes data
     def normalize(self, df, scaler):
         # Scale all metrics but each separately
         df = scaler.fit_transform(df)
         return df
 
+
     # inverse method to @normalize
     def inverse_normalize(self, df):
         return self.get_scaler().inverse_transform(df)
+
 
     # returns time series generator
     def get_tsg(self, df):
@@ -473,8 +537,8 @@ class mods_model:
                                    stride=1,
                                    batch_size=1)
 
-    def predict(self, df):
 
+    def predict(self, df):
         interpol = df
         if self.get_interpolate():
             interpol = df.interpolate()
@@ -499,18 +563,21 @@ class mods_model:
 
         return invtrans
 
+
     # This function wraps pandas._read_csv(), reads the csv data and calls predict() on them
     def predict_file_or_buffer(self, *args, **kwargs):
         if kwargs is not None:
             kwargs = {k: v for k, v in kwargs.items() if k in [
                 'usecols', 'sep', 'skiprows', 'skipfooter', 'engine', 'header'
             ]}
+
             if 'usecols' in kwargs:
                 if isinstance(kwargs['usecols'], str):
                     kwargs['usecols'] = [
                         utl.parse_int_or_str(col)
                         for col in kwargs['usecols'].split(',')
                     ]
+
             if 'header' in kwargs:
                 if isinstance(kwargs['header'], str):
                     kwargs['header'] = [
@@ -520,11 +587,14 @@ class mods_model:
                     if len(kwargs['header']) == 1:
                         kwargs['header'] = kwargs['header'][0]
             # print('HEADER: %s' % kwargs['pd_header'])
+
         df = pd.read_csv(*args, **kwargs)
         return self.predict(df)
 
+
     def predict_url(self, url):
         pass
+
 
     def eval(self, df):
         interpol = df

@@ -18,8 +18,8 @@ Created on Mon Oct 15 10:14:37 2018
 
 Train models with first order differential to monitor changes
 
-@author: giang nguyen
 @author: stefan dlugolinsky
+@author: giang nguyen
 """
 
 import io
