@@ -1,6 +1,6 @@
 #!/usr/bin/groovy
 
-@Library(['github.com/indigo-dc/jenkins-pipeline-library']) _
+@Library(['github.com/indigo-dc/jenkins-pipeline-library@1.2.3']) _
 
 def job_result_url = ''
 
@@ -14,6 +14,7 @@ pipeline {
         author_email = "stefan.dlugolinsky@savba.sk"
         app_name = "mods"
         job_location = "Pipeline-as-code/DEEP-OC-org/DEEP-OC-mods/master"
+        job_location_test = "Pipeline-as-code/DEEP-OC-org/DEEP-OC-mods/test"
     }
 
     stages {
@@ -59,10 +60,21 @@ pipeline {
             }
         }
 
-        stage("Re-build DEEP-OC-mods Docker image") {
+        stage("Re-build DEEP-OC-mods Docker images") {
+            when {
+                anyOf {
+                   branch 'master'
+                   branch 'test'
+                   buildingTag()
+               }
+            }
             steps {
                 script {
-                    def job_result = JenkinsBuildJob("${env.job_location}")
+                    job_to_build = "${env.job_location}"
+                    if (env.BRANCH_NAME == 'test') {
+                       job_to_build = "${env.job_location_test}"
+                    }
+                    def job_result = JenkinsBuildJob(job_to_build)
                     job_result_url = job_result.absoluteUrl
                 }
             }
@@ -94,6 +106,7 @@ Check console output at:\n\n
 *  ${env.BUILD_URL}/console\n\n
 and resultant Docker image rebuilding job at (may be empty in case of FAILURE):\n\n
 *  ${job_result_url}\n\n
+
 DEEP Jenkins CI service"""
 
                 EmailSend(subject, body, "${author_email}")
