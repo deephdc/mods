@@ -133,6 +133,7 @@ data_test = 'w1h-s10m.tsv'
 
 
 # common defaults
+model_name_all = list_dir(app_models, '*.zip')
 model_name = 'mods-20180414-20181015-w1h-s10m'
 
 
@@ -236,13 +237,9 @@ def set_predict_args():
     predict_args = {
         'model_name': {
             'default': model_name,
+            'choices': model_name_all,
             'help': 'Name of the model used for prediction',
             'type': str,
-            'required': False
-        },
-        'data': {
-            'default': data_predict,
-            'help': 'Data to predict on',
             'required': False
         }
     }
