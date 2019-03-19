@@ -199,11 +199,13 @@ def set_train_args():
         },
         'model_delta': {
             'default': model_delta,
+            'choices': [True, False],
             'help': '',
             'required': False
         },
         'interpolate': {
             'default': interpolate,
+            'choices': [True, False],
             'help': '',
             'required': False
         },

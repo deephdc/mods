@@ -468,6 +468,8 @@ class mods_model:
         df_train = self.transform(df_train)
         df_train = self.normalize(df_train, self.get_scaler())
 
+        print('train - scaler: %s' % self.__scaler)
+
         tsg_train = self.get_tsg(df_train)
 
         # TODO: remove later
@@ -507,25 +509,43 @@ class mods_model:
 
 
     def inverse_transform(self, original, transformed, prediction):
+        print('inverse_transform:\n\toriginal[0:9]=\n%s\n\ttransformed[0:9]=\n%s\n\tprediction[0:9]=\n%s' % (original[0:9], transformed[0:9], prediction[0:9]))
         if self.isdelta():
             beg = self.get_sequence_len()
             end = beg + len(prediction)
+            print('inverse_transform - beg, end = %s, %s' % (beg, end))
             y = original[beg + 1:end + 1]
+            print('inverse_transform - y[0:9] = %s' % y[0:9])
             return y - transformed[beg:end] + prediction
         else:
             return prediction
 
 
     # normalizes data
-    def normalize(self, df, scaler):
+    def normalize(self, df, scaler, fit=True):
         # Scale all metrics but each separately
-        df = scaler.fit_transform(df)
+        df = scaler.fit_transform(df) if fit else scaler.transform(df)
+        print('normalize - scaler.get_params(): %s\n\tscaler.data_min_=%s\n\tscaler.data_max_=%s\n\tscaler.data_range_=%s'
+              % (
+                  scaler.get_params(),
+                  scaler.data_min_,
+                  scaler.data_max_,
+                  scaler.data_range_,
+              ))
         return df
 
 
     # inverse method to @normalize
     def inverse_normalize(self, df):
-        return self.get_scaler().inverse_transform(df)
+        scaler = self.get_scaler()
+        print('inverse_normalize - scaler.get_params(): %s\n\tscaler.data_min_=%s\n\tscaler.data_max_=%s\n\tscaler.data_range_=%s'
+              % (
+                  scaler.get_params(),
+                  scaler.data_min_,
+                  scaler.data_max_,
+                  scaler.data_range_,
+              ))
+        return scaler.inverse_transform(df)
 
 
     # returns time series generator
@@ -539,27 +559,28 @@ class mods_model:
 
 
     def predict(self, df):
-        interpol = df
+        print('df:\n%s' % df[0:9])
+        interpol = df.copy()
         if self.get_interpolate():
-            interpol = df.interpolate()
+            interpol = interpol.interpolate()
             interpol = interpol.values.astype('float32')
-            # print('interpolated:\n%s' % interpol)
+            print('interpolated:\n%s' % interpol[0:9])
 
         trans = self.transform(interpol)
-        # print('transformed:\n%s' % transf)
+        print('transformed:\n%s' % trans[0:9])
 
-        norm = self.normalize(trans, self.get_scaler())
-        # print('normalized:\n%s' % norm)
+        norm = self.normalize(trans, self.get_scaler(), fit=False)
+        print('normalized:\n%s' % norm[0:9])
 
         tsg = self.get_tsg(norm)
         pred = self.model.predict_generator(tsg)
-        # print('prediction:\n%s' % pred)
+        print('prediction:\n%s' % pred[0:9])
 
         denorm = self.inverse_normalize(pred)
-        # print('denormalized:\n%s' % denorm)
+        print('denormalized:\n%s' % denorm[0:9])
 
         invtrans = self.inverse_transform(interpol, trans, denorm)
-        # print('inverse transformed:\n%s' % invtrans)
+        print('inverse transformed:\n%s' % invtrans[0:9])
 
         return invtrans
 
