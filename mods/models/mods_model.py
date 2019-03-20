@@ -497,6 +497,10 @@ class mods_model:
     # be carefull                                   len(dt) == len(data)-1
     # e.g., [5,2,9,1] --> [2-5,9-2,1-9] == [-3,7,-8]
     def delta(self, df):
+        if isinstance(df, pd.DataFrame):
+            # pandas data frame
+            return df.diff(periods=1, axis=0)[1:]
+        # numpy ndarray
         return df[1:] - df[:-1]
 
 
@@ -508,43 +512,30 @@ class mods_model:
             return df
 
 
-    def inverse_transform(self, original, transformed, prediction):
-        print('inverse_transform:\n\toriginal[0:9]=\n%s\n\ttransformed[0:9]=\n%s\n\tprediction[0:9]=\n%s' % (original[0:9], transformed[0:9], prediction[0:9]))
+    def inverse_transform(self, original, pred_denorm):
         if self.isdelta():
-            beg = self.get_sequence_len()
-            end = beg + len(prediction)
-            print('inverse_transform - beg, end = %s, %s' % (beg, end))
-            y = original[beg + 1:end + 1]
-            print('inverse_transform - y[0:9] = %s' % y[0:9])
-            return y - transformed[beg:end] + prediction
+            seql = self.get_sequence_len()
+            y = original[seql:-1]
+            save_df(y, self.name, 'y.tsv')
+            d = pred_denorm
+            save_df(d, self.name, 'd.tsv')
+            return y - d
         else:
-            return prediction
+            return pred_denorm
 
 
     # normalizes data
     def normalize(self, df, scaler, fit=True):
         # Scale all metrics but each separately
         df = scaler.fit_transform(df) if fit else scaler.transform(df)
-        print('normalize - scaler.get_params(): %s\n\tscaler.data_min_=%s\n\tscaler.data_max_=%s\n\tscaler.data_range_=%s'
-              % (
-                  scaler.get_params(),
-                  scaler.data_min_,
-                  scaler.data_max_,
-                  scaler.data_range_,
-              ))
+        dbg_scaler(scaler, 'normalize')
         return df
 
 
     # inverse method to @normalize
     def inverse_normalize(self, df):
         scaler = self.get_scaler()
-        print('inverse_normalize - scaler.get_params(): %s\n\tscaler.data_min_=%s\n\tscaler.data_max_=%s\n\tscaler.data_range_=%s'
-              % (
-                  scaler.get_params(),
-                  scaler.data_min_,
-                  scaler.data_max_,
-                  scaler.data_range_,
-              ))
+        dbg_scaler(scaler, 'inverse_normalize')
         return scaler.inverse_transform(df)
 
 
@@ -559,30 +550,39 @@ class mods_model:
 
 
     def predict(self, df):
-        print('df:\n%s' % df[0:9])
-        interpol = df.copy()
+        print('df:\n%s' % df2tsv(df[0:9]))
+        save_df(df, self.name, 'original.tsv')
         if self.get_interpolate():
-            interpol = interpol.interpolate()
-            interpol = interpol.values.astype('float32')
-            print('interpolated:\n%s' % interpol[0:9])
+            df = df.interpolate()
+            print('interpolated:\n%s' % df2tsv(df[0:9]))
+            save_df(df, self.name, 'interpolated.tsv')
 
-        trans = self.transform(interpol)
-        print('transformed:\n%s' % trans[0:9])
+        trans = self.transform(df)
+        print('transformed:\n%s' % df2tsv(trans[0:9]))
+        save_df(trans, self.name, 'transformed.tsv')
 
         norm = self.normalize(trans, self.get_scaler(), fit=False)
-        print('normalized:\n%s' % norm[0:9])
+        save_df(norm, self.name, 'normalized.tsv')
+        print('normalized:\n%s' % df2tsv(norm[0:9]))
 
         tsg = self.get_tsg(norm)
         pred = self.model.predict_generator(tsg)
-        print('prediction:\n%s' % pred[0:9])
+        print('prediction:\n%s' % df2tsv(pred[0:9]))
+        save_df(pred, self.name, 'prediction.tsv')
 
-        denorm = self.inverse_normalize(pred)
-        print('denormalized:\n%s' % denorm[0:9])
+        pred_denorm = self.inverse_normalize(pred)
+        print('denormalized:\n%s' % df2tsv(pred_denorm[0:9]))
+        save_df(pred_denorm, self.name, 'denormalized.tsv')
+        dbg_scaler(self.get_scaler(), 'predict')
 
-        invtrans = self.inverse_transform(interpol, trans, denorm)
-        print('inverse transformed:\n%s' % invtrans[0:9])
+        pred_invtrans = self.inverse_transform(df, pred_denorm)
+        print('inverse transformed:\n%s' % df2tsv(pred_invtrans[0:9]))
+        save_df(pred_invtrans, self.name, 'invtrans.tsv')
 
-        return invtrans
+        if isinstance(pred_invtrans, pd.DataFrame):
+            pred_invtrans = pred_invtrans.values
+
+        return pred_invtrans
 
 
     # This function wraps pandas._read_csv(), reads the csv data and calls predict() on them
@@ -633,3 +633,30 @@ class mods_model:
         tsg = self.get_tsg(norm)
 
         return self.model.evaluate_generator(tsg)
+
+def dbg_scaler(scaler, msg):
+    print('%s - scaler.get_params(): %s\n\tscaler.data_min_=%s\n\tscaler.data_max_=%s\n\tscaler.data_range_=%s'
+          % (
+              msg,
+              scaler.get_params(),
+              scaler.data_min_,
+              scaler.data_max_,
+              scaler.data_range_
+          ))
+
+def df2tsv(df):
+    if isinstance(df, pd.DataFrame):
+        df = df.values
+    ret = ''
+    for row in df:
+        for col in row:
+            ret += str(col) + '\t'
+        ret += '\n'
+    return ret
+
+DEBUG=False
+def save_df(df, modelname, filename):
+    if DEBUG:
+        with open(os.path.join(cfg.app_data, modelname, filename), mode='w') as f:
+            f.write(df2tsv(df))
+            f.close()
