@@ -20,6 +20,10 @@ Created on Mon Jan 11 13:34:37 2019
 @author: stefan dlugolinsky
 """
 
+DEBUG_SAVE_DFS=True
+DEBUG_PRINT_DFS=True
+DEBUG_TSG=True
+
 import io
 import json
 import os
@@ -464,11 +468,11 @@ class mods_model:
             df_train.interpolate(inplace=True)
 
         # Data transformation
-        df_train = df_train.values.astype('float32')
+        # df_train = df_train.values.astype('float32')
         df_train = self.transform(df_train)
         df_train = self.normalize(df_train, self.get_scaler())
 
-        print('train - scaler: %s' % self.__scaler)
+        dbg_scaler(self.__scaler, 'train - scaler')
 
         tsg_train = self.get_tsg(df_train)
 
@@ -516,9 +520,9 @@ class mods_model:
         if self.isdelta():
             seql = self.get_sequence_len()
             y = original[seql:-1]
-            save_df(y, self.name, 'y.tsv')
+            dbg_df(y, self.name, 'y.tsv')
             d = pred_denorm
-            save_df(d, self.name, 'd.tsv')
+            dbg_df(d, self.name, 'd.tsv')
             return y - d
         else:
             return pred_denorm
@@ -550,34 +554,30 @@ class mods_model:
 
 
     def predict(self, df):
-        print('df:\n%s' % df2tsv(df[0:9]))
-        save_df(df, self.name, 'original.tsv')
+
+        dbg_df(df, self.name, 'original')
+
         if self.get_interpolate():
             df = df.interpolate()
-            print('interpolated:\n%s' % df2tsv(df[0:9]))
-            save_df(df, self.name, 'interpolated.tsv')
+            dbg_df(df, self.name, 'interpolated')
 
         trans = self.transform(df)
-        print('transformed:\n%s' % df2tsv(trans[0:9]))
-        save_df(trans, self.name, 'transformed.tsv')
+        dbg_df(trans, self.name, 'transformed')
 
         norm = self.normalize(trans, self.get_scaler(), fit=False)
-        save_df(norm, self.name, 'normalized.tsv')
-        print('normalized:\n%s' % df2tsv(norm[0:9]))
+        dbg_df(norm, self.name, 'normalized')
 
         tsg = self.get_tsg(norm)
+        dbg_tsg(tsg, 'norm_tsg')
+
         pred = self.model.predict_generator(tsg)
-        print('prediction:\n%s' % df2tsv(pred[0:9]))
-        save_df(pred, self.name, 'prediction.tsv')
+        dbg_df(pred, self.name, 'prediction')
 
         pred_denorm = self.inverse_normalize(pred)
-        print('denormalized:\n%s' % df2tsv(pred_denorm[0:9]))
-        save_df(pred_denorm, self.name, 'denormalized.tsv')
-        dbg_scaler(self.get_scaler(), 'predict')
+        dbg_df(pred_denorm, self.name, 'pred_denormalized')
 
         pred_invtrans = self.inverse_transform(df, pred_denorm)
-        print('inverse transformed:\n%s' % df2tsv(pred_invtrans[0:9]))
-        save_df(pred_invtrans, self.name, 'invtrans.tsv')
+        dbg_df(pred_invtrans, self.name, 'pred_inv_trans')
 
         if isinstance(pred_invtrans, pd.DataFrame):
             pred_invtrans = pred_invtrans.values
@@ -654,9 +654,29 @@ def df2tsv(df):
         ret += '\n'
     return ret
 
-DEBUG=False
 def save_df(df, modelname, filename):
-    if DEBUG:
-        with open(os.path.join(cfg.app_data, modelname, filename), mode='w') as f:
+    if DEBUG_SAVE_DFS:
+        dir = os.path.join(cfg.app_data, modelname[:-4] if modelname.lower().endswith('.zip') else modelname)
+        if not os.path.isdir(dir):
+            if os.path.isfile(dir):
+                raise NotADirectoryError(dir)
+            os.mkdir(dir)
+        with open(os.path.join(dir, filename), mode='w') as f:
             f.write(df2tsv(df))
             f.close()
+
+def print_df(df, name, min=0, max=9):
+    print('%s:\n%s' % (name, df2tsv(df[min:max])))
+
+def dbg_df(df, model, name):
+    if DEBUG_PRINT_DFS:
+        print_df(df, name)
+    if DEBUG_SAVE_DFS:
+        save_df(df, model, name + '.tsv')
+
+def dbg_tsg(tsg, msg):
+    if DEBUG_TSG:
+        print(msg)
+        for i in range(len(tsg)):
+            x, y = tsg[i]
+            print('%s => %s' % (x, y))
