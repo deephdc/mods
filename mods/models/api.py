@@ -18,8 +18,8 @@ Created on Mon Oct 15 10:14:37 2018
 
 Train models with first order differential to monitor changes
 
-@author: giang nguyen
 @author: stefan dlugolinsky
+@author: giang nguyen
 """
 
 import io
@@ -79,6 +79,9 @@ def predict_file(*args, **kwargs):
     Function to make prediction on a local file
     """
 
+    print('predict_file - args: %s' % args)
+    print('predict_file - kwargs: %s' % kwargs)
+
     mdata.prepare_data()
 
     message = 'Error reading input data'
@@ -133,6 +136,9 @@ def predict_data(*args, **kwargs):
     Function to make prediction on an uploaded file
     """
 
+    print('predict_data - args: %s' % str(args))
+    print('predict_data - kwargs: %s' % str(kwargs))
+
     mdata.prepare_data()
 
     message = 'Error reading input data'
@@ -142,7 +148,7 @@ def predict_data(*args, **kwargs):
             message = {'status': 'ok', 'predictions': []}
 
             try:
-                model_name = yaml.safe_load(arg.model_name)
+                model_name = yaml.safe_load(kwargs['model_name'])
             except Exception:
                 model_name = cfg.model_name
 
@@ -182,15 +188,17 @@ def predict_data(*args, **kwargs):
     return message
 
 
-def predict_url(*args):
+def predict_url(*args, **kwargs):
     """
     Function to make prediction on a local file
     """
+    print('predict_url - args: %s' % args)
+    print('predict_url - kwargs: %s' % kwargs)
     message = 'Not implemented in the model (predict_url)'
     return message
 
 
-def predict_stream(*args):
+def predict_stream(*args, **kwargs):
     """
     Function to make prediction on a stream
 
@@ -216,7 +224,8 @@ def predict_stream(*args):
                 }
             }
     """
-    print('args: %s' % args)
+    print('predict_stream - args: %s' % args)
+    print('predict_stream - kwargs: %s' % kwargs)
 
     params = json.loads(args[0])
 

@@ -20,6 +20,11 @@ Created on Mon Jan 11 13:34:37 2019
 @author: stefan dlugolinsky
 """
 
+DEBUG=False
+DEBUG_SAVE_DFS = DEBUG
+DEBUG_PRINT_DFS = DEBUG
+DEBUG_TSG = DEBUG
+
 import io
 import json
 import os
@@ -27,6 +32,7 @@ import tempfile
 from zipfile import ZipFile
 
 import keras
+import numpy as np
 import pandas as pd
 from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
@@ -84,11 +90,14 @@ class mods_model:
     def __func_over_tempfile(self, orig_file, func, mode='wb', *args, **kwargs):
         # create temp file
         _, fname = tempfile.mkstemp()
+
         with open(fname, mode) as tf:
             # extract model to the temp file
             tf.write(orig_file.read())
+
             # call the func over the temp file
             result = func(fname, *args, **kwargs)
+
         # remove the temp file
         os.remove(fname)
         return result
@@ -102,12 +111,14 @@ class mods_model:
         if not file.lower().endswith('.zip'):
             file += '.zip'
         print('Saving model: %s' % file)
+
         with ZipFile(file, mode='w') as zip:
             self.__save_config(zip, 'config.json')
             self.__save_model(zip, self.config[mods_model.__MODEL])
             self.__save_scaler(zip, self.config[mods_model.__SCALER])
             self.__save_sample_data(zip, self.__get_sample_data_cfg())
             zip.close()
+
         print('Model saved')
         return file
 
@@ -115,12 +126,14 @@ class mods_model:
         if not file.lower().endswith('.zip'):
             file += '.zip'
         print('Loading model: %s' % file)
+
         with ZipFile(file) as zip:
             self.__load_config(zip, 'config.json')
             self.__load_model(zip, self.config[mods_model.__MODEL])
             self.__load_scaler(zip, self.config[mods_model.__SCALER])
             self.__load_sample_data(zip, self.__get_sample_data_cfg())
             zip.close()
+
         print('Model loaded')
         self.__init()
 
@@ -167,10 +180,12 @@ class mods_model:
     def __save_sample_data(self, zip, sample_data_config):
         if sample_data_config is None:
             return
+
         if self.sample_data is None:
             print('No sample data was set')
             return
         print('Saving sample data')
+
         with zip.open(sample_data_config[mods_model.__FILE], mode='w') as f:
             self.sample_data.to_csv(
                 io.TextIOWrapper(f),
@@ -186,6 +201,7 @@ class mods_model:
         if sample_data_config is None:
             return
         print('Loading sample data')
+
         try:
             with zip.open(sample_data_config[mods_model.__FILE]) as f:
                 self.sample_data = pd.read_csv(
@@ -318,30 +334,37 @@ class mods_model:
             multivariate = self.get_multivariate()
         else:
             self.set_multivariate(multivariate)
+
         if sequence_len is None:
             sequence_len = self.get_sequence_len()
         else:
             self.set_sequence_len(sequence_len)
+
         if model_delta is None:
             model_delta = self.isdelta()
         else:
             self.set_model_delta(model_delta)
+
         if interpolate is None:
             interpolate = self.get_interpolate()
         else:
             self.set_interpolate(interpolate)
+
         if model_type is None:
             model_type = self.get_model_type()
         else:
             self.set_model_type(model_type)
+
         if num_epochs is None:
             num_epochs = self.get_epochs()
         else:
             self.set_epochs(num_epochs)
+
         if epochs_patience is None:
             epochs_patience = self.get_epochs_patience()
         else:
             self.set_epochs_patience(epochs_patience)
+
         if blocks is None:
             blocks = self.get_blocks()
         else:
@@ -384,6 +407,7 @@ class mods_model:
             optimizer='adam',  # 'adagrad', 'rmsprop'
             metrics=['mse', 'mae', 'mape']  # 'cosine'
         )
+
         # Checkpointing and earlystopping
         filepath = cfg.app_checkpoints + self.name + '-{epoch:02d}.hdf5'
         checkpoints = ModelCheckpoint(
@@ -393,11 +417,13 @@ class mods_model:
             mode=max,
             verbose=1
         )
+
         earlystops = EarlyStopping(
             monitor='loss',
             patience=epochs_patience,
             verbose=1
         )
+
         callbacks_list = [checkpoints, earlystops]
 
         # Replace None by 0
@@ -408,9 +434,11 @@ class mods_model:
             df_train.interpolate(inplace=True)
 
         # Data transformation
-        df_train = df_train.values.astype('float32')
+        # df_train = df_train.values.astype('float32')
         df_train = self.transform(df_train)
         df_train = self.normalize(df_train, self.get_scaler())
+
+        dbg_scaler(self.__scaler, 'train - scaler')
 
         tsg_train = self.get_tsg(df_train)
 
@@ -436,6 +464,10 @@ class mods_model:
     # be carefull                                   len(dt) == len(data)-1
     # e.g., [5,2,9,1] --> [2-5,9-2,1-9] == [-3,7,-8]
     def delta(self, df):
+        if isinstance(df, pd.DataFrame):
+            # pandas data frame
+            return df.diff(periods=1, axis=0)[1:]
+        # numpy ndarray
         return df[1:] - df[:-1]
 
     def transform(self, df):
@@ -445,24 +477,29 @@ class mods_model:
             # bucketing, taxo, fuzzy
             return df
 
-    def inverse_transform(self, original, transformed, prediction):
+    def inverse_transform(self, original, pred_denorm):
         if self.isdelta():
-            beg = self.get_sequence_len()
-            end = beg + len(prediction)
-            y = original[beg + 1:end + 1]
-            return y - transformed[beg:end] + prediction
+            seql = self.get_sequence_len()
+            y = original[seql:]
+            dbg_df(y, self.name, 'y.tsv')
+            d = pred_denorm
+            dbg_df(d, self.name, 'd.tsv')
+            return y + d
         else:
-            return prediction
+            return pred_denorm
 
-    # normalizes data
-    def normalize(self, df, scaler):
+    # normalizes data, returns np.ndarray
+    def normalize(self, df, scaler, fit=True):
         # Scale all metrics but each separately
-        df = scaler.fit_transform(df)
+        df = scaler.fit_transform(df) if fit else scaler.transform(df)
+        dbg_scaler(scaler, 'normalize')
         return df
 
     # inverse method to @normalize
     def inverse_normalize(self, df):
-        return self.get_scaler().inverse_transform(df)
+        scaler = self.get_scaler()
+        dbg_scaler(scaler, 'inverse_normalize')
+        return scaler.inverse_transform(df)
 
     # returns time series generator
     def get_tsg(self, df):
@@ -475,29 +512,41 @@ class mods_model:
 
     def predict(self, df):
 
-        interpol = df
+        dbg_df(df, self.name, 'original')
+
         if self.get_interpolate():
-            interpol = df.interpolate()
-            interpol = interpol.values.astype('float32')
-            # print('interpolated:\n%s' % interpol)
+            df = df.interpolate()
+            dbg_df(df, self.name, 'interpolated')
 
-        trans = self.transform(interpol)
-        # print('transformed:\n%s' % transf)
+        trans = self.transform(df)
+        dbg_df(trans, self.name, 'transformed')
 
-        norm = self.normalize(trans, self.get_scaler())
-        # print('normalized:\n%s' % norm)
+        norm = self.normalize(trans, self.get_scaler(), fit=False)
+        dbg_df(norm, self.name, 'normalized')
+
+        # append dummy row at the end of the norm np.ndarray
+        # in order to tsg generate last sample for prediction
+        # of the future state
+        dummy = [np.nan] * self.get_multivariate()
+        norm = np.append(norm, [dummy], axis=0)
+        dbg_df(norm, self.name, 'normalized+nan')
 
         tsg = self.get_tsg(norm)
+        dbg_tsg(tsg, 'norm_tsg')
+
         pred = self.model.predict_generator(tsg)
-        # print('prediction:\n%s' % pred)
+        dbg_df(pred, self.name, 'prediction')
 
-        denorm = self.inverse_normalize(pred)
-        # print('denormalized:\n%s' % denorm)
+        pred_denorm = self.inverse_normalize(pred)
+        dbg_df(pred_denorm, self.name, 'pred_denormalized')
 
-        invtrans = self.inverse_transform(interpol, trans, denorm)
-        # print('inverse transformed:\n%s' % invtrans)
+        pred_invtrans = self.inverse_transform(df, pred_denorm)
+        dbg_df(pred_invtrans, self.name, 'pred_inv_trans')
 
-        return invtrans
+        if isinstance(pred_invtrans, pd.DataFrame):
+            pred_invtrans = pred_invtrans.values
+
+        return pred_invtrans
 
     # This function wraps pandas._read_csv(), reads the csv data and calls predict() on them
     def predict_file_or_buffer(self, *args, **kwargs):
@@ -505,12 +554,14 @@ class mods_model:
             kwargs = {k: v for k, v in kwargs.items() if k in [
                 'usecols', 'sep', 'skiprows', 'skipfooter', 'engine', 'header'
             ]}
+
             if 'usecols' in kwargs:
                 if isinstance(kwargs['usecols'], str):
                     kwargs['usecols'] = [
                         utl.parse_int_or_str(col)
                         for col in kwargs['usecols'].split(',')
                     ]
+
             if 'header' in kwargs:
                 if isinstance(kwargs['header'], str):
                     kwargs['header'] = [
@@ -520,6 +571,7 @@ class mods_model:
                     if len(kwargs['header']) == 1:
                         kwargs['header'] = kwargs['header'][0]
             # print('HEADER: %s' % kwargs['pd_header'])
+
         df = pd.read_csv(*args, **kwargs)
         return self.predict(df)
 
@@ -542,3 +594,56 @@ class mods_model:
         tsg = self.get_tsg(norm)
 
         return self.model.evaluate_generator(tsg)
+
+
+def dbg_scaler(scaler, msg):
+    print('%s - scaler.get_params(): %s\n\tscaler.data_min_=%s\n\tscaler.data_max_=%s\n\tscaler.data_range_=%s'
+          % (
+              msg,
+              scaler.get_params(),
+              scaler.data_min_,
+              scaler.data_max_,
+              scaler.data_range_
+          ))
+
+
+def df2tsv(df):
+    if isinstance(df, pd.DataFrame):
+        df = df.values
+    ret = ''
+    for row in df:
+        for col in row:
+            ret += str(col) + '\t'
+        ret += '\n'
+    return ret
+
+
+def save_df(df, modelname, filename):
+    if DEBUG_SAVE_DFS:
+        dir = os.path.join(cfg.app_data, modelname[:-4] if modelname.lower().endswith('.zip') else modelname)
+        if not os.path.isdir(dir):
+            if os.path.isfile(dir):
+                raise NotADirectoryError(dir)
+            os.mkdir(dir)
+        with open(os.path.join(dir, filename), mode='w') as f:
+            f.write(df2tsv(df))
+            f.close()
+
+
+def print_df(df, name, min=0, max=9):
+    print('%s:\n%s' % (name, df2tsv(df[min:max])))
+
+
+def dbg_df(df, model, name):
+    if DEBUG_PRINT_DFS:
+        print_df(df, name)
+    if DEBUG_SAVE_DFS:
+        save_df(df, model, name + '.tsv')
+
+
+def dbg_tsg(tsg, msg):
+    if DEBUG_TSG:
+        print(msg)
+        for i in range(len(tsg)):
+            x, y = tsg[i]
+            print('%s => %s' % (x, y))
