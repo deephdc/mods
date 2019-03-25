@@ -20,7 +20,7 @@ Created on Mon Jan 11 13:34:37 2019
 @author: stefan dlugolinsky
 """
 
-DEBUG=False
+DEBUG = True
 DEBUG_SAVE_DFS = DEBUG
 DEBUG_PRINT_DFS = DEBUG
 DEBUG_TSG = DEBUG
@@ -405,7 +405,7 @@ class mods_model:
         self.model.compile(
             loss='mean_squared_error',
             optimizer='adam',  # 'adagrad', 'rmsprop'
-            metrics=['mse', 'mae', 'mape']  # 'cosine'
+            metrics=['mse', 'mae']  # 'cosine'
         )
 
         # Checkpointing and earlystopping
@@ -549,7 +549,7 @@ class mods_model:
         return pred_invtrans
 
     # This function wraps pandas._read_csv(), reads the csv data and calls predict() on them
-    def predict_file_or_buffer(self, *args, **kwargs):
+    def read_file_or_buffer(self, *args, **kwargs):
         if kwargs is not None:
             kwargs = {k: v for k, v in kwargs.items() if k in [
                 'usecols', 'sep', 'skiprows', 'skipfooter', 'engine', 'header'
@@ -573,6 +573,10 @@ class mods_model:
             # print('HEADER: %s' % kwargs['pd_header'])
 
         df = pd.read_csv(*args, **kwargs)
+        return df
+
+    def predict_file_or_buffer(self, *args, **kwargs):
+        df = self.read_file_or_buffer(*args, **kwargs)
         return self.predict(df)
 
     def predict_url(self, url):

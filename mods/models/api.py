@@ -82,7 +82,10 @@ def predict_file(*args, **kwargs):
     print('predict_file - args: %s' % args)
     print('predict_file - kwargs: %s' % kwargs)
 
-    mdata.prepare_data()
+    # prepare data
+    bootstrap_data = yaml.safe_load(kwargs['bootstrap_data'])
+    if bootstrap_data:
+        mdata.prepare_data()
 
     message = 'Error reading input data'
 
@@ -91,7 +94,7 @@ def predict_file(*args, **kwargs):
             message = {'status': 'ok', 'predictions': []}
             model_name = yaml.safe_load(arg.model_name)
 
-            data = yaml.safe_load(arg.file)
+            data_file = yaml.safe_load(arg.file)
 
             usecols = [utl.parse_int_or_str(col) for col in yaml.safe_load(arg.pd_usecols).split(',')]
             skiprows = yaml.safe_load(arg.pd_skiprows)
@@ -108,16 +111,18 @@ def predict_file(*args, **kwargs):
                 else:
                     models_dir = os.path.dirname(model_name)
                     model_name = os.path.basename(model_name)
-                if data == cfg.data_predict:
-                    data = os.path.join(cfg.app_data_predict, data)
+                if data_file == cfg.data_predict:
+                    data_file = os.path.join(cfg.app_data_predict, data_file)
             else:
-                data = os.path.join(cfg.app_data_predict, data)
+                data_file = os.path.join(cfg.app_data_predict, data_file)
 
-            predictions = get_model(
+            m = get_model(
                 models_dir=models_dir,
                 model_name=model_name
-            ).predict_file_or_buffer(
-                data,
+            )
+
+            df_data = m.read_file_or_buffer(
+                data_file,
                 usecols=usecols,
                 sep='\t',
                 skiprows=skiprows,
@@ -125,6 +130,37 @@ def predict_file(*args, **kwargs):
                 engine='python',
                 header=header
             )
+
+            predictions = m.predict(df_data)
+
+            # eval
+            result = {}
+            y_true = df_data[m.get_sequence_len():-1].values
+            y_pred = m.predict(df_data)[:-1]
+
+            print('y_true:\n%s' % y_true)
+            print('y_pred:\n%s' % y_pred)
+
+            err_mape = utl.mape(y_true, y_pred)
+            err_smape = utl.smape(y_true, y_pred)
+            result['mods_mape'] = err_mape
+            result['mods_smape'] = err_smape
+
+            eval_result = m.eval(df_data)
+
+            i = 0
+            for metric in m.model.metrics_names:
+                result[metric] = eval_result[i]
+                i += 1
+
+            message = {
+                'status': 'ok',
+                'dir_models': models_dir,
+                'model_name': model_name,
+                'data': data_file,
+                'usecols': usecols,
+                'evaluation': result
+            }
 
             message['predictions'] = predictions.tolist()
 
@@ -139,7 +175,10 @@ def predict_data(*args, **kwargs):
     print('predict_data - args: %s' % str(args))
     print('predict_data - kwargs: %s' % str(kwargs))
 
-    mdata.prepare_data()
+    # prepare data
+    bootstrap_data = yaml.safe_load(kwargs['bootstrap_data'])
+    if bootstrap_data:
+        mdata.prepare_data()
 
     message = 'Error reading input data'
 
@@ -170,10 +209,12 @@ def predict_data(*args, **kwargs):
                     models_dir = os.path.dirname(model_name)
                     model_name = os.path.basename(model_name)
 
-            predictions = get_model(
+            m = get_model(
                 models_dir=models_dir,
                 model_name=model_name
-            ).predict_file_or_buffer(
+            )
+
+            df_data = m.read_file_or_buffer(
                 buffer,
                 usecols=usecols,
                 sep=sep,
@@ -182,6 +223,37 @@ def predict_data(*args, **kwargs):
                 engine='python',
                 header=header
             )
+
+            predictions = m.predict(df_data)
+
+            # eval
+            result = {}
+            y_true = df_data[m.get_sequence_len():-1].values
+            y_pred = m.predict(df_data)[:-1]
+
+            print('y_true:\n%s' % y_true)
+            print('y_pred:\n%s' % y_pred)
+
+            err_mape = utl.mape(y_true, y_pred)
+            err_smape = utl.smape(y_true, y_pred)
+            result['mods_mape'] = err_mape
+            result['mods_smape'] = err_smape
+
+            if len(df_data) > m.get_sequence_len() + 1:
+                eval_result = m.eval(df_data)
+                i = 0
+                for metric in m.model.metrics_names:
+                    result[metric] = eval_result[i]
+                    i += 1
+
+            message = {
+                'status': 'ok',
+                'dir_models': models_dir,
+                'model_name': model_name,
+                'data': 'buffered',
+                'usecols': usecols,
+                'evaluation': result
+            }
 
             message['predictions'] = predictions.tolist()
 
@@ -374,26 +446,32 @@ def get_predict_args():
     return predict_args
 
 
-def train(train_args, **kwargs):
+def train(args, **kwargs):
     """
     Train network
     """
+    print("train(args, **kwargs)\n\targs:\n%s\n\tkwargs:\n%s" % (
+        args,
+        kwargs
+    ))
 
-    print("train_args:", train_args)
-    print("kwargs:", kwargs)
+    # prepare data
+    bootstrap_data = yaml.safe_load(args.bootstrap_data)
+    if bootstrap_data:
+        mdata.prepare_data()
 
-    data = yaml.safe_load(train_args.data)
-    model_name = yaml.safe_load(train_args.model_name)
-    multivariate = yaml.safe_load(train_args.multivariate)
-    sequence_len = yaml.safe_load(train_args.sequence_len)
-    model_delta = yaml.safe_load(train_args.model_delta)
-    interpolate = yaml.safe_load(train_args.interpolate)
-    model_type = yaml.safe_load(train_args.model_type)
-    num_epochs = yaml.safe_load(train_args.num_epochs)
-    epochs_patience = yaml.safe_load(train_args.epochs_patience)
-    blocks = yaml.safe_load(train_args.blocks)
-    pd_usecols = [utl.parse_int_or_str(col) for col in yaml.safe_load(train_args.pd_usecols).split(',')]
-    pd_header = yaml.safe_load(train_args.pd_header)
+    data = yaml.safe_load(args.data)
+    model_name = yaml.safe_load(args.model_name)
+    multivariate = yaml.safe_load(args.multivariate)
+    sequence_len = yaml.safe_load(args.sequence_len)
+    model_delta = yaml.safe_load(args.model_delta)
+    interpolate = yaml.safe_load(args.interpolate)
+    model_type = yaml.safe_load(args.model_type)
+    num_epochs = yaml.safe_load(args.num_epochs)
+    epochs_patience = yaml.safe_load(args.epochs_patience)
+    blocks = yaml.safe_load(args.blocks)
+    pd_usecols = [utl.parse_int_or_str(col) for col in yaml.safe_load(args.pd_usecols).split(',')]
+    pd_header = yaml.safe_load(args.pd_header)
 
     # support full paths for command line calls
     models_dir = cfg.app_models
@@ -405,8 +483,6 @@ def train(train_args, **kwargs):
             data = os.path.join(cfg.app_data_features, data)
     else:
         data = os.path.join(cfg.app_data_features, data)
-
-    mdata.prepare_data()
 
     backend.clear_session()
     m = MODS.mods_model(model_name)
@@ -442,7 +518,36 @@ def train(train_args, **kwargs):
     )
     print('rclone_copy(%s, %s):\nout: %s\nerr: %s' % (file, dir_remote, out, err))
 
-    return "OK"
+    # eval
+    result = {}
+    y_true = df_train[m.get_sequence_len():-1].values
+    y_pred = m.predict(df_train)[:-1]
+
+    # print('y_true:\n%s' % y_true)
+    # print('y_pred:\n%s' % y_pred)
+
+    err_mape = utl.mape(y_true, y_pred)
+    err_smape = utl.smape(y_true, y_pred)
+    result['mods_mape'] = err_mape
+    result['mods_smape'] = err_smape
+
+    eval_result = m.eval(df_train)
+
+    i = 0
+    for metric in m.model.metrics_names:
+        result[metric] = eval_result[i]
+        i += 1
+
+    message = {
+        'status': 'ok',
+        'dir_models': models_dir,
+        'model_name': model_name,
+        'train_data': data,
+        'usecols': pd_usecols,
+        'evaluation': result
+    }
+
+    return message
 
 
 def test_file(*args, **kwargs):
@@ -450,8 +555,8 @@ def test_file(*args, **kwargs):
     Function to make test on a local file
     """
 
-    # prepare data
-    mdata.prepare_data()
+    print("args:", args)
+    print("kwargs:", kwargs)
 
     message = {
         'status': 'error',
@@ -463,12 +568,21 @@ def test_file(*args, **kwargs):
 
     messages = []
 
+    data_prepared = False
+
     for arg in args:
+
+        if not data_prepared:
+            # prepare data
+            bootstrap_data = yaml.safe_load(arg.bootstrap_data)
+            if bootstrap_data:
+                mdata.prepare_data()
+                data_prepared = True
 
         dir_models = cfg.app_models
         model_name = yaml.safe_load(arg.model_name)
-        dir_data = cfg.app_data_test
-        data = yaml.safe_load(arg.file)
+        dir_data_test = cfg.app_data_test
+        data_test = yaml.safe_load(arg.file)
         usecols = [utl.parse_int_or_str(col) for col in yaml.safe_load(arg.pd_usecols).split(',')]
         skiprows = yaml.safe_load(arg.pd_skiprows)
         skipfooter = yaml.safe_load(arg.pd_skipfooter)
@@ -479,9 +593,9 @@ def test_file(*args, **kwargs):
             if model_name != cfg.model_name:
                 dir_models = os.path.dirname(model_name)
                 model_name = os.path.basename(model_name)
-            if data != cfg.data_test:
-                dir_data = os.path.dirname(data)
-                data = os.path.basename(data)
+            if data_test != cfg.data_test:
+                dir_data_test = os.path.dirname(data_test)
+                data_test = os.path.basename(data_test)
 
         # important!
         backend.clear_session()
@@ -496,17 +610,33 @@ def test_file(*args, **kwargs):
 
         # load data
         df_test = m.load_data(
-            path=os.path.join(dir_data, data),
+            path=os.path.join(dir_data_test, data_test),
             usecols=usecols,
             skiprows=skiprows,
             skipfooter=skipfooter,
             header=header
         )
 
+        # predict
+        pred = m.predict(df_test)
+
+        # evaluate
+        result = {}
+
+        y_true = df_test[m.get_sequence_len():-1].values
+        y_pred = pred[:-1]
+
+        # print('y_true:\n%s' % y_true)
+        # print('y_pred:\n%s' % y_pred)
+
+        err_mape = utl.mape(y_true, y_pred)
+        err_smape = utl.smape(y_true, y_pred)
+        result['mods_mape'] = err_mape
+        result['mods_smape'] = err_smape
+
         eval_result = m.eval(df_test)
 
         i = 0
-        result = {}
         for metric in m.model.metrics_names:
             result[metric] = eval_result[i]
             i += 1
@@ -515,7 +645,7 @@ def test_file(*args, **kwargs):
             'status': 'ok',
             'dir_models': dir_models,
             'model_name': model_name,
-            'test_data': data,
+            'test_data': data_test,
             'usecols': usecols,
             'evaluation': result
         })

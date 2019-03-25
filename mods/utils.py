@@ -23,26 +23,27 @@ Created on Mon Apr 23 12:48:52 2018
 import calendar
 import datetime
 import json
-import matplotlib
-import matplotlib.pyplot as plt
-import numpy as np
 import os
-import pandas as pd
 import re
-import seaborn as sns
 import time
 # from datetime import datetime
 from datetime import timedelta
 from math import sqrt
 from os.path import basename
 from random import randint
+
+import keras
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import MinMaxScaler
-import keras
 
 # from mods import config as mc
 import mods.config as cfg
+
 
 # matplotlib.style.use('ggplot')
 
@@ -118,7 +119,7 @@ def mape(a, f):
     score = []
     for i in range(a.shape[1]):
         score.append(
-                np.mean(np.abs((a[:,i]-f[:,i])/a[:,i]))*100 )
+            np.mean(np.abs((a[:, i] - f[:, i]) / a[:, i])) * 100)
     return score
 
 
@@ -128,8 +129,8 @@ def smape(a, f):
     score = []
     for i in range(a.shape[1]):
         score.append(
-                100/len(a[:,i]) *
-                np.sum(2*np.abs(f[:,i]-a[:,i])/(np.abs(a[:,i])+np.abs(f[:,i]))) )
+            100 / len(a[:, i]) *
+            np.sum(2 * np.abs(f[:, i] - a[:, i]) / (np.abs(a[:, i]) + np.abs(f[:, i]))))
     return score
 
 
@@ -343,3 +344,33 @@ def parse_int_or_str(val):
         return int(val)
     except Exception:
         return str(val)
+
+
+# @giang: MAPE = np.mean(np.abs((A-F)/A)) * 100
+def mape(y_true, y_pred):
+    score = []
+    for i in range(y_true.shape[1]):
+        try:
+            s = np.mean(np.abs((y_true[:, i] - y_pred[:, i]) / y_true[:, i])) * 100
+            if np.isnan(s):
+                s = str(s)
+            score.append(s)
+        except ZeroDivisionError:
+            score.append(str(np.nan))
+    return score
+
+
+# @giang: SMAPE = 100/len(A) * np.sum(2 * np.abs(F-A) / (np.abs(A) + np.abs(F)) )
+def smape(y_true, y_pred):
+    score = []
+    for i in range(y_true.shape[1]):
+        try:
+            s = 100 / len(y_true[:, i]) * \
+                np.sum(2 * np.abs(y_pred[:, i] - y_true[:, i]) / (np.abs(y_true[:, i]) + np.abs(y_pred[:, i])))
+            if np.isnan(s):
+                s = str(s)
+            score.append(s)
+        except ZeroDivisionError:
+            score.append(str(np.nan))
+
+    return score

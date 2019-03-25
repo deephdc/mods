@@ -137,6 +137,18 @@ model_name_all = list_dir(app_models, '*.zip')
 model_name = 'mods-20180414-20181015-w1h-s10m'
 
 
+def set_common_args():
+    common_args = {
+        'bootstrap_data': {
+            'default': True,
+            'choices': [True, False],
+            'help': 'Download data from remote datastore',
+            'required': False
+        }
+    }
+    return common_args
+
+
 def set_pandas_args():
     pandas_args = {
         'pd_usecols': {
@@ -232,6 +244,7 @@ def set_train_args():
         }
     }
     train_args.update(set_pandas_args())
+    train_args.update(set_common_args())
     return train_args
 
 
@@ -246,10 +259,11 @@ def set_predict_args():
         }
     }
     predict_args.update(set_pandas_args())
+    predict_args.update(set_common_args())
     return predict_args
 
 def set_test_args():
-    predict_args = {
+    test_args = {
         'model_name': {
             'default': model_name,
             'help': 'Name of the model used for a test',
@@ -262,5 +276,6 @@ def set_test_args():
             'required': False
         }
     }
-    predict_args.update(set_pandas_args())
-    return predict_args
+    test_args.update(set_pandas_args())
+    test_args.update(set_common_args())
+    return test_args
