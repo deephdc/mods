@@ -374,3 +374,28 @@ def smape(y_true, y_pred):
             score.append(str(np.nan))
 
     return score
+
+
+def compute_metrics(model, df_true, df_pred):
+    result = {'status': 'not enough data'}
+    if len(df_true) > model.get_sequence_len() + 1:
+        result['status'] = 'ok'
+        y_true = df_true[model.get_sequence_len():-1].values
+        y_pred = df_pred[:-1]
+
+        # print('y_true:\n%s' % y_true)
+        # print('y_pred:\n%s' % y_pred)
+
+        err_mape = mape(y_true, y_pred)
+        err_smape = smape(y_true, y_pred)
+        result['mods_mape'] = err_mape
+        result['mods_smape'] = err_smape
+        result['status'] = 'ok'
+
+        eval_result = model.eval(df_true)
+
+        i = 0
+        for metric in model.model.metrics_names:
+            result[metric] = eval_result[i]
+            i += 1
+    return result

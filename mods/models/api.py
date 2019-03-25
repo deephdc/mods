@@ -133,35 +133,13 @@ def predict_file(*args, **kwargs):
 
             predictions = m.predict(df_data)
 
-            # eval
-            result = {'status': 'not enough data'}
-            if len(df_data) > m.get_sequence_len() + 1:
-                result['status'] = 'ok'
-                y_true = df_data[m.get_sequence_len():-1].values
-                y_pred = m.predict(df_data)[:-1]
-
-                print('y_true:\n%s' % y_true)
-                print('y_pred:\n%s' % y_pred)
-
-                err_mape = utl.mape(y_true, y_pred)
-                err_smape = utl.smape(y_true, y_pred)
-                result['mods_mape'] = err_mape
-                result['mods_smape'] = err_smape
-
-                eval_result = m.eval(df_data)
-
-                i = 0
-                for metric in m.model.metrics_names:
-                    result[metric] = eval_result[i]
-                    i += 1
-
             message = {
                 'status': 'ok',
                 'dir_models': models_dir,
                 'model_name': model_name,
                 'data': data_file,
                 'usecols': usecols,
-                'evaluation': result
+                'evaluation': utl.compute_metrics(m, df_data, predictions)
             }
 
             message['predictions'] = predictions.tolist()
@@ -228,34 +206,13 @@ def predict_data(*args, **kwargs):
 
             predictions = m.predict(df_data)
 
-            # eval
-            result = {'status': 'not enough data'}
-            if len(df_data) > m.get_sequence_len() + 1:
-                result['status'] = 'ok'
-                y_true = df_data[m.get_sequence_len():-1].values
-                y_pred = m.predict(df_data)[:-1]
-
-                print('y_true:\n%s' % y_true)
-                print('y_pred:\n%s' % y_pred)
-
-                err_mape = utl.mape(y_true, y_pred)
-                err_smape = utl.smape(y_true, y_pred)
-                result['mods_mape'] = err_mape
-                result['mods_smape'] = err_smape
-
-                eval_result = m.eval(df_data)
-                i = 0
-                for metric in m.model.metrics_names:
-                    result[metric] = eval_result[i]
-                    i += 1
-
             message = {
                 'status': 'ok',
                 'dir_models': models_dir,
                 'model_name': model_name,
                 'data': 'buffered',
                 'usecols': usecols,
-                'evaluation': result
+                'evaluation': utl.compute_metrics(m, df_data, predictions)
             }
 
             message['predictions'] = predictions.tolist()
@@ -521,28 +478,7 @@ def train(args, **kwargs):
     )
     print('rclone_copy(%s, %s):\nout: %s\nerr: %s' % (file, dir_remote, out, err))
 
-    # eval
-    result = {'status': 'not enough data'}
-    if len(df_train) > m.get_sequence_len() + 1:
-        result['status'] = 'ok'
-        y_true = df_train[m.get_sequence_len():-1].values
-        y_pred = m.predict(df_train)[:-1]
-
-        # print('y_true:\n%s' % y_true)
-        # print('y_pred:\n%s' % y_pred)
-
-        err_mape = utl.mape(y_true, y_pred)
-        err_smape = utl.smape(y_true, y_pred)
-        result['mods_mape'] = err_mape
-        result['mods_smape'] = err_smape
-        result['status'] = 'ok'
-
-        eval_result = m.eval(df_train)
-
-        i = 0
-        for metric in m.model.metrics_names:
-            result[metric] = eval_result[i]
-            i += 1
+    pred = m.predict(df_train)
 
     message = {
         'status': 'ok',
@@ -550,7 +486,7 @@ def train(args, **kwargs):
         'model_name': model_name,
         'train_data': data,
         'usecols': pd_usecols,
-        'evaluation': result
+        'evaluation': utl.compute_metrics(m, df_train, pred)
     }
 
     return message
@@ -626,36 +562,13 @@ def test_file(*args, **kwargs):
         # predict
         pred = m.predict(df_test)
 
-        # eval
-        result = {'status': 'not enough data'}
-        if len(df_test) > m.get_sequence_len() + 1:
-            result['status'] = 'ok'
-            y_true = df_test[m.get_sequence_len():-1].values
-            y_pred = pred[:-1]
-
-            # print('y_true:\n%s' % y_true)
-            # print('y_pred:\n%s' % y_pred)
-
-            err_mape = utl.mape(y_true, y_pred)
-            err_smape = utl.smape(y_true, y_pred)
-            result['mods_mape'] = err_mape
-            result['mods_smape'] = err_smape
-            result['status'] = 'ok'
-
-            eval_result = m.eval(df_test)
-
-            i = 0
-            for metric in m.model.metrics_names:
-                result[metric] = eval_result[i]
-                i += 1
-
         messages.append({
             'status': 'ok',
             'dir_models': dir_models,
             'model_name': model_name,
             'test_data': data_test,
             'usecols': usecols,
-            'evaluation': result
+            'evaluation': utl.compute_metrics(m, df_test, pred)
         })
 
     return messages
