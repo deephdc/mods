@@ -14,4 +14,3 @@ scikit-learn
 matplotlib
 seaborn
 pyyaml
-
