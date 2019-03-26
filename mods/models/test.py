@@ -66,7 +66,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Model parameters')
 
-    predict_args = api.get_predict_args()
+    predict_args = api.get_test_args()
 
     for key, val in predict_args.items():
         parser.add_argument('--%s' % key,

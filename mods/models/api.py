@@ -82,18 +82,23 @@ def predict_file(*args, **kwargs):
     print('predict_file - args: %s' % args)
     print('predict_file - kwargs: %s' % kwargs)
 
-    # prepare data
-    bootstrap_data = yaml.safe_load(kwargs['bootstrap_data'])
-    if bootstrap_data:
-        mdata.prepare_data()
+    data_prepared = False
 
     message = 'Error reading input data'
 
     if args:
         for arg in args:
             message = {'status': 'ok', 'predictions': []}
-            model_name = yaml.safe_load(arg.model_name)
 
+            # prepare data
+            if not data_prepared:
+                bootstrap_data = yaml.safe_load(arg.bootstrap_data)
+                if bootstrap_data:
+                    mdata.prepare_data()
+                    data_prepared = True
+
+
+            model_name = yaml.safe_load(arg.model_name)
             data_file = yaml.safe_load(arg.file)
 
             usecols = [utl.parse_int_or_str(col) for col in yaml.safe_load(arg.pd_usecols).split(',')]
@@ -155,10 +160,7 @@ def predict_data(*args, **kwargs):
     print('predict_data - args: %s' % str(args))
     print('predict_data - kwargs: %s' % str(kwargs))
 
-    # prepare data
-    bootstrap_data = yaml.safe_load(kwargs['bootstrap_data'])
-    if bootstrap_data:
-        mdata.prepare_data()
+    data_prepared = False
 
     message = 'Error reading input data'
 
@@ -166,12 +168,20 @@ def predict_data(*args, **kwargs):
         for arg in args:
             message = {'status': 'ok', 'predictions': []}
 
+            # prepare data
+            if not data_prepared:
+                bootstrap_data = yaml.safe_load(arg.bootstrap_data)
+                if bootstrap_data:
+                    mdata.prepare_data()
+                    data_prepared = True
+
             try:
-                model_name = yaml.safe_load(kwargs['model_name'])
+                model_name = yaml.safe_load(arg.model_name)
             except Exception:
                 model_name = cfg.model_name
 
-            buffer = io.BytesIO(arg[0])
+            file_storage = arg.files
+            buffer = io.BytesIO(file_storage.read())
 
             usecols = cfg.pd_usecols
             sep = cfg.pd_sep
@@ -210,7 +220,7 @@ def predict_data(*args, **kwargs):
                 'status': 'ok',
                 'dir_models': models_dir,
                 'model_name': model_name,
-                'data': 'buffered',
+                'data': file_storage.filename,
                 'usecols': usecols,
                 'evaluation': utl.compute_metrics(m, df_data, predictions)
             }
@@ -393,7 +403,8 @@ def get_train_args():
     return train_args
 
 
-def get_predict_args():
+# !!! deepaas calls get_test_args() to get args for 'predict'
+def get_test_args():
     predict_args = cfg.set_predict_args()
 
     # convert default values and possible 'choices' into strings
