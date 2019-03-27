@@ -115,6 +115,8 @@ def rate_cosine(a, b):
 
 # @giang: MAPE = np.mean(np.abs((A-F)/A)) * 100
 def mape(y_true, y_pred):
+    assert isinstance(y_true, np.ndarray), 'numpy array expected for y_true in mape'
+    assert isinstance(y_pred, np.ndarray), 'numpy array expected for y_pred in mape'
     score = []
     for i in range(y_true.shape[1]):
         try:
@@ -129,6 +131,8 @@ def mape(y_true, y_pred):
 
 # @giang: SMAPE = 100/len(A) * np.sum(2 * np.abs(F-A) / (np.abs(A) + np.abs(F)) )
 def smape(y_true, y_pred):
+    assert isinstance(y_true, np.ndarray), 'numpy array expected for y_true in smape'
+    assert isinstance(y_pred, np.ndarray), 'numpy array expected for y_pred in smape'
     score = []
     for i in range(y_true.shape[1]):
         try:
@@ -356,23 +360,24 @@ def parse_int_or_str(val):
 
 
 # @stevo
-def compute_metrics(model, df_true, df_pred):
-    result = {'status': 'not enough data'}
+def compute_metrics(y_true, y_pred, model):
+    result = {}
 
-    if len(df_true) > model.get_sequence_len() + 1:
-        result['status'] = 'ok'
+    if len(y_true) > 1 and len(y_true) == len(y_pred):
 
-        y_true = df_true[model.get_sequence_len():-1].values
-        y_pred = df_pred[:-1]
+        eval_result = model.eval(y_true)
+
+        if isinstance(y_true, pd.DataFrame):
+            y_true = y_true.values
+
+        if isinstance(y_pred, pd.DataFrame):
+            y_pred = y_pred.values
 
         err_mape = mape(y_true, y_pred)
         err_smape = smape(y_true, y_pred)
 
         result['mods_mape'] = err_mape
         result['mods_smape'] = err_smape
-        result['status'] = 'ok'
-
-        eval_result = model.eval(df_true)
 
         i = 0
         for metric in model.model.metrics_names:

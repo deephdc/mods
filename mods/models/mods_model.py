@@ -504,43 +504,56 @@ class mods_model:
                                    stride=1,
                                    batch_size=1)
 
-    def predict(self, df):
+    def predict(self, df, steps_fwd=1):
 
         utl.dbg_df(df, self.name, 'original', print=DEBUG, save=DEBUG)
+        predictions = None
 
-        if self.get_interpolate():
-            df = df.interpolate()
-            utl.dbg_df(df, self.name, 'interpolated', print=DEBUG, save=DEBUG)
+        for i in range(steps_fwd):
 
-        trans = self.transform(df)
-        utl.dbg_df(trans, self.name, 'transformed', print=DEBUG, save=DEBUG)
+            if self.get_interpolate():
+                df = df.interpolate()
+                utl.dbg_df(df, self.name, 'interpolated-step%03d' % i, print=DEBUG, save=DEBUG)
 
-        norm = self.normalize(trans, self.get_scaler(), fit=False)
-        utl.dbg_df(norm, self.name, 'normalized', print=DEBUG, save=DEBUG)
+            trans = self.transform(df)
+            utl.dbg_df(trans, self.name, 'transformed-step%03d' % i, print=DEBUG, save=DEBUG)
 
-        # append dummy row at the end of the norm np.ndarray
-        # in order to tsg generate last sample for prediction
-        # of the future state
-        dummy = [np.nan] * self.get_multivariate()
-        norm = np.append(norm, [dummy], axis=0)
-        utl.dbg_df(norm, self.name, 'normalized+nan', print=DEBUG, save=DEBUG)
+            norm = self.normalize(trans, self.get_scaler(), fit=False)
+            utl.dbg_df(norm, self.name, 'normalized-step%03d' % i, print=DEBUG, save=DEBUG)
 
-        tsg = self.get_tsg(norm)
-        utl.dbg_tsg(tsg, 'norm_tsg', debug=DEBUG)
+            # append dummy row at the end of the norm np.ndarray
+            # in order to tsg generate last sample for prediction
+            # of the future state
+            dummy = [np.nan] * self.get_multivariate()
+            norm = np.append(norm, [dummy], axis=0)
+            utl.dbg_df(norm, self.name, 'normalized+nan-step%03d' % i, print=DEBUG, save=DEBUG)
 
-        pred = self.model.predict_generator(tsg)
-        utl.dbg_df(pred, self.name, 'prediction', print=DEBUG, save=DEBUG)
+            tsg = self.get_tsg(norm)
+            utl.dbg_tsg(tsg, 'norm_tsg-step%03d' % i, debug=DEBUG)
 
-        pred_denorm = self.inverse_normalize(pred)
-        utl.dbg_df(pred_denorm, self.name, 'pred_denormalized', print=DEBUG, save=DEBUG)
+            pred = self.model.predict_generator(tsg)
+            utl.dbg_df(pred, self.name, 'prediction-step%03d' % i, print=DEBUG, save=DEBUG)
 
-        pred_invtrans = self.inverse_transform(df, pred_denorm)
-        utl.dbg_df(pred_invtrans, self.name, 'pred_inv_trans', print=DEBUG, save=DEBUG)
+            pred_denorm = self.inverse_normalize(pred)
+            utl.dbg_df(pred_denorm, self.name, 'pred_denormalized-step%03d' % i, print=DEBUG, save=DEBUG)
 
-        if isinstance(pred_invtrans, pd.DataFrame):
-            pred_invtrans = pred_invtrans.values
+            pred_invtrans = self.inverse_transform(df, pred_denorm)
+            utl.dbg_df(pred_invtrans, self.name, 'pred_inv_trans-step%03d' % i, print=DEBUG, save=DEBUG)
 
-        return pred_invtrans
+            if predictions is None:
+                predictions = pred_invtrans
+            else:
+                utl.dbg_df(predictions, self.name, ('pred-step%03d' % i), save=DEBUG, print=DEBUG)
+                predictions = predictions.append(pred_invtrans.tail(1))
+                utl.dbg_df(predictions, self.name, ('pred-append-step%03d' % i), save=DEBUG, print=DEBUG)
+
+            # next step, leave the first row and append predicted row
+            df = df.append(pred_invtrans.tail(1))[1:]
+
+        if isinstance(predictions, pd.DataFrame):
+            predictions = predictions.values
+
+        return predictions
 
     # This function wraps pandas._read_csv(), reads the csv data and calls predict() on them
     def read_file_or_buffer(self, *args, **kwargs):

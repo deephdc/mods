@@ -40,7 +40,6 @@ def list_dir(dir, pattern='*.tsv'):
 # identify basedir for the package
 BASE_DIR = path.dirname(path.normpath(path.dirname(__file__)))
 
-
 # Data repository
 DATA_DIR = expanduser("~") + '/data/deep-dm/'  # app_data_raw
 # Data dirs
@@ -48,7 +47,6 @@ dir_logs = DATA_DIR + 'logs/'
 dir_parquet = DATA_DIR + 'logs_parquet/'
 dir_cleaned = DATA_DIR + 'logs_cleaned/'
 log_header_lines = 8
-
 
 # Application dirs
 app_data = BASE_DIR + '/data/'
@@ -62,7 +60,6 @@ app_models_remote = 'deepnc:/mods/models/'
 app_checkpoints = BASE_DIR + '/checkpoints/'
 app_visualization = BASE_DIR + '/visualization/'
 
-
 # Feature data
 feature_filename = 'features.tsv'
 # time_range_begin = '2018-04-14'         # begin <= time_range < end
@@ -71,7 +68,6 @@ time_range_begin = '2018-07-14'
 time_range_end = '2018-10-15'
 window_duration = '1 hour'
 slide_duration = '10 minutes'
-
 
 # ML data
 column_separator = '\t'  # for tsv
@@ -82,22 +78,18 @@ column_separator = '\t'  # for tsv
 split_ratio = 0.67  # train:test = 2:1
 batch_size = 1  # delta (6), without_delta(1)
 
-
 # Auxiliary
 rate_RMSE = True
-
 
 # Auxiliary: plotting
 plot = False
 fig_size_x = 15  # max 2^16 pixels = 650 inch
 fig_size_y = 4
 
-
 # Auxiliary: DayTime format
 format_string = '%Y-%m-%d %H:%M:%S'
 format_string_parquet = '%Y-%m-%d %H_%M_%S'  # parquet format without ":"
 timezone = 3600
-
 
 # pandas defaults
 pd_usecols = ['number_of_conn', 'sum_orig_kbytes']
@@ -108,7 +100,6 @@ pd_skiprows = 0
 pd_skipfooter = 0
 pd_engine = 'python'
 pd_header = 0
-
 
 # training defaults
 data_train_all = list_dir(app_data_features, '*.tsv')
@@ -123,19 +114,20 @@ num_epochs = 50
 epochs_patience = 10
 blocks = 6
 
-
 # prediction defaults
 data_predict = 'sample-w1h-s10m.tsv'
 
-
 # test defaults
 data_test = 'w1h-s10m.tsv'
-
 
 # common defaults
 model_name_all = list_dir(app_models, '*.zip')
 model_name = 'mods-20180414-20181015-w1h-s10m'
 
+steps_fwd_choices = [1, 2, 3, 5, 10, 25, 50, 100]
+if sequence_len not in steps_fwd_choices:
+    steps_fwd_choices.append(sequence_len)
+    steps_fwd_choices.sort()
 
 def set_common_args():
     common_args = {
@@ -256,11 +248,18 @@ def set_predict_args():
             'help': 'Name of the model used for prediction',
             'type': str,
             'required': False
+        },
+        'steps_forward': {
+            'default': 1,
+            'choices': steps_fwd_choices,
+            'help': 'Number of steps to predict forward',
+            'required': False
         }
     }
     predict_args.update(set_pandas_args())
     predict_args.update(set_common_args())
     return predict_args
+
 
 def set_test_args():
     test_args = {
@@ -273,6 +272,12 @@ def set_test_args():
         'data': {
             'default': data_test,
             'help': 'Data to test on',
+            'required': False
+        },
+        'steps_forward': {
+            'default': 1,
+            'choices': steps_fwd_choices,
+            'help': 'Number of steps to predict forward',
             'required': False
         }
     }
