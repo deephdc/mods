@@ -20,10 +20,7 @@ Created on Mon Jan 11 13:34:37 2019
 @author: stefan dlugolinsky
 """
 
-DEBUG = True
-DEBUG_SAVE_DFS = DEBUG
-DEBUG_PRINT_DFS = DEBUG
-DEBUG_TSG = DEBUG
+DEBUG = False
 
 import io
 import json
@@ -437,13 +434,10 @@ class mods_model:
         # df_train = df_train.values.astype('float32')
         df_train = self.transform(df_train)
         df_train = self.normalize(df_train, self.get_scaler())
-
-        dbg_scaler(self.__scaler, 'train - scaler')
-
         tsg_train = self.get_tsg(df_train)
 
-        # TODO: remove later
-        print(self.config)
+        if DEBUG:
+            print(self.config)
 
         self.model.fit_generator(
             tsg_train,
@@ -481,9 +475,9 @@ class mods_model:
         if self.isdelta():
             seql = self.get_sequence_len()
             y = original[seql:]
-            dbg_df(y, self.name, 'y.tsv')
+            utl.dbg_df(y, self.name, 'y.tsv', print=DEBUG, save=DEBUG)
             d = pred_denorm
-            dbg_df(d, self.name, 'd.tsv')
+            utl.dbg_df(d, self.name, 'd.tsv', print=DEBUG, save=DEBUG)
             return y + d
         else:
             return pred_denorm
@@ -492,13 +486,13 @@ class mods_model:
     def normalize(self, df, scaler, fit=True):
         # Scale all metrics but each separately
         df = scaler.fit_transform(df) if fit else scaler.transform(df)
-        dbg_scaler(scaler, 'normalize')
+        utl.dbg_scaler(scaler, 'normalize', debug=DEBUG)
         return df
 
     # inverse method to @normalize
     def inverse_normalize(self, df):
         scaler = self.get_scaler()
-        dbg_scaler(scaler, 'inverse_normalize')
+        utl.dbg_scaler(scaler, 'inverse_normalize', debug=DEBUG)
         return scaler.inverse_transform(df)
 
     # returns time series generator
@@ -512,36 +506,36 @@ class mods_model:
 
     def predict(self, df):
 
-        dbg_df(df, self.name, 'original')
+        utl.dbg_df(df, self.name, 'original', print=DEBUG, save=DEBUG)
 
         if self.get_interpolate():
             df = df.interpolate()
-            dbg_df(df, self.name, 'interpolated')
+            utl.dbg_df(df, self.name, 'interpolated', print=DEBUG, save=DEBUG)
 
         trans = self.transform(df)
-        dbg_df(trans, self.name, 'transformed')
+        utl.dbg_df(trans, self.name, 'transformed', print=DEBUG, save=DEBUG)
 
         norm = self.normalize(trans, self.get_scaler(), fit=False)
-        dbg_df(norm, self.name, 'normalized')
+        utl.dbg_df(norm, self.name, 'normalized', print=DEBUG, save=DEBUG)
 
         # append dummy row at the end of the norm np.ndarray
         # in order to tsg generate last sample for prediction
         # of the future state
         dummy = [np.nan] * self.get_multivariate()
         norm = np.append(norm, [dummy], axis=0)
-        dbg_df(norm, self.name, 'normalized+nan')
+        utl.dbg_df(norm, self.name, 'normalized+nan', print=DEBUG, save=DEBUG)
 
         tsg = self.get_tsg(norm)
-        dbg_tsg(tsg, 'norm_tsg')
+        utl.dbg_tsg(tsg, 'norm_tsg', debug=DEBUG)
 
         pred = self.model.predict_generator(tsg)
-        dbg_df(pred, self.name, 'prediction')
+        utl.dbg_df(pred, self.name, 'prediction', print=DEBUG, save=DEBUG)
 
         pred_denorm = self.inverse_normalize(pred)
-        dbg_df(pred_denorm, self.name, 'pred_denormalized')
+        utl.dbg_df(pred_denorm, self.name, 'pred_denormalized', print=DEBUG, save=DEBUG)
 
         pred_invtrans = self.inverse_transform(df, pred_denorm)
-        dbg_df(pred_invtrans, self.name, 'pred_inv_trans')
+        utl.dbg_df(pred_invtrans, self.name, 'pred_inv_trans', print=DEBUG, save=DEBUG)
 
         if isinstance(pred_invtrans, pd.DataFrame):
             pred_invtrans = pred_invtrans.values
@@ -598,56 +592,3 @@ class mods_model:
         tsg = self.get_tsg(norm)
 
         return self.model.evaluate_generator(tsg)
-
-
-def dbg_scaler(scaler, msg):
-    print('%s - scaler.get_params(): %s\n\tscaler.data_min_=%s\n\tscaler.data_max_=%s\n\tscaler.data_range_=%s'
-          % (
-              msg,
-              scaler.get_params(),
-              scaler.data_min_,
-              scaler.data_max_,
-              scaler.data_range_
-          ))
-
-
-def df2tsv(df):
-    if isinstance(df, pd.DataFrame):
-        df = df.values
-    ret = ''
-    for row in df:
-        for col in row:
-            ret += str(col) + '\t'
-        ret += '\n'
-    return ret
-
-
-def save_df(df, modelname, filename):
-    if DEBUG_SAVE_DFS:
-        dir = os.path.join(cfg.app_data, modelname[:-4] if modelname.lower().endswith('.zip') else modelname)
-        if not os.path.isdir(dir):
-            if os.path.isfile(dir):
-                raise NotADirectoryError(dir)
-            os.mkdir(dir)
-        with open(os.path.join(dir, filename), mode='w') as f:
-            f.write(df2tsv(df))
-            f.close()
-
-
-def print_df(df, name, min=0, max=9):
-    print('%s:\n%s' % (name, df2tsv(df[min:max])))
-
-
-def dbg_df(df, model, name):
-    if DEBUG_PRINT_DFS:
-        print_df(df, name)
-    if DEBUG_SAVE_DFS:
-        save_df(df, model, name + '.tsv')
-
-
-def dbg_tsg(tsg, msg):
-    if DEBUG_TSG:
-        print(msg)
-        for i in range(len(tsg)):
-            x, y = tsg[i]
-            print('%s => %s' % (x, y))

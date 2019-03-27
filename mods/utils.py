@@ -346,6 +346,7 @@ def load_model_metadata(metadata_filename):
     return None
 
 
+# @stevo
 def parse_int_or_str(val):
     val = val.strip()
     try:
@@ -354,18 +355,19 @@ def parse_int_or_str(val):
         return str(val)
 
 
+# @stevo
 def compute_metrics(model, df_true, df_pred):
     result = {'status': 'not enough data'}
+
     if len(df_true) > model.get_sequence_len() + 1:
         result['status'] = 'ok'
+
         y_true = df_true[model.get_sequence_len():-1].values
         y_pred = df_pred[:-1]
 
-        # print('y_true:\n%s' % y_true)
-        # print('y_pred:\n%s' % y_pred)
-
         err_mape = mape(y_true, y_pred)
         err_smape = smape(y_true, y_pred)
+
         result['mods_mape'] = err_mape
         result['mods_smape'] = err_smape
         result['status'] = 'ok'
@@ -376,4 +378,69 @@ def compute_metrics(model, df_true, df_pred):
         for metric in model.model.metrics_names:
             result[metric] = eval_result[i]
             i += 1
+
     return result
+
+
+# @stevo tsv representation of a dataframe
+def df2tsv(df):
+    if isinstance(df, pd.DataFrame):
+        df = df.values
+    ret = ''
+    for row in df:
+        for col in row:
+            ret += str(col) + '\t'
+        ret += '\n'
+    return ret
+
+
+# @stevo tsv representation of a tsg
+def tsg2tsv(tsg):
+    ret = ''
+    for i in range(len(tsg)):
+        x, y = tsg[i]
+        ret += '%s => %s\n' % (x, y)
+    return ret
+
+
+# @stevo saves dataframe to a file
+def save_df(df, model_name, file):
+    dir = os.path.join(cfg.app_data, model_name[:-4] if model_name.lower().endswith('.zip') else model_name)
+    if not os.path.isdir(dir):
+        if os.path.isfile(dir):
+            raise NotADirectoryError(dir)
+        os.mkdir(dir)
+    with open(os.path.join(dir, file), mode='w') as f:
+        f.write(df2tsv(df))
+        f.close()
+
+
+# @stevo prints dataframe within a range of rows
+def print_df(df, name, min=0, max=9):
+    print('%s:\n%s' % (name, df2tsv(df[min:max])))
+
+
+# @stevo prints dataframe to stdout and/or saves it to a file <<model>>/<<name>>.tsv
+def dbg_df(df, model_name, df_name, print=False, save=False):
+    if print:
+        print_df(df, df_name)
+    if save:
+        save_df(df, model_name, df_name + '.tsv')
+
+
+# @stevo prints TimeSeriesGenerator to stdout
+def dbg_tsg(tsg, msg, debug=False):
+    if debug:
+        print('%s:\n%s' % (msg, tsg2tsv(tsg)))
+
+
+# @stevo prints scaler to stdout
+def dbg_scaler(scaler, msg):
+    print('%s - scaler.get_params(): %s\n\tscaler.data_min_=%s\n\tscaler.data_max_=%s\n\tscaler.data_range_=%s'
+          % (
+              msg,
+              scaler.get_params(),
+              scaler.data_min_,
+              scaler.data_max_,
+              scaler.data_range_
+          ))
