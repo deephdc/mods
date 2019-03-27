@@ -435,12 +435,13 @@ def dbg_tsg(tsg, msg, debug=False):
 
 
 # @stevo prints scaler to stdout
-def dbg_scaler(scaler, msg):
-    print('%s - scaler.get_params(): %s\n\tscaler.data_min_=%s\n\tscaler.data_max_=%s\n\tscaler.data_range_=%s'
-          % (
-              msg,
-              scaler.get_params(),
-              scaler.data_min_,
-              scaler.data_max_,
-              scaler.data_range_
-          ))
+def dbg_scaler(scaler, msg, debug=False):
+    if debug:
+        print('%s - scaler.get_params(): %s\n\tscaler.data_min_=%s\n\tscaler.data_max_=%s\n\tscaler.data_range_=%s'
+              % (
+                  msg,
+                  scaler.get_params(),
+                  scaler.data_min_,
+                  scaler.data_max_,
+                  scaler.data_range_
+              ))
