@@ -145,7 +145,7 @@ def predict_file(*args, **kwargs):
                 'steps_ahead': m.get_steps_ahead(),
                 'usecols': usecols,
                 'evaluation': utl.compute_metrics(
-                    df_data[m.get_sequence_len():-1],
+                    df_data[m.get_sequence_len():-m.get_steps_ahead()],
                     predictions[:-m.get_steps_ahead()],
                     m,
                 )
@@ -228,7 +228,7 @@ def predict_data(*args, **kwargs):
                 'steps_ahead': m.get_steps_ahead(),
                 'usecols': usecols,
                 'evaluation': utl.compute_metrics(
-                    df_data[m.get_sequence_len():-1],
+                    df_data[m.get_sequence_len():-m.get_steps_ahead()],
                     predictions[:-m.get_steps_ahead()],
                     m,
                 )
@@ -510,7 +510,7 @@ def train(args, **kwargs):
         'steps_ahead': m.get_steps_ahead(),
         'usecols': pd_usecols,
         'evaluation': utl.compute_metrics(
-            df_train[m.get_sequence_len():-1],
+            df_train[m.get_sequence_len():-steps_ahead],
             pred[:-steps_ahead],  # here, we predict # steps_ahead
             m,
         )
@@ -597,7 +597,7 @@ def test_file(*args, **kwargs):
             'steps_ahead': m.get_steps_ahead(),
             'usecols': usecols,
             'evaluation': utl.compute_metrics(
-                df_test[m.get_sequence_len():-1],
+                df_test[m.get_sequence_len():-m.get_steps_ahead()],
                 predictions[:-m.get_steps_ahead()],
                 m,
             )
