@@ -20,7 +20,7 @@ Created on Mon Jan 11 13:34:37 2019
 @author: stefan dlugolinsky
 """
 
-DEBUG = True
+DEBUG = False
 
 import io
 import json
