@@ -20,7 +20,7 @@ Created on Mon Jan 11 13:34:37 2019
 @author: stefan dlugolinsky
 """
 
-DEBUG = False
+DEBUG = True
 
 import io
 import json
@@ -65,6 +65,7 @@ class mods_model:
     __EPOCHS = 'epochs'
     __EPOCHS_PATIENCE = 'epochs_patience'
     __BLOCKS = 'blocks'
+    __STEPS_AHEAD = 'steps_ahead'
     # scaler
     __SCALER = 'scaler'
     # sample data
@@ -246,7 +247,8 @@ class mods_model:
                 mods_model.__MODEL_TYPE: cfg.model_type,
                 mods_model.__EPOCHS: cfg.num_epochs,
                 mods_model.__EPOCHS_PATIENCE: cfg.epochs_patience,
-                mods_model.__BLOCKS: cfg.blocks
+                mods_model.__BLOCKS: cfg.blocks,
+                mods_model.__STEPS_AHEAD: cfg.steps_ahead
             },
             mods_model.__SCALER: {
                 mods_model.__FILE: 'scaler.pkl'
@@ -304,6 +306,12 @@ class mods_model:
     def get_blocks(self):
         return self.cfg_model()[mods_model.__BLOCKS]
 
+    def set_steps_ahead(self, steps_ahead):
+        self.cfg_model()[mods_model.__STEPS_AHEAD] = steps_ahead
+
+    def get_steps_ahead(self):
+        return self.cfg_model()[mods_model.__STEPS_AHEAD]
+
     def get_scaler(self):
         if not self.__scaler:
             self.__scaler = MinMaxScaler(feature_range=(0, 1))
@@ -325,7 +333,8 @@ class mods_model:
             model_type=cfg.model_type,
             num_epochs=cfg.num_epochs,
             epochs_patience=cfg.epochs_patience,
-            blocks=cfg.blocks
+            blocks=cfg.blocks,
+            steps_ahead=cfg.steps_ahead
     ):
         if multivariate is None:
             multivariate = self.get_multivariate()
@@ -366,6 +375,11 @@ class mods_model:
             blocks = self.get_blocks()
         else:
             self.set_blocks(blocks)
+
+        if steps_ahead is None:
+            steps_ahead = self.get_steps_ahead()
+        else:
+            self.set_steps_ahead(steps_ahead)
 
         # Define model
         # TODO: divide into multiple model classes according to model_type
@@ -434,7 +448,7 @@ class mods_model:
         # df_train = df_train.values.astype('float32')
         df_train = self.transform(df_train)
         df_train = self.normalize(df_train, self.get_scaler())
-        tsg_train = self.get_tsg(df_train)
+        tsg_train = self.get_tsg(df_train, steps_ahead)
 
         if DEBUG:
             print(self.config)
@@ -496,64 +510,74 @@ class mods_model:
         return scaler.inverse_transform(df)
 
     # returns time series generator
-    def get_tsg(self, df):
-        return TimeseriesGenerator(df,
-                                   df,
-                                   length=self.get_sequence_len(),
+    # steps_ahead = 3:
+    # sequence_length = 6
+    # batch_size = steps_ahead
+    # x=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+    # --> x=[1,2,3,4,5,6,7,8,9,10,11,12]
+    # --> y=[4,5,6,7,8,9,10,11,12,13,14,15]
+    # --> tsg=
+    # [[1. 2. 3. 4. 5. 6.]
+    #  [2. 3. 4. 5. 6. 7.]
+    #  [3. 4. 5. 6. 7. 8.]] => [ 9. 10. 11.]
+    # [[ 4.  5.  6.  7.  8.  9.]
+    #  [ 5.  6.  7.  8.  9. 10.]
+    #  [ 6.  7.  8.  9. 10. 11.]] => [12. 13. 14.]
+    def get_tsg(self, df, steps_ahead=1):
+        x = y = df
+        length = self.get_sequence_len()
+        if steps_ahead < 2:
+            batch_size = 1
+        else:
+            batch_size = steps_ahead
+            x = df[:-(steps_ahead - 1)]
+            y = df[steps_ahead - 1:]
+            # length -= steps_ahead
+        return TimeseriesGenerator(x,
+                                   y,
+                                   length=length,
                                    sampling_rate=1,
                                    stride=1,
-                                   batch_size=1)
+                                   batch_size=batch_size)
 
-    def predict(self, df, steps_fwd=1):
+    def predict(self, df):
 
         utl.dbg_df(df, self.name, 'original', print=DEBUG, save=DEBUG)
-        predictions = None
 
-        for i in range(steps_fwd):
+        if self.get_interpolate():
+            df = df.interpolate()
+            utl.dbg_df(df, self.name, 'interpolated', print=DEBUG, save=DEBUG)
 
-            if self.get_interpolate():
-                df = df.interpolate()
-                utl.dbg_df(df, self.name, 'interpolated-step%03d' % i, print=DEBUG, save=DEBUG)
+        trans = self.transform(df)
+        utl.dbg_df(trans, self.name, 'transformed', print=DEBUG, save=DEBUG)
 
-            trans = self.transform(df)
-            utl.dbg_df(trans, self.name, 'transformed-step%03d' % i, print=DEBUG, save=DEBUG)
+        norm = self.normalize(trans, self.get_scaler(), fit=False)
+        utl.dbg_df(norm, self.name, 'normalized', print=DEBUG, save=DEBUG)
 
-            norm = self.normalize(trans, self.get_scaler(), fit=False)
-            utl.dbg_df(norm, self.name, 'normalized-step%03d' % i, print=DEBUG, save=DEBUG)
-
-            # append dummy row at the end of the norm np.ndarray
-            # in order to tsg generate last sample for prediction
-            # of the future state
-            dummy = [np.nan] * self.get_multivariate()
+        # append #steps_ahead dummy rows at the end of the norm
+        # np.ndarray in order to tsg generate last sample
+        # for prediction of the future state
+        dummy = [np.nan] * self.get_multivariate()
+        for i in range(self.get_steps_ahead()):
             norm = np.append(norm, [dummy], axis=0)
-            utl.dbg_df(norm, self.name, 'normalized+nan-step%03d' % i, print=DEBUG, save=DEBUG)
+        utl.dbg_df(norm, self.name, 'normalized+nan', print=DEBUG, save=DEBUG)
 
-            tsg = self.get_tsg(norm)
-            utl.dbg_tsg(tsg, 'norm_tsg-step%03d' % i, debug=DEBUG)
+        tsg = self.get_tsg(norm, self.get_steps_ahead())
+        utl.dbg_tsg(tsg, 'norm_tsg', debug=DEBUG)
 
-            pred = self.model.predict_generator(tsg)
-            utl.dbg_df(pred, self.name, 'prediction-step%03d' % i, print=DEBUG, save=DEBUG)
+        pred = self.model.predict_generator(tsg)
+        utl.dbg_df(pred, self.name, 'prediction', print=DEBUG, save=DEBUG)
 
-            pred_denorm = self.inverse_normalize(pred)
-            utl.dbg_df(pred_denorm, self.name, 'pred_denormalized-step%03d' % i, print=DEBUG, save=DEBUG)
+        pred_denorm = self.inverse_normalize(pred)
+        utl.dbg_df(pred_denorm, self.name, 'pred_denormalized', print=DEBUG, save=DEBUG)
 
-            pred_invtrans = self.inverse_transform(df, pred_denorm)
-            utl.dbg_df(pred_invtrans, self.name, 'pred_inv_trans-step%03d' % i, print=DEBUG, save=DEBUG)
+        pred_invtrans = self.inverse_transform(df, pred_denorm)
+        utl.dbg_df(pred_invtrans, self.name, 'pred_inv_trans', print=DEBUG, save=DEBUG)
 
-            if predictions is None:
-                predictions = pred_invtrans
-            else:
-                utl.dbg_df(predictions, self.name, ('pred-step%03d' % i), save=DEBUG, print=DEBUG)
-                predictions = predictions.append(pred_invtrans.tail(1))
-                utl.dbg_df(predictions, self.name, ('pred-append-step%03d' % i), save=DEBUG, print=DEBUG)
+        if isinstance(pred_invtrans, pd.DataFrame):
+            pred_invtrans = pred_invtrans.values
 
-            # next step, leave the first row and append predicted row
-            df = df.append(pred_invtrans.tail(1))[1:]
-
-        if isinstance(predictions, pd.DataFrame):
-            predictions = predictions.values
-
-        return predictions
+        return pred_invtrans
 
     # This function wraps pandas._read_csv(), reads the csv data and calls predict() on them
     def read_file_or_buffer(self, *args, **kwargs):
@@ -602,6 +626,6 @@ class mods_model:
         norm = self.normalize(trans, self.get_scaler())
         # print('normalized:\n%s' % norm)
 
-        tsg = self.get_tsg(norm)
+        tsg = self.get_tsg(norm, self.get_steps_ahead())
 
         return self.model.evaluate_generator(tsg)

@@ -99,7 +99,6 @@ def predict_file(*args, **kwargs):
 
             model_name = yaml.safe_load(arg.model_name)
             data_file = yaml.safe_load(arg.file)
-            steps_fwd = yaml.safe_load(arg.steps_forward)
 
             usecols = [utl.parse_int_or_str(col) for col in yaml.safe_load(arg.pd_usecols).split(',')]
             skiprows = yaml.safe_load(arg.pd_skiprows)
@@ -136,18 +135,18 @@ def predict_file(*args, **kwargs):
                 header=header
             )
 
-            predictions = m.predict(df_data, steps_fwd)
+            predictions = m.predict(df_data)
 
             message = {
                 'status': 'ok',
                 'dir_models': models_dir,
                 'model_name': model_name,
                 'data': data_file,
-                'steps_forward': steps_fwd,
+                'steps_ahead': m.get_steps_ahead(),
                 'usecols': usecols,
                 'evaluation': utl.compute_metrics(
                     df_data[m.get_sequence_len():-1],
-                    predictions[:-steps_fwd],
+                    predictions[:-m.get_steps_ahead()],
                     m,
                 )
             }
@@ -187,7 +186,6 @@ def predict_data(*args, **kwargs):
 
             file_storage = arg.files
             buffer = io.BytesIO(file_storage.read())
-            steps_fwd = yaml.safe_load(arg.steps_forward)
 
             usecols = cfg.pd_usecols
             sep = cfg.pd_sep
@@ -220,18 +218,18 @@ def predict_data(*args, **kwargs):
                 header=header
             )
 
-            predictions = m.predict(df_data, steps_fwd)
+            predictions = m.predict(df_data)
 
             message = {
                 'status': 'ok',
                 'dir_models': models_dir,
                 'model_name': model_name,
                 'data': file_storage.filename,
-                'steps_forward': steps_fwd,
+                'steps_ahead': m.get_steps_ahead(),
                 'usecols': usecols,
                 'evaluation': utl.compute_metrics(
                     df_data[m.get_sequence_len():-1],
-                    predictions[:-steps_fwd],
+                    predictions[:-m.get_steps_ahead()],
                     m,
                 )
             }
@@ -452,6 +450,7 @@ def train(args, **kwargs):
     num_epochs = yaml.safe_load(args.num_epochs)
     epochs_patience = yaml.safe_load(args.epochs_patience)
     blocks = yaml.safe_load(args.blocks)
+    steps_ahead = yaml.safe_load(args.steps_ahead)
     pd_usecols = [utl.parse_int_or_str(col) for col in yaml.safe_load(args.pd_usecols).split(',')]
     pd_header = yaml.safe_load(args.pd_header)
 
@@ -485,7 +484,8 @@ def train(args, **kwargs):
         model_type=model_type,
         num_epochs=num_epochs,
         epochs_patience=epochs_patience,
-        blocks=blocks
+        blocks=blocks,
+        steps_ahead=steps_ahead
     )
 
     # save model locally
@@ -507,10 +507,11 @@ def train(args, **kwargs):
         'dir_models': models_dir,
         'model_name': model_name,
         'train_data': data,
+        'steps_ahead': m.get_steps_ahead(),
         'usecols': pd_usecols,
         'evaluation': utl.compute_metrics(
             df_train[m.get_sequence_len():-1],
-            pred[:-1],  # here, we predict 1 step ahead
+            pred[:-steps_ahead],  # here, we predict # steps_ahead
             m,
         )
     }
@@ -549,7 +550,6 @@ def test_file(*args, **kwargs):
 
         dir_models = cfg.app_models
         model_name = yaml.safe_load(arg.model_name)
-        steps_fwd = yaml.safe_load(arg.steps_forward)
         dir_data_test = cfg.app_data_test
         data_test = yaml.safe_load(arg.file)
         usecols = [utl.parse_int_or_str(col) for col in yaml.safe_load(arg.pd_usecols).split(',')]
@@ -587,18 +587,18 @@ def test_file(*args, **kwargs):
         )
 
         # predict
-        predictions = m.predict(df_test, steps_fwd)
+        predictions = m.predict(df_test)
 
         messages.append({
             'status': 'ok',
             'dir_models': dir_models,
             'model_name': model_name,
             'test_data': data_test,
-            'steps_forward': steps_fwd,
+            'steps_ahead': m.get_steps_ahead(),
             'usecols': usecols,
             'evaluation': utl.compute_metrics(
                 df_test[m.get_sequence_len():-1],
-                predictions[:-steps_fwd],
+                predictions[:-m.get_steps_ahead()],
                 m,
             )
         })

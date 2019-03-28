@@ -113,6 +113,7 @@ model_type = model_types[0]
 num_epochs = 50
 epochs_patience = 10
 blocks = 6
+steps_ahead = 1
 
 # prediction defaults
 data_predict = 'sample-w1h-s10m.tsv'
@@ -124,10 +125,6 @@ data_test = 'w1h-s10m.tsv'
 model_name_all = list_dir(app_models, '*.zip')
 model_name = 'mods-20180414-20181015-w1h-s10m'
 
-steps_fwd_choices = [1, 2, 3, 5, 10, 25, 50, 100]
-if sequence_len not in steps_fwd_choices:
-    steps_fwd_choices.append(sequence_len)
-    steps_fwd_choices.sort()
 
 def set_common_args():
     common_args = {
@@ -233,6 +230,11 @@ def set_train_args():
             'default': blocks,
             'help': '',
             'required': False
+        },
+        'steps_ahead': {
+            'default': steps_ahead,
+            'help': 'Number of steps to predict ahead of current time',
+            'required': False
         }
     }
     train_args.update(set_pandas_args())
@@ -247,12 +249,6 @@ def set_predict_args():
             'choices': model_name_all,
             'help': 'Name of the model used for prediction',
             'type': str,
-            'required': False
-        },
-        'steps_forward': {
-            'default': 1,
-            'choices': steps_fwd_choices,
-            'help': 'Number of steps to predict forward',
             'required': False
         }
     }
@@ -272,12 +268,6 @@ def set_test_args():
         'data': {
             'default': data_test,
             'help': 'Data to test on',
-            'required': False
-        },
-        'steps_forward': {
-            'default': 1,
-            'choices': steps_fwd_choices,
-            'help': 'Number of steps to predict forward',
             'required': False
         }
     }
