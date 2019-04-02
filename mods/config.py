@@ -51,17 +51,17 @@ log_header_lines = 8
 
 # Application dirs
 app_data = BASE_DIR + '/data/'
-app_data_remote = 'deepnc:/mods/data/'
-app_data_raw = BASE_DIR + '/data/raw/'
-app_data_features = BASE_DIR + '/data/features/'
-# app_data_test = BASE_DIR + '/data/test/'
-# app_data_predict = BASE_DIR + '/data/predict/'
-app_data_plot = BASE_DIR + '/data/plot/'
-app_data_results = BASE_DIR + '/data/results/'
-app_models = BASE_DIR + '/models/'
-app_models_remote = 'deepnc:/mods/models/'
-app_checkpoints = BASE_DIR + '/checkpoints/'
-app_visualization = BASE_DIR + '/visualization/'
+app_data_remote     = 'deepnc:/mods/data/'
+app_data_raw        = BASE_DIR + '/data/raw/'
+app_data_features   = BASE_DIR + '/data/features/'
+app_data_test       = BASE_DIR + '/data/test/'
+app_data_predict    = BASE_DIR + '/data/predict/'
+app_data_plot       = BASE_DIR + '/data/plot/'
+app_data_results    = BASE_DIR + '/data/results/'
+app_models          = BASE_DIR + '/models/'
+app_models_remote   = 'deepnc:/mods/models/'
+app_checkpoints     = BASE_DIR + '/checkpoints/'
+app_visualization   = BASE_DIR + '/visualization/'
 
 # Feature data
 feature_filename = 'features.tsv'
@@ -118,7 +118,8 @@ blocks = 6
 
 # common defaults
 model_name_all = list_dir(app_models, '*.zip')
-model_name = 'model-default'
+# model_name = 'model-default'
+model_name = 'mods-20180414-20181015-w1h-s10m'
 
 # prediction defaults
 data_predict = 'sample-w1h-s10m.tsv'        # can be removed later?
@@ -140,6 +141,18 @@ fig_size_y = 4
 format_string = '%Y-%m-%d %H:%M:%S'
 format_string_parquet = '%Y-%m-%d %H_%M_%S'     # parquet format without ":"
 timezone = 3600
+
+
+def set_common_args():
+    common_args = {
+        'bootstrap_data': {
+            'default': True,
+            'choices': [True, False],
+            'help': 'Download data from remote datastore',
+            'required': False
+        }
+    }
+    return common_args
 
 
 def set_pandas_args():
@@ -204,11 +217,13 @@ def set_train_args():
         },
         'model_delta': {
             'default': model_delta,
+            'choices': [True, False],
             'help': '',
             'required': False
         },
         'interpolate': {
             'default': interpolate,
+            'choices': [True, False],
             'help': '',
             'required': False
         },
@@ -232,9 +247,15 @@ def set_train_args():
             'default': blocks,
             'help': '',
             'required': False
+        },
+        'steps_ahead': {
+            'default': steps_ahead,
+            'help': 'Number of steps to predict ahead of current time',
+            'required': False
         }
     }
     train_args.update(set_pandas_args())
+    train_args.update(set_common_args())
     return train_args
 
 
@@ -249,10 +270,12 @@ def set_predict_args():
         }
     }
     predict_args.update(set_pandas_args())
+    predict_args.update(set_common_args())
     return predict_args
 
+
 def set_test_args():
-    predict_args = {
+    test_args = {
         'model_name': {
             'default': model_name,
             'help': 'Name of the model used for a test',
@@ -265,5 +288,6 @@ def set_test_args():
             'required': False
         }
     }
-    predict_args.update(set_pandas_args())
-    return predict_args
+    test_args.update(set_pandas_args())
+    test_args.update(set_common_args())
+    return test_args
