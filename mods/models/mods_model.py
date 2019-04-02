@@ -411,17 +411,17 @@ class mods_model:
         x = Input(shape=(sequence_len, multivariate))
 
         if model_type == 'GRU':
-            h = GRU(cfg.blocks)(x)
+            h = GRU(blocks)(x)
         elif model_type == 'CuDNNLSTM':
-            h = CuDNNLSTM(cfg.blocks)(x)
+            h = CuDNNLSTM(blocks)(x)
         elif model_type == 'CuDNNGRU':
-            h = CuDNNGRU(cfg.blocks)(x)
+            h = CuDNNGRU(blocks)(x)
         elif model_type == 'BidirectLSTM':
-            h = Bidirectional(LSTM(cfg.blocks))(x)
+            h = Bidirectional(LSTM(blocks))(x)
         elif model_type == 'seq2seqLSTM':
-            h = LSTM(cfg.blocks)(x)
+            h = LSTM(blocks)(x)
             h = RepeatVector(sequence_len)(h)
-            h = LSTM(cfg.blocks, return_sequences=True)(h)
+            h = LSTM(blocks, return_sequences=True)(h)
             h = Flatten()(h)
         elif model_type == 'Conv1D':
             h = Conv1D(filters=64, kernel_size=2, activation='relu')(x)
@@ -432,7 +432,7 @@ class mods_model:
             # h = Dense(units=multivariate, activation='relu')(h)   # stacked
             h = Flatten()(h)
         else:  # default LSTM
-            h = LSTM(cfg.blocks)(x)
+            h = LSTM(blocks)(x)
             # h = LSTM(cfg.blocks)(h)                               # stacked
 
         y = Dense(units=multivariate, activation='sigmoid')(h)      # 'softmax'
