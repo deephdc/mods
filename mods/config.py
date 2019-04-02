@@ -42,6 +42,7 @@ BASE_DIR = path.dirname(path.normpath(path.dirname(__file__)))
 
 # Data repository
 DATA_DIR = expanduser("~") + '/data/deep-dm/'  # app_data_raw
+
 # Data dirs
 dir_logs = DATA_DIR + 'logs/'
 dir_parquet = DATA_DIR + 'logs_parquet/'
@@ -51,10 +52,12 @@ log_header_lines = 8
 # Application dirs
 app_data = BASE_DIR + '/data/'
 app_data_remote = 'deepnc:/mods/data/'
-app_data_raw = BASE_DIR + '/data/raw/'  # ln -s ...
-app_data_features = BASE_DIR + '/data/features/'  # extracted features
-app_data_test = BASE_DIR + '/data/test/'
-app_data_predict = BASE_DIR + '/data/predict/'
+app_data_raw = BASE_DIR + '/data/raw/'
+app_data_features = BASE_DIR + '/data/features/'
+# app_data_test = BASE_DIR + '/data/test/'
+# app_data_predict = BASE_DIR + '/data/predict/'
+app_data_plot = BASE_DIR + '/data/plot/'
+app_data_results = BASE_DIR + '/data/results/'
 app_models = BASE_DIR + '/models/'
 app_models_remote = 'deepnc:/mods/models/'
 app_checkpoints = BASE_DIR + '/checkpoints/'
@@ -62,80 +65,81 @@ app_visualization = BASE_DIR + '/visualization/'
 
 # Feature data
 feature_filename = 'features.tsv'
-# time_range_begin = '2018-04-14'         # begin <= time_range < end
-# time_range_end   = '2018-10-15'         # excluded
-time_range_begin = '2018-07-14'
-time_range_end = '2018-10-15'
+time_range_begin = '2018-04-14'             # begin <= time_range < end
+time_range_end   = '2019-04-01'             # excluded
 window_duration = '1 hour'
-slide_duration = '10 minutes'
-
-# ML data
-column_separator = '\t'  # for tsv
-# column_separator = ','                                                    # for csv
-
-
-# ML and time series datasets
-split_ratio = 0.67  # train:test = 2:1
-batch_size = 1  # delta (6), without_delta(1)
-
-# Auxiliary
-rate_RMSE = True
-
-# Auxiliary: plotting
-plot = False
-fig_size_x = 15  # max 2^16 pixels = 650 inch
-fig_size_y = 4
-
-# Auxiliary: DayTime format
-format_string = '%Y-%m-%d %H:%M:%S'
-format_string_parquet = '%Y-%m-%d %H_%M_%S'  # parquet format without ":"
-timezone = 3600
+slide_duration  = '10 minutes'
 
 # pandas defaults
 pd_usecols = ['number_of_conn', 'sum_orig_kbytes']
 # pd_usecols = ['number_of_conn']
 # pd_usecols = ['sum_orig_kbytes']
-pd_sep = '\t'
+pd_sep = '\t'                               # ',' for csv
 pd_skiprows = 0
 pd_skipfooter = 0
 pd_engine = 'python'
 pd_header = 0
 
+# Datapool defaults
+app_data_pool = app_data_features + 'w01h-s10m/'        # 'w10m-s01m/'
+month_start_default = '201804'              # collected data starts since this month
+
+data_filename_train = 'data_train.tsv'
+data_train_begin = '201805'
+data_train_end   = '201812'                 # included
+data_train_excluded = []
+
+data_filename_test  = 'data_test.tsv'
+data_test_begin = '201901'
+data_test_end   = '201903'                  # included
+data_test_excluded = []
+
 # training defaults
 data_train_all = list_dir(app_data_features, '*.tsv')
 data_train = 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv'
-multivariate = len(pd_usecols)
-sequence_len = 6
-model_delta = True
+
+# Data transformation defaults
+model_delta = True                          # True --> better predictions
 interpolate = True
-model_types = ['LSTM', 'bidirect', 'seq2seq', 'GRU', 'CNN', 'MLP']
+remove_peak = False                         # don't use; True --> worse predictions due to time-series nature
+
+# Training parameters defaults
+multivariate = len(pd_usecols)
+sequence_len = 6                            # from 6 to 12 for w01h-s10m
+steps_ahead = 1                             # number of steps steps_ahead for prediction
+model_types = ['LSTM', 'GRU', 'CuDNNLSTM', 'CuDNNGRU', 'BidirectLSTM', 'seq2seqLSTM', 'Conv1D', 'MLP']
+# model_types = ['ConvLSTM2D']
 model_type = model_types[0]
 num_epochs = 50
 epochs_patience = 10
+batch_size = 1                              # to be tested later
+batch_size_test = 1                         # don't change
 blocks = 6
-steps_ahead = 1
-
-# prediction defaults
-data_predict = 'sample-w1h-s10m.tsv'
-
-# test defaults
-data_test = 'w1h-s10m.tsv'
 
 # common defaults
 model_name_all = list_dir(app_models, '*.zip')
-model_name = 'mods-20180414-20181015-w1h-s10m'
+model_name = 'model-default'
 
+# prediction defaults
+data_predict = 'sample-w1h-s10m.tsv'        # can be removed later?
 
-def set_common_args():
-    common_args = {
-        'bootstrap_data': {
-            'default': True,
-            'choices': [True, False],
-            'help': 'Download data from remote datastore',
-            'required': False
-        }
-    }
-    return common_args
+# test defaults
+data_test = 'w1h-s10m.tsv'                  # can be removed later?
+
+# Evaluation metrics on real values
+eval_filename = 'eval.tsv'
+eval_metrics = ['SMAPE', 'R2', 'COSINE']    # 'MAPE', 'RMSE'
+
+# Plotting
+plot = False
+plot_filename = 'plot_data.png'
+fig_size_x = 25                             # max 2^16 pixels = 650 inch
+fig_size_y = 4
+
+# Auxiliary: DayTime format
+format_string = '%Y-%m-%d %H:%M:%S'
+format_string_parquet = '%Y-%m-%d %H_%M_%S'     # parquet format without ":"
+timezone = 3600
 
 
 def set_pandas_args():
@@ -200,13 +204,11 @@ def set_train_args():
         },
         'model_delta': {
             'default': model_delta,
-            'choices': [True, False],
             'help': '',
             'required': False
         },
         'interpolate': {
             'default': interpolate,
-            'choices': [True, False],
             'help': '',
             'required': False
         },
@@ -230,15 +232,9 @@ def set_train_args():
             'default': blocks,
             'help': '',
             'required': False
-        },
-        'steps_ahead': {
-            'default': steps_ahead,
-            'help': 'Number of steps to predict ahead of current time',
-            'required': False
         }
     }
     train_args.update(set_pandas_args())
-    train_args.update(set_common_args())
     return train_args
 
 
@@ -253,12 +249,10 @@ def set_predict_args():
         }
     }
     predict_args.update(set_pandas_args())
-    predict_args.update(set_common_args())
     return predict_args
 
-
 def set_test_args():
-    test_args = {
+    predict_args = {
         'model_name': {
             'default': model_name,
             'help': 'Name of the model used for a test',
@@ -271,6 +265,5 @@ def set_test_args():
             'required': False
         }
     }
-    test_args.update(set_pandas_args())
-    test_args.update(set_common_args())
-    return test_args
+    predict_args.update(set_pandas_args())
+    return predict_args

@@ -22,32 +22,33 @@ Created on Mon Apr 23 12:48:52 2018
 
 import calendar
 import datetime
+import glob
 import json
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
 import os
+import pandas as pd
 import re
+import seaborn as sns
+import string
 import time
 # from datetime import datetime
 from datetime import timedelta
 from math import sqrt
 from os.path import basename
 from random import randint
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import r2_score
+from sklearn.preprocessing import MinMaxScaler
+from numpy import dot
+from numpy.linalg import norm
 
 import keras
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
-from sklearn.metrics import mean_squared_error
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.preprocessing import MinMaxScaler
 
-# from mods import config as mc
 import mods.config as cfg
 
-
 # matplotlib.style.use('ggplot')
-
-
 # %matplotlib inline
 
 # import bat
@@ -63,57 +64,87 @@ import mods.config as cfg
 #    return
 
 
-########## Data functions ##########
+# @giang: read .tsv file -> pandas dataframe -> numpy array
+def read_data(data_filename):
+    df = pd.read_csv(data_filename,
+                     sep=cfg.pd_sep,
+                     skiprows=0,
+                     skipfooter=0,
+                     engine='python',
+                     usecols=lambda col: col in cfg.pd_usecols
+                     )
+    print(len(df.columns), list(df))
 
-# @giang: get Y or X from TimeseriesGenerator, default is Y
-def get_var_from_tsg(tsg, multivariate, get_x=False, verbose=False):
-    var = None
+    df = df.apply(pd.to_numeric, errors='coerce')
+    df.replace('NaN', 0, inplace=True)
+    df.interpolate(inplace=True)
 
-    index = 1
-    if get_x:
-        index = 0
+    if 'sum_orig_kbytes' in list(df):
+        df['sum_orig_kbytes'] = df['sum_orig_kbytes'].div(1024 * 1024).astype(int)
+        # print(df)
 
-    for i in range(len(tsg)):
-        batch = tsg[i][index]
-        if var is None:
-            var = batch
-        else:
-            var = np.append(var, batch)
-
-    if verbose:
-        print(var.shape, '\n', var)
-
-    var = var.reshape((-1, multivariate))
-
-    if verbose:
-        print(var.shape)
-
-    return var
+    # Data: pandas dataframe to numpy array
+    data = df.values.astype('float32')
+    print('read_data: ', data_filename, data.dtype, cfg.multivariate)
+    return data
 
 
-# @giang: First order differential d(y)/d(t)=f(y,t)=y' for numpy array
+# @giang: get X from TimeseriesGenerator data
+def getX(tsg_data):
+    X = list()
+    for x, y in tsg_data:
+        X.append(x)
+    return np.array(X)
+
+
+# @giang: get Y from TimeseriesGenerator data
+def getY(tsg_data):
+    Y = list()
+    for x, y in tsg_data:
+        Y.append(y)
+    return np.array(Y)
+
+
+# @giang: get XY from TimeseriesGenerator data
+def getXY(tsg_data):
+    X, Y = list(), list()
+    for x, y in tsg_data:
+        X.append(x)
+        Y.append(y)
+    return np.array(X), np.array(Y)
+
+
+# @giang: first order differential d(y)/d(t)=f(y,t)=y' for numpy array
 def delta_timeseries(arr):
     return arr[1:] - arr[:-1]
 
 
 # @giang: RMSE for numpy array
-def rate_rmse(a, b):
+def rmse(a, b):
     score = []
     for i in range(a.shape[1]):
         score.append(sqrt(mean_squared_error(a[:, i], b[:, i])))
     return score
 
 
-# @giang: cosine similarity for two numpy arrays
-def rate_cosine(a, b):
+# @giang: cosine similarity for two numpy arrays, <-1.0, 1.0>
+def cosine(a, b):
     score = []
     for i in range(a.shape[1]):
-        score.append(cosine_similarity(a[:, i].reshape(1, -1),
-                                       b[:, i].reshape(1, -1)))
+        cos_sim = dot(a[:, i], b[:, i]) / (norm(a[:, i]) * norm(b[:, i]))
+        score.append(cos_sim)
     return score
 
 
-# @giang: MAPE = np.mean(np.abs((A-F)/A)) * 100
+# @giang: R^2 (coefficient of determination) regression score, <-1.0, 1.0>, not a symmetric function
+def r2(a, b):
+    score = []
+    for i in range(a.shape[1]):
+        score.append(r2_score(a[:, i], b[:, i]))
+    return score
+
+
+# @giang/@stevo: MAPE = np.mean(np.abs((A-F)/A)) * 100
 def mape(y_true, y_pred):
     assert isinstance(y_true, np.ndarray), 'numpy array expected for y_true in mape'
     assert isinstance(y_pred, np.ndarray), 'numpy array expected for y_pred in mape'
@@ -129,7 +160,7 @@ def mape(y_true, y_pred):
     return score
 
 
-# @giang: SMAPE = 100/len(A) * np.sum(2 * np.abs(F-A) / (np.abs(A) + np.abs(F)) )
+# @giang/@stevo: SMAPE = 100/len(A) * np.sum(2 * np.abs(F-A) / (np.abs(A) + np.abs(F))), symmetric function
 def smape(y_true, y_pred):
     assert isinstance(y_true, np.ndarray), 'numpy array expected for y_true in smape'
     assert isinstance(y_pred, np.ndarray), 'numpy array expected for y_pred in smape'
@@ -146,18 +177,63 @@ def smape(y_true, y_pred):
     return score
 
 
-########## File manipulation functions ##########
+##### Datapool functions #####
 
-# @giang create unique filename
-def create_filename(
-        timer_start,
-        dir_output=cfg.app_data_features,
-        feature_filename=cfg.feature_filename,
-        time_range_begin=cfg.time_range_begin,
-        time_range_end=cfg.time_range_end,
-        window_duration=cfg.window_duration,
-        slide_duration=cfg.slide_duration
-):
+# @giang
+def create_data_from_datapool(data_filename,
+                              data_begin,
+                              data_end,
+                              data_excluded,
+                              app_data_pool=cfg.app_data_pool,
+                              app_data=cfg.app_data
+                              ):
+    flist = []
+    for filename in sorted(os.listdir(app_data_pool)):
+        if filename.endswith('.tsv'):
+            fn = os.path.basename(filename).split('.')[0]
+            if (data_begin <= fn <= data_end) and (fn not in data_excluded):
+                flist.append(app_data_pool + filename)
+    print(flist)
+
+    filename = app_data + data_filename
+    if not filename.endswith(('.tsv')):
+        filename = filename + '.tsv'
+
+    write_header = True
+    with open(filename, 'w') as fout:
+        for fn in flist:
+            with open(fn) as fin:
+                if write_header:
+                    header = fin.readline()
+                    fout.write(header)
+                    write_header = False
+                else:
+                    next(fin)
+                for line in fin:
+                    fout.write(line)
+
+    print('created data=', filename + '\n')
+    return filename
+
+
+##### @giang auxiliary - BEGIN - can be removed later #####
+
+# @giang data = numpy array
+def plot_series(data, ylabel):
+    plt.plot(data)
+    plt.ylabel(ylabel)
+    plt.show()
+
+
+# @giang: create unique filename (TBR later???)
+def create_filename(timer_start,
+                    dir_output=cfg.app_data_features,
+                    time_range_begin=cfg.time_range_begin,
+                    time_range_end=cfg.time_range_end,
+                    window_duration=cfg.window_duration,
+                    slide_duration=cfg.slide_duration
+                    ):
+
     filename = os.path.join(
         dir_output,
         cfg.feature_filename.split('.')[0] + \
@@ -169,85 +245,19 @@ def create_filename(
             str(int(timer_start.timestamp())))
     )
     print('Output filename for extracted features:', filename)
+
     return filename
 
 
-# @giang
+# @giang (TBR later ???)
 def get_fullpath_model_name(dataset_name,
-                            sequence_len=cfg.sequence_len):
-    model_name = (cfg.app_models +
-                  os.path.splitext(basename(dataset_name))[0] +
-                  '-seq-' + str(sequence_len) + '.h5')
+                            sequence_len=cfg.sequence_len
+                            ):
+    model_name = cfg.app_models +\
+                 os.path.splitext(basename(dataset_name))[0] +\
+                 '-seq-' + str(sequence_len) + '.h5'
     return model_name
 
-
-########## Drawing functions ##########
-
-# @giang data = numpy array
-def plot_series(data, ylabel):
-    plt.plot(data)
-    plt.ylabel(ylabel)
-    plt.show()
-
-
-# df = pandas dataframe
-def drawing_df_scaled():
-    np.random.seed(1)
-    scaler = MinMaxScaler(feature_range=(0, 1))
-
-    df = pd.DataFrame({
-        'x1': np.random.normal(0, 2, 10000),
-        'x2': np.random.normal(5, 3, 10000),
-        'x3': np.random.normal(-5, 5, 10000)
-    })
-    #    df = pd.DataFrame({
-    #        'x1': np.random.chisquare(8, 1000),
-    #        'x2': np.random.beta(8, 2, 1000) * 40,
-    #        'x3': np.random.normal(50, 3, 1000)
-    #    })
-
-    df_scaled = scaler.fit_transform(df)
-
-    fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(6, 5))
-
-    ax1.set_title('Before scaling')
-    for col in list(df):
-        sns.kdeplot(df[col].values, ax=ax1)
-
-    ax2.set_title('After scaling')
-    for col in list(df_scaled):
-        sns.kdeplot(df_scaled[col].values, ax=ax2)
-
-    plt.show()
-    return
-
-
-########## DayTime functions ##########
-
-# @stevo
-REGEX_TIME_INTERVAL = re.compile(
-    r'((?P<years>\d)\s+years?\s+)?((?P<months>\d)\s+months?\s+)?((?P<days>\d)\s+days?\s+)?(?P<hours>\d{2}):(?P<minutes>\d{2}):(?P<seconds>\d{2})(?P<nanoseconds>\.\d+)')
-
-
-# @stevo
-def parseInterval(s):
-    global REGEX_TIME_INTERVAL
-    time_array = [['nanoseconds', 1],
-                  ['seconds', 1],
-                  ['minutes', 60],
-                  ['hours', 3600],
-                  ['days', 86400],
-                  ['months', 1036800],
-                  ['years', 378432000]]
-
-    m = REGEX_TIME_INTERVAL.search(s.strip())
-    seconds = float(0.0)
-    for t in time_array:
-        seconds += float(m.group(t[0])) * t[1] if m.group(t[0]) else 0
-    return seconds
-
-
-########## Auxiliary functions - can be removed later ##########
 
 def get_one_row(i, dataset):
     row = dataset[i, :]
@@ -322,6 +332,32 @@ def print_slides(dir_day, log_file, window_duration=cfg.window_duration,
         print('\tslide', i,
               window_next(start, window_duration * i, fs=cfg.format_string))
     return
+
+##### @giang auxiliary - END - can be removed later #####
+
+##### @stevo @stevo @stevo#####
+
+# @stevo
+REGEX_TIME_INTERVAL = re.compile(
+    r'((?P<years>\d)\s+years?\s+)?((?P<months>\d)\s+months?\s+)?((?P<days>\d)\s+days?\s+)?(?P<hours>\d{2}):(?P<minutes>\d{2}):(?P<seconds>\d{2})(?P<nanoseconds>\.\d+)')
+
+
+# @stevo
+def parseInterval(s):
+    global REGEX_TIME_INTERVAL
+    time_array = [['nanoseconds', 1],
+                  ['seconds', 1],
+                  ['minutes', 60],
+                  ['hours', 3600],
+                  ['days', 86400],
+                  ['months', 1036800],
+                  ['years', 378432000]]
+
+    m = REGEX_TIME_INTERVAL.search(s.strip())
+    seconds = float(0.0)
+    for t in time_array:
+        seconds += float(m.group(t[0])) * t[1] if m.group(t[0]) else 0
+    return seconds
 
 
 # returns metadata filename based on model filename

@@ -31,23 +31,27 @@ from zipfile import ZipFile
 import keras
 import numpy as np
 import pandas as pd
-from keras.callbacks import EarlyStopping
+
+from keras import backend as K
 from keras.callbacks import ModelCheckpoint
+from keras.callbacks import EarlyStopping
 from keras.layers import Bidirectional
 from keras.layers import Dense
 from keras.layers import Flatten
 from keras.layers import Input
 from keras.layers import RepeatVector
+from keras.layers import CuDNNGRU
+from keras.layers import CuDNNLSTM
+from keras.layers import ConvLSTM2D
 from keras.layers.convolutional import Conv1D
 from keras.layers.convolutional import MaxPooling1D
 from keras.layers.recurrent import GRU
 from keras.layers.recurrent import LSTM
 from keras.models import Model
 from keras.preprocessing.sequence import TimeseriesGenerator
-from sklearn.externals import joblib
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.externals import joblib
 
-# import project config.py
 import mods.config as cfg
 import mods.utils as utl
 
@@ -84,6 +88,7 @@ class mods_model:
         self.sample_data = None
         self.config = self.__default_config()
 
+
     # saves the contents of the original file (e.g. file in a zip) into a temp file and runs func over it
     def __func_over_tempfile(self, orig_file, func, mode='wb', *args, **kwargs):
         # create temp file
@@ -100,10 +105,12 @@ class mods_model:
         os.remove(fname)
         return result
 
+
     def __get_sample_data_cfg(self):
         if mods_model.__SAMPLE_DATA in self.config:
             return self.config[mods_model.__SAMPLE_DATA]
         return None
+
 
     def save(self, file):
         if not file.lower().endswith('.zip'):
@@ -120,6 +127,7 @@ class mods_model:
         print('Model saved')
         return file
 
+
     def load(self, file):
         if not file.lower().endswith('.zip'):
             file += '.zip'
@@ -135,10 +143,12 @@ class mods_model:
         print('Model loaded')
         self.__init()
 
+
     def __save_config(self, zip, file):
         with zip.open(file, mode='w') as f:
             data = json.dumps(self.config)
             f.write(bytes(data, 'utf-8'))
+
 
     def __load_config(self, zip, file):
         print('Loading model config')
@@ -146,6 +156,7 @@ class mods_model:
             data = f.read()
             self.config = json.loads(data.decode('utf-8'))
         print('Model config:\n%s' % json.dumps(self.config, indent=True))
+
 
     def __save_model(self, zip, model_config):
         print('Saving keras model')
@@ -155,11 +166,13 @@ class mods_model:
         os.remove(fname)
         print('Keras model saved')
 
+
     def __load_model(self, zip, model_config):
         print('Loading keras model')
         with zip.open(model_config[mods_model.__FILE]) as f:
             self.model = self.__func_over_tempfile(f, keras.models.load_model)
         print('Keras model loaded')
+
 
     def __save_scaler(self, zip, scaler_config):
         print('Saving scaler')
@@ -169,11 +182,13 @@ class mods_model:
         os.remove(fname)
         print('Scaler saved')
 
+
     def __load_scaler(self, zip, scaler_config):
         print('Loading scaler')
         with zip.open(scaler_config[mods_model.__FILE]) as f:
             self.__scaler = joblib.load(f)
         print('Scaler loaded')
+
 
     def __save_sample_data(self, zip, sample_data_config):
         if sample_data_config is None:
@@ -195,6 +210,7 @@ class mods_model:
             )
         print('Sample data saved:\n%s' % self.sample_data)
 
+
     def __load_sample_data(self, zip, sample_data_config):
         if sample_data_config is None:
             return
@@ -213,6 +229,7 @@ class mods_model:
             print('Sample data loaded:\n%s' % self.sample_data)
         except Exception as e:
             print('Sample data not loaded: %s' % e)
+
 
     def load_data(
             self,
@@ -236,6 +253,7 @@ class mods_model:
         )
         return df
 
+
     def __default_config(self):
         return {
             mods_model.__MODEL: {
@@ -254,6 +272,7 @@ class mods_model:
                 mods_model.__FILE: 'scaler.pkl'
             }
         }
+
 
     def cfg_model(self):
         return self.config[mods_model.__MODEL]
@@ -323,6 +342,7 @@ class mods_model:
     def set_sample_data(self, df):
         self.sample_data = df
 
+
     def train(
             self,
             df_train,
@@ -382,30 +402,40 @@ class mods_model:
             self.set_steps_ahead(steps_ahead)
 
         # Define model
-        # TODO: divide into multiple model classes according to model_type
+        if len(K.tensorflow_backend._get_available_gpus()) == 0:
+            if model_type == 'CuDNNLSTM':
+                model_type = 'LSTM'
+            elif model_type == 'CuDNNGRU':
+                model_type = 'GRU'
+
         x = Input(shape=(sequence_len, multivariate))
+
         if model_type == 'GRU':
-            h = GRU(blocks)(x)
-        elif model_type == 'bidirect':
-            h = Bidirectional(LSTM(blocks))(x)
-        elif model_type == 'seq2seq':
-            h = LSTM(blocks)(x)
+            h = GRU(cfg.blocks)(x)
+        elif model_type == 'CuDNNLSTM':
+            h = CuDNNLSTM(cfg.blocks)(x)
+        elif model_type == 'CuDNNGRU':
+            h = CuDNNGRU(cfg.blocks)(x)
+        elif model_type == 'BidirectLSTM':
+            h = Bidirectional(LSTM(cfg.blocks))(x)
+        elif model_type == 'seq2seqLSTM':
+            h = LSTM(cfg.blocks)(x)
             h = RepeatVector(sequence_len)(h)
-            h = LSTM(blocks, return_sequences=True)(h)
+            h = LSTM(cfg.blocks, return_sequences=True)(h)
             h = Flatten()(h)
-        elif model_type == 'CNN':
+        elif model_type == 'Conv1D':
             h = Conv1D(filters=64, kernel_size=2, activation='relu')(x)
             h = MaxPooling1D(pool_size=2)(h)
             h = Flatten()(h)
         elif model_type == 'MLP':
             h = Dense(units=multivariate, activation='relu')(x)
-            # h = Dense(units=multivariate, activation='relu')(h)
+            # h = Dense(units=multivariate, activation='relu')(h)   # stacked
             h = Flatten()(h)
         else:  # default LSTM
-            h = LSTM(blocks)(x)
-            # h = LSTM(blocks)(h)         # stacked
+            h = LSTM(cfg.blocks)(x)
+            # h = LSTM(cfg.blocks)(h)                               # stacked
 
-        y = Dense(units=multivariate, activation='sigmoid')(h)  # 'softmax'
+        y = Dense(units=multivariate, activation='sigmoid')(h)      # 'softmax'
 
         self.model = Model(inputs=x, outputs=y)
 
@@ -415,8 +445,8 @@ class mods_model:
         # Compile model
         self.model.compile(
             loss='mean_squared_error',
-            optimizer='adam',  # 'adagrad', 'rmsprop'
-            metrics=['mse', 'mae']  # 'cosine'
+            optimizer='adam',               # 'adagrad', 'rmsprop'
+            metrics=['mse', 'mae']          # 'cosine', 'mape'
         )
 
         # Checkpointing and earlystopping
@@ -523,22 +553,42 @@ class mods_model:
     # [[ 4.  5.  6.  7.  8.  9.]
     #  [ 5.  6.  7.  8.  9. 10.]
     #  [ 6.  7.  8.  9. 10. 11.]] => [12. 13. 14.]
-    def get_tsg(self, df, steps_ahead=1):
+    # def get_tsg(self, df, steps_ahead=1):
+    #     x = y = df
+    #     length = self.get_sequence_len()
+    #     if steps_ahead < 2:
+    #         batch_size = 1
+    #     else:
+    #         batch_size = steps_ahead
+    #         x = df[:-(steps_ahead - 1)]
+    #         y = df[steps_ahead - 1:]
+    #         # length -= steps_ahead
+    #     return TimeseriesGenerator(x,
+    #                                y,
+    #                                length=length,
+    #                                sampling_rate=1,
+    #                                stride=1,
+    #                                batch_size=batch_size)
+
+    def get_tsg(self, df,
+                steps_ahead=cfg.steps_ahead,
+                batch_size=cfg.batch_size
+                ):
+
         x = y = df
         length = self.get_sequence_len()
-        if steps_ahead < 2:
-            batch_size = 1
-        else:
-            batch_size = steps_ahead
+        if steps_ahead > 1:
             x = df[:-(steps_ahead - 1)]
             y = df[steps_ahead - 1:]
-            # length -= steps_ahead
+
         return TimeseriesGenerator(x,
                                    y,
                                    length=length,
                                    sampling_rate=1,
                                    stride=1,
-                                   batch_size=batch_size)
+                                   batch_size=batch_size
+                                   )
+
 
     def predict(self, df):
 
@@ -562,7 +612,7 @@ class mods_model:
             norm = np.append(norm, [dummy], axis=0)
         utl.dbg_df(norm, self.name, 'normalized+nan', print=DEBUG, save=DEBUG)
 
-        tsg = self.get_tsg(norm, self.get_steps_ahead())
+        tsg = self.get_tsg(norm, self.get_steps_ahead(), cfg.batch_size_test)
         utl.dbg_tsg(tsg, 'norm_tsg', debug=DEBUG)
 
         pred = self.model.predict_generator(tsg)
@@ -626,6 +676,6 @@ class mods_model:
         norm = self.normalize(trans, self.get_scaler())
         # print('normalized:\n%s' % norm)
 
-        tsg = self.get_tsg(norm, self.get_steps_ahead())
+        tsg = self.get_tsg(norm, self.get_steps_ahead(), cfg.batch_size_test)
 
         return self.model.evaluate_generator(tsg)
