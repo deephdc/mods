@@ -96,7 +96,8 @@ data_test_excluded = []
 
 # training defaults
 data_train_all = list_dir(app_data_features, '*.tsv')
-data_train = 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv'
+# data_train = 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv'
+data_train = 'data_train.tsv'
 
 # Data transformation defaults
 model_delta = True                          # True --> better predictions
@@ -118,14 +119,14 @@ blocks = 6
 
 # common defaults
 model_name_all = list_dir(app_models, '*.zip')
-# model_name = 'model-default'
-model_name = 'mods-20180414-20181015-w1h-s10m'
+# model_name = 'mods-20180414-20181015-w1h-s10m'
+model_name = 'model-default'
 
 # prediction defaults
 data_predict = 'sample-w1h-s10m.tsv'        # can be removed later?
 
 # test defaults
-data_test = 'w1h-s10m.tsv'                  # can be removed later?
+data_test = 'data_test.tsv'                  # can be removed later?
 
 # Evaluation metrics on real values
 eval_filename = 'eval.tsv'
