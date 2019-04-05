@@ -252,6 +252,11 @@ def set_train_args():
             'default': steps_ahead,
             'help': 'Number of steps to predict ahead of current time',
             'required': False
+        },
+        'batch_size': {
+            'default': batch_size,
+            'help': '',
+            'required': False
         }
     }
     train_args.update(set_pandas_args())
@@ -266,6 +271,11 @@ def set_predict_args():
             'choices': model_name_all,
             'help': 'Name of the model used for prediction',
             'type': str,
+            'required': False
+        },
+        'batch_size': {
+            'default': batch_size_test,
+            'help': '',
             'required': False
         }
     }
@@ -285,6 +295,11 @@ def set_test_args():
         'data': {
             'default': data_test,
             'help': 'Data to test on',
+            'required': False
+        },
+        'batch_size': {
+            'default': batch_size_test,
+            'help': '',
             'required': False
         }
     }

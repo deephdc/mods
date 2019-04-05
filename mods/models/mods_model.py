@@ -70,6 +70,7 @@ class mods_model:
     __EPOCHS_PATIENCE = 'epochs_patience'
     __BLOCKS = 'blocks'
     __STEPS_AHEAD = 'steps_ahead'
+    __BATCH_SIZE = 'batch_size'
     # scaler
     __SCALER = 'scaler'
     # sample data
@@ -266,7 +267,8 @@ class mods_model:
                 mods_model.__EPOCHS: cfg.num_epochs,
                 mods_model.__EPOCHS_PATIENCE: cfg.epochs_patience,
                 mods_model.__BLOCKS: cfg.blocks,
-                mods_model.__STEPS_AHEAD: cfg.steps_ahead
+                mods_model.__STEPS_AHEAD: cfg.steps_ahead,
+                mods_model.__BATCH_SIZE: cfg.batch_size,
             },
             mods_model.__SCALER: {
                 mods_model.__FILE: 'scaler.pkl'
@@ -331,6 +333,12 @@ class mods_model:
     def get_steps_ahead(self):
         return self.cfg_model()[mods_model.__STEPS_AHEAD]
 
+    def set_batch_size(self, batch_size):
+        self.cfg_model()[mods_model.__BATCH_SIZE] = batch_size
+
+    def get_batch_size(self):
+        return self.cfg_model()[mods_model.__BATCH_SIZE]
+
     def get_scaler(self):
         if not self.__scaler:
             self.__scaler = MinMaxScaler(feature_range=(0, 1))
@@ -354,7 +362,8 @@ class mods_model:
             num_epochs=cfg.num_epochs,
             epochs_patience=cfg.epochs_patience,
             blocks=cfg.blocks,
-            steps_ahead=cfg.steps_ahead
+            steps_ahead=cfg.steps_ahead,
+            batch_size=cfg.batch_size
     ):
         if multivariate is None:
             multivariate = self.get_multivariate()
@@ -400,6 +409,11 @@ class mods_model:
             steps_ahead = self.get_steps_ahead()
         else:
             self.set_steps_ahead(steps_ahead)
+
+        if batch_size is None:
+            batch_size = self.get_batch_size()
+        else:
+            self.set_batch_size(batch_size)
 
         # Define model
         if len(K.tensorflow_backend._get_available_gpus()) == 0:
@@ -478,7 +492,8 @@ class mods_model:
         # df_train = df_train.values.astype('float32')
         df_train = self.transform(df_train)
         df_train = self.normalize(df_train, self.get_scaler())
-        tsg_train = self.get_tsg(df_train, steps_ahead)
+
+        tsg_train = self.get_tsg(df_train, steps_ahead=steps_ahead, batch_size=batch_size)
 
         if DEBUG:
             print(self.config)
@@ -539,36 +554,6 @@ class mods_model:
         utl.dbg_scaler(scaler, 'inverse_normalize', debug=DEBUG)
         return scaler.inverse_transform(df)
 
-    # returns time series generator
-    # steps_ahead = 3:
-    # sequence_length = 6
-    # batch_size = steps_ahead
-    # x=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-    # --> x=[1,2,3,4,5,6,7,8,9,10,11,12]
-    # --> y=[4,5,6,7,8,9,10,11,12,13,14,15]
-    # --> tsg=
-    # [[1. 2. 3. 4. 5. 6.]
-    #  [2. 3. 4. 5. 6. 7.]
-    #  [3. 4. 5. 6. 7. 8.]] => [ 9. 10. 11.]
-    # [[ 4.  5.  6.  7.  8.  9.]
-    #  [ 5.  6.  7.  8.  9. 10.]
-    #  [ 6.  7.  8.  9. 10. 11.]] => [12. 13. 14.]
-    # def get_tsg(self, df, steps_ahead=1):
-    #     x = y = df
-    #     length = self.get_sequence_len()
-    #     if steps_ahead < 2:
-    #         batch_size = 1
-    #     else:
-    #         batch_size = steps_ahead
-    #         x = df[:-(steps_ahead - 1)]
-    #         y = df[steps_ahead - 1:]
-    #         # length -= steps_ahead
-    #     return TimeseriesGenerator(x,
-    #                                y,
-    #                                length=length,
-    #                                sampling_rate=1,
-    #                                stride=1,
-    #                                batch_size=batch_size)
 
     def get_tsg(self, df,
                 steps_ahead=cfg.steps_ahead,
@@ -581,13 +566,14 @@ class mods_model:
             x = df[:-(steps_ahead - 1)]
             y = df[steps_ahead - 1:]
 
-        return TimeseriesGenerator(x,
-                                   y,
-                                   length=length,
-                                   sampling_rate=1,
-                                   stride=1,
-                                   batch_size=batch_size
-                                   )
+        return TimeseriesGenerator(
+            x,
+            y,
+            length=length,
+            sampling_rate=1,
+            stride=1,
+            batch_size=batch_size
+        )
 
 
     def predict(self, df):
@@ -612,7 +598,7 @@ class mods_model:
             norm = np.append(norm, [dummy], axis=0)
         utl.dbg_df(norm, self.name, 'normalized+nan', print=DEBUG, save=DEBUG)
 
-        tsg = self.get_tsg(norm, self.get_steps_ahead(), cfg.batch_size_test)
+        tsg = self.get_tsg(norm, steps_ahead=self.get_steps_ahead(), batch_size=self.get_batch_size())
         utl.dbg_tsg(tsg, 'norm_tsg', debug=DEBUG)
 
         pred = self.model.predict_generator(tsg)

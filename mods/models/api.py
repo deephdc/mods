@@ -125,6 +125,10 @@ def predict_file(*args, **kwargs):
                 model_name=model_name
             )
 
+            # override batch_size
+            batch_size = yaml.safe_load(arg.batch_size)
+            m.set_batch_size(batch_size)
+
             df_data = m.read_file_or_buffer(
                 data_file,
                 usecols=usecols,
@@ -207,6 +211,10 @@ def predict_data(*args, **kwargs):
                 models_dir=models_dir,
                 model_name=model_name
             )
+
+            # override batch_size
+            batch_size = yaml.safe_load(arg.batch_size)
+            m.set_batch_size(batch_size)
 
             df_data = m.read_file_or_buffer(
                 buffer,
@@ -451,6 +459,7 @@ def train(args, **kwargs):
     epochs_patience = yaml.safe_load(args.epochs_patience)
     blocks = yaml.safe_load(args.blocks)
     steps_ahead = yaml.safe_load(args.steps_ahead)
+    batch_size = yaml.safe_load(args.batch_size)
     pd_usecols = [utl.parse_int_or_str(col) for col in yaml.safe_load(args.pd_usecols).split(',')]
     pd_header = yaml.safe_load(args.pd_header)
 
@@ -485,7 +494,8 @@ def train(args, **kwargs):
         num_epochs=num_epochs,
         epochs_patience=epochs_patience,
         blocks=blocks,
-        steps_ahead=steps_ahead
+        steps_ahead=steps_ahead,
+        batch_size=batch_size
     )
 
     # save model locally
@@ -576,6 +586,10 @@ def test_file(*args, **kwargs):
         ) + ('.zip' if not model_name.lower().endswith('.zip') else '')
         m = MODS.mods_model(model_name)
         m.load(file_model)
+
+        # override batch_size
+        batch_size = yaml.safe_load(arg.batch_size)
+        m.set_batch_size(batch_size)
 
         # load data
         df_test = m.load_data(
