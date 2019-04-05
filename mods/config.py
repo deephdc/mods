@@ -71,9 +71,10 @@ window_duration = '1 hour'
 slide_duration  = '10 minutes'
 
 # pandas defaults
-pd_usecols = ['number_of_conn', 'sum_orig_kbytes']
+# pd_usecols = ['number_of_conn', 'sum_orig_kbytes']
+pd_usecols = ['number_of_conn', 'sum_orig_bytes']
 # pd_usecols = ['number_of_conn']
-# pd_usecols = ['sum_orig_kbytes']
+# pd_usecols = ['sum_orig_bytes']
 pd_sep = '\t'                               # ',' for csv
 pd_skiprows = 0
 pd_skipfooter = 0
