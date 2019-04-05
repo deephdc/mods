@@ -26,31 +26,30 @@ import io
 import json
 import os
 import tempfile
+import time
 from zipfile import ZipFile
 
 import keras
 import numpy as np
 import pandas as pd
-
 from keras import backend as K
-from keras.callbacks import ModelCheckpoint
 from keras.callbacks import EarlyStopping
+from keras.callbacks import ModelCheckpoint
 from keras.layers import Bidirectional
+from keras.layers import CuDNNGRU
+from keras.layers import CuDNNLSTM
 from keras.layers import Dense
 from keras.layers import Flatten
 from keras.layers import Input
 from keras.layers import RepeatVector
-from keras.layers import CuDNNGRU
-from keras.layers import CuDNNLSTM
-from keras.layers import ConvLSTM2D
 from keras.layers.convolutional import Conv1D
 from keras.layers.convolutional import MaxPooling1D
 from keras.layers.recurrent import GRU
 from keras.layers.recurrent import LSTM
 from keras.models import Model
 from keras.preprocessing.sequence import TimeseriesGenerator
-from sklearn.preprocessing import MinMaxScaler
 from sklearn.externals import joblib
+from sklearn.preprocessing import MinMaxScaler
 
 import mods.config as cfg
 import mods.utils as utl
@@ -71,6 +70,7 @@ class mods_model:
     __BLOCKS = 'blocks'
     __STEPS_AHEAD = 'steps_ahead'
     __BATCH_SIZE = 'batch_size'
+    __TRAINING_TIME = 'training_time'
     # scaler
     __SCALER = 'scaler'
     # sample data
@@ -339,6 +339,12 @@ class mods_model:
     def get_batch_size(self):
         return self.cfg_model()[mods_model.__BATCH_SIZE]
 
+    def set_training_time(self, training_time):
+        self.cfg_model()[mods_model.__TRAINING_TIME] = training_time
+
+    def get_training_time(self):
+        return self.cfg_model()[mods_model.__TRAINING_TIME]
+
     def get_scaler(self):
         if not self.__scaler:
             self.__scaler = MinMaxScaler(feature_range=(0, 1))
@@ -492,17 +498,18 @@ class mods_model:
         # df_train = df_train.values.astype('float32')
         df_train = self.transform(df_train)
         df_train = self.normalize(df_train, self.get_scaler())
-
         tsg_train = self.get_tsg(df_train, steps_ahead=steps_ahead, batch_size=batch_size)
 
         if DEBUG:
             print(self.config)
 
+        start_time = time.time()
         self.model.fit_generator(
             tsg_train,
             epochs=num_epochs,
             callbacks=callbacks_list
         )
+        self.set_training_time(time.time() - start_time)
 
     def plot(self, *args):
         print('this method is not yet implemented')
