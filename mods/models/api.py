@@ -147,6 +147,7 @@ def predict_file(*args, **kwargs):
                 'model_name': model_name,
                 'data': data_file,
                 'steps_ahead': m.get_steps_ahead(),
+                'batch_size': m.get_batch_size(),
                 'usecols': usecols,
                 'evaluation': utl.compute_metrics(
                     df_data[m.get_sequence_len():-m.get_steps_ahead()],
@@ -234,6 +235,7 @@ def predict_data(*args, **kwargs):
                 'model_name': model_name,
                 'data': file_storage.filename,
                 'steps_ahead': m.get_steps_ahead(),
+                'batch_size': m.get_batch_size(),
                 'usecols': usecols,
                 'evaluation': utl.compute_metrics(
                     df_data[m.get_sequence_len():-m.get_steps_ahead()],
@@ -518,6 +520,8 @@ def train(args, **kwargs):
         'model_name': model_name,
         'train_data': data,
         'steps_ahead': m.get_steps_ahead(),
+        'batch_size': m.get_batch_size(),
+        'training_time': m.get_training_time(),
         'usecols': pd_usecols,
         'evaluation': utl.compute_metrics(
             df_train[m.get_sequence_len():-steps_ahead],
@@ -609,6 +613,7 @@ def test_file(*args, **kwargs):
             'model_name': model_name,
             'test_data': data_test,
             'steps_ahead': m.get_steps_ahead(),
+            'batch_size': m.get_batch_size(),
             'usecols': usecols,
             'evaluation': utl.compute_metrics(
                 df_test[m.get_sequence_len():-m.get_steps_ahead()],
