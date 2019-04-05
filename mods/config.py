@@ -107,7 +107,7 @@ remove_peak = False                         # don't use; True --> worse predicti
 
 # Training parameters defaults
 multivariate = len(pd_usecols)
-sequence_len = 6                            # from 6 to 12 for w01h-s10m
+sequence_len = 6                           # from 6 to 24 for w01h-s10m
 steps_ahead = 1                             # number of steps steps_ahead for prediction
 model_types = ['CuDNNLSTM', 'CuDNNGRU', 'Conv1D', 'MLP', 'BidirectLSTM', 'seq2seqLSTM']     # 'LSTM', 'GRU'
 # model_types = ['ConvLSTM2D']
