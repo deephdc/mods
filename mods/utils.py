@@ -48,6 +48,7 @@ import keras
 
 import mods.config as cfg
 
+
 # matplotlib.style.use('ggplot')
 # %matplotlib inline
 
@@ -233,7 +234,6 @@ def create_filename(timer_start,
                     window_duration=cfg.window_duration,
                     slide_duration=cfg.slide_duration
                     ):
-
     filename = os.path.join(
         dir_output,
         cfg.feature_filename.split('.')[0] + \
@@ -253,8 +253,8 @@ def create_filename(timer_start,
 def get_fullpath_model_name(dataset_name,
                             sequence_len=cfg.sequence_len
                             ):
-    model_name = cfg.app_models +\
-                 os.path.splitext(basename(dataset_name))[0] +\
+    model_name = cfg.app_models + \
+                 os.path.splitext(basename(dataset_name))[0] + \
                  '-seq-' + str(sequence_len) + '.h5'
     return model_name
 
@@ -332,6 +332,7 @@ def print_slides(dir_day, log_file, window_duration=cfg.window_duration,
         print('\tslide', i,
               window_next(start, window_duration * i, fs=cfg.format_string))
     return
+
 
 ##### @giang auxiliary - END - can be removed later #####
 
@@ -492,3 +493,23 @@ def dbg_scaler(scaler, msg, debug=False):
                   scaler.data_max_,
                   scaler.data_range_
               ))
+
+
+# @stevo - parses data specification in order to support multiple data files merging
+def parse_data_specs(specs):
+    specs = re.compile(r'\s*;\s*').split(specs.strip())
+    merge_on_col = []
+    if len(specs) > 1:
+        if specs[-1].startswith('#'):
+            # parse an array of column names (separated by ,) and filter empty strings
+            merge_on_col = list(filter(None, re.compile(r'\s*,\s*').split(specs[-1][1:])))
+            # remove merge column specification
+            specs = specs[:-1]
+    files = []
+    for spec in specs:
+        parsed = re.compile(r'\s*\|\s*').split(spec)
+        file = parsed[0]
+        columns = parsed[1:] if len(parsed) > 1 else []
+        # columns.extend(merge_on_col)
+        files.append({'file': file, 'cols': columns})
+    return (files, merge_on_col)

@@ -26,6 +26,7 @@ import fnmatch
 import os
 from os import path
 from os.path import expanduser
+import html
 
 
 def list_dir(dir, pattern='*.tsv'):
@@ -96,9 +97,8 @@ data_test_end   = '201903'                  # included
 data_test_excluded = []
 
 # training defaults
-data_train_all = list_dir(app_data_features, '*.tsv')
 # data_train = 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv'
-data_train = 'data_train.tsv'
+data_train = 'demo_data_bytes.tsv|number_of_conn;demo_data_bytes.tsv|sum_orig_bytes;#window_start,window_end'
 
 # Data transformation defaults
 model_delta = True                          # True --> better predictions
@@ -203,13 +203,9 @@ def set_train_args():
         },
         'data': {
             'default': data_train,
-            'choices': data_train_all,
-            'help': 'Training data to train on',
-            'required': False
-        },
-        'multivariate': {
-            'default': multivariate,
-            'help': '',
+            'help':
+                'Training data to train on. Multiple files can be specified with specific columns and a column to merge then on.<br><br>Use following format:<br><i>' + html.escape(
+                    '<file1>;<file2>|<col1>|<col2>|...;<file3>;...;#<merge_col>') + '</i>',
             'required': False
         },
         'sequence_len': {

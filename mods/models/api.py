@@ -452,7 +452,6 @@ def train(args, **kwargs):
 
     data = yaml.safe_load(args.data)
     model_name = yaml.safe_load(args.model_name)
-    multivariate = yaml.safe_load(args.multivariate)
     sequence_len = yaml.safe_load(args.sequence_len)
     model_delta = yaml.safe_load(args.model_delta)
     interpolate = yaml.safe_load(args.interpolate)
@@ -463,7 +462,6 @@ def train(args, **kwargs):
     steps_ahead = yaml.safe_load(args.steps_ahead)
     batch_size = yaml.safe_load(args.batch_size)
     pd_usecols = [utl.parse_int_or_str(col) for col in yaml.safe_load(args.pd_usecols).split(',')]
-    pd_header = yaml.safe_load(args.pd_header)
 
     # support full paths for command line calls
     models_dir = cfg.app_models
@@ -471,24 +469,40 @@ def train(args, **kwargs):
     if full_paths:
         models_dir = os.path.dirname(model_name)
         model_name = os.path.basename(model_name)
-        if data == cfg.data_train:
-            data = os.path.join(cfg.app_data_features, data)
-    else:
-        data = os.path.join(cfg.app_data_features, data)
 
     backend.clear_session()
     m = MODS.mods_model(model_name)
 
-    # loading training data
-    df_train = m.load_data(
-        path=data,
-        usecols=pd_usecols,
-        header=pd_header
-    )
+    # loading and merging training data
+    keep_cols = []
+    df_train = None
+    data_files, merge_on_col = utl.parse_data_specs(data)
+    for data_file in data_files:
+        if full_paths and data_file['file'] == cfg.data_train:
+            data_file['file'] = os.path.join(cfg.app_data_features, data_file['file'])
+        else:
+            data_file['file'] = os.path.join(cfg.app_data_features, data_file['file'])
+        # collect columns, that will be kept in the final dataset
+        keep_cols.extend(data_file['cols'])
+        # columns to be loaded: columns specified for the file as well as columns, that will be used for joins
+        data_file['cols'].extend(merge_on_col)
+        # load one of the data files
+        df = m.load_data(
+            path=data_file['file'],
+            usecols=data_file['cols'],
+            header=0
+        )
+        if df_train is None:
+            df_train = df
+        else:
+            df_train = pd.merge(df_train, df, on=merge_on_col)
+
+    # select only specified columns
+    df_train = df_train[keep_cols]
 
     m.train(
         df_train=df_train,
-        multivariate=multivariate,
+        multivariate=len(df_train.columns),
         sequence_len=sequence_len,
         model_delta=model_delta,
         interpolate=interpolate,
