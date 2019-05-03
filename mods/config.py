@@ -117,6 +117,8 @@ epochs_patience = 10
 batch_size = 1                              # to be tested later
 batch_size_test = 1                         # don't change
 blocks = 6
+data_splits = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+data_split = 0.8
 
 # common defaults
 model_name_all = list_dir(app_models, '*.zip')
@@ -206,6 +208,13 @@ def set_train_args():
             'help':
                 'Training data to train on. Multiple files can be specified with specific columns and a column to merge then on.<br><br>Use following format:<br><i>' + html.escape(
                     '<file1>;<file2>|<col1>|<col2>|...;<file3>;...;#<merge_col>') + '</i>',
+            'required': False
+        },
+        'data_split' : {
+            'default': data_split,
+            'choices': data_splits,
+            'help': 'Specify the split of the input data into the training and test data.',
+            'type': str,
             'required': False
         },
         'sequence_len': {

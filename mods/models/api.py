@@ -451,6 +451,7 @@ def train(args, **kwargs):
         mdata.prepare_data()
 
     data = yaml.safe_load(args.data)
+    data_split = yaml.safe_load(args.data_split)
     model_name = yaml.safe_load(args.model_name)
     sequence_len = yaml.safe_load(args.sequence_len)
     model_delta = yaml.safe_load(args.model_delta)
@@ -500,6 +501,15 @@ def train(args, **kwargs):
     # select only specified columns
     df_train = df_train[keep_cols]
 
+    # test on df_train by default
+    df_test = df_train
+
+    # split the data into train and test
+    if data_split < 1.0:
+        cut = int(data_split * len(df))
+        df_test = df_train[cut:]
+        df_train = df_train[:cut]
+
     m.train(
         df_train=df_train,
         multivariate=len(df_train.columns),
@@ -514,6 +524,18 @@ def train(args, **kwargs):
         batch_size=batch_size
     )
 
+    # evaluate the model
+    pred = m.predict(df_test)
+    metrics = utl.compute_metrics(
+        df_test[m.get_sequence_len():-steps_ahead],
+        pred[:-steps_ahead],  # here, we predict # steps_ahead
+        m,
+    )
+    metrics['split'] = data_split
+
+    # put computed metrics into the model to be saved in model's zip
+    m.update_metrics(metrics)
+
     # save model locally
     file = m.save(os.path.join(models_dir, model_name))
     dir_remote = cfg.app_models_remote
@@ -526,7 +548,6 @@ def train(args, **kwargs):
     )
     print('rclone_copy(%s, %s):\nout: %s\nerr: %s' % (file, dir_remote, out, err))
 
-    pred = m.predict(df_train)
 
     message = {
         'status': 'ok',
@@ -537,11 +558,7 @@ def train(args, **kwargs):
         'batch_size': m.get_batch_size(),
         'training_time': m.get_training_time(),
         'usecols': pd_usecols,
-        'evaluation': utl.compute_metrics(
-            df_train[m.get_sequence_len():-steps_ahead],
-            pred[:-steps_ahead],  # here, we predict # steps_ahead
-            m,
-        )
+        'evaluation': m.get_metrics()
     }
 
     return message

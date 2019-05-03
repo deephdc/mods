@@ -70,7 +70,7 @@ class mods_model:
     __BLOCKS = 'blocks'
     __STEPS_AHEAD = 'steps_ahead'
     __BATCH_SIZE = 'batch_size'
-    __TRAINING_TIME = 'training_time'
+    __TRAINING_TIME = 'training_time'   # moved to metrics.json
     # scaler
     __SCALER = 'scaler'
     # sample data
@@ -87,6 +87,7 @@ class mods_model:
         self.model = None
         self.__scaler = None
         self.sample_data = None
+        self.__metrics = {}
         self.config = self.__default_config()
 
 
@@ -123,6 +124,7 @@ class mods_model:
             self.__save_model(zip, self.config[mods_model.__MODEL])
             self.__save_scaler(zip, self.config[mods_model.__SCALER])
             self.__save_sample_data(zip, self.__get_sample_data_cfg())
+            self.__save_metrics(zip, 'metrics.json')
             zip.close()
 
         print('Model saved')
@@ -139,6 +141,7 @@ class mods_model:
             self.__load_model(zip, self.config[mods_model.__MODEL])
             self.__load_scaler(zip, self.config[mods_model.__SCALER])
             self.__load_sample_data(zip, self.__get_sample_data_cfg())
+            self.__load_metrics(zip, 'metrics.json')
             zip.close()
 
         print('Model loaded')
@@ -158,6 +161,22 @@ class mods_model:
             self.config = json.loads(data.decode('utf-8'))
         print('Model config:\n%s' % json.dumps(self.config, indent=True))
 
+
+    def __save_metrics(self, zip, file):
+        with zip.open(file, mode='w') as f:
+            data = json.dumps(self.__metrics)
+            f.write(bytes(data, 'utf-8'))
+
+
+    def __load_metrics(self, zip, file):
+        print('Loading model metrics')
+        try:
+            with zip.open(file) as f:
+                data = f.read()
+                self.__metrics = json.loads(data.decode('utf-8'))
+            print('Model metrics:\n%s' % json.dumps(self.__metrics, indent=True))
+        except Exception as e:
+            print('Error: Could not load model metrics [%s]' % str(e))
 
     def __save_model(self, zip, model_config):
         print('Saving keras model')
@@ -340,10 +359,16 @@ class mods_model:
         return self.cfg_model()[mods_model.__BATCH_SIZE]
 
     def set_training_time(self, training_time):
-        self.cfg_model()[mods_model.__TRAINING_TIME] = training_time
+        self.__metrics[self.__TRAINING_TIME] = training_time
 
     def get_training_time(self):
-        return self.cfg_model()[mods_model.__TRAINING_TIME]
+        # backward compatibility
+        try:
+            t = self.cfg_model()[mods_model.__TRAINING_TIME]
+            if t is not None:
+                return t
+        except Exception as e:
+            return self.__metrics[self.__TRAINING_TIME]
 
     def get_scaler(self):
         if not self.__scaler:
@@ -356,6 +381,11 @@ class mods_model:
     def set_sample_data(self, df):
         self.sample_data = df
 
+    def update_metrics(self, metrics):
+        self.__metrics.update(metrics)
+
+    def get_metrics(self):
+        return self.__metrics
 
     def train(
             self,
