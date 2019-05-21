@@ -499,17 +499,22 @@ def dbg_scaler(scaler, msg, debug=False):
 def parse_data_specs(specs):
     specs = re.compile(r'\s*;\s*').split(specs.strip())
     merge_on_col = []
+    
     if len(specs) > 1:
         if specs[-1].startswith('#'):
             # parse an array of column names (separated by ,) and filter empty strings
             merge_on_col = list(filter(None, re.compile(r'\s*,\s*').split(specs[-1][1:])))
+            
             # remove merge column specification
             specs = specs[:-1]
+    
     files = []
     for spec in specs:
+        # parse an array of file names (separated by |)
         parsed = re.compile(r'\s*\|\s*').split(spec)
         file = parsed[0]
         columns = parsed[1:] if len(parsed) > 1 else []
+        
         # columns.extend(merge_on_col)
         files.append({'file': file, 'cols': columns})
     return (files, merge_on_col)
