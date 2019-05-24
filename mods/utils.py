@@ -179,8 +179,7 @@ def smape(y_true, y_pred):
     return score
 
 
-##### Datapool functions #####
-
+##### @giang auxiliary - BEGIN - code in this block can be removed later #####
 # @giang
 def create_data_from_datapool(data_filename,
                               data_begin,
@@ -217,125 +216,7 @@ def create_data_from_datapool(data_filename,
     print('created data=', filename + '\n')
     return filename
 
-
-##### @giang auxiliary - BEGIN - can be removed later #####
-
-# @giang data = numpy array
-def plot_series(data, ylabel):
-    plt.plot(data)
-    plt.ylabel(ylabel)
-    plt.show()
-
-
-# @giang: create unique filename (TBR later???)
-def create_filename(timer_start,
-                    dir_output=cfg.app_data_features,
-                    time_range_begin=cfg.time_range_begin,
-                    time_range_end=cfg.time_range_end,
-                    window_duration=cfg.window_duration,
-                    slide_duration=cfg.slide_duration
-                    ):
-    filename = os.path.join(
-        dir_output,
-        cfg.feature_filename.split('.')[0] + \
-        '-%s-%s-win-%s-slide-%s-ts-%s.tsv' % (
-            re.sub(r'[-\s:]+', r'', str(time_range_begin)),  # without %H:%M:%S
-            re.sub(r'[-\s:]+', r'', str(time_range_end)),
-            re.sub(r'\s+', r'_', window_duration),
-            re.sub(r'\s+', r'_', slide_duration),
-            str(int(timer_start.timestamp())))
-    )
-    print('Output filename for extracted features:', filename)
-
-    return filename
-
-
-# @giang (TBR later ???)
-def get_fullpath_model_name(dataset_name,
-                            sequence_len=cfg.sequence_len
-                            ):
-    model_name = cfg.app_models + \
-                 os.path.splitext(basename(dataset_name))[0] + \
-                 '-seq-' + str(sequence_len) + '.h5'
-    return model_name
-
-
-def get_one_row(i, dataset):
-    row = dataset[i, :]
-    return row[1:].reshape(1, -1)  # i-th row without label as [row]
-
-
-def get_random_row(dataset):
-    i = randint(0, dataset.shape[0])
-    return get_one_row(i, dataset)
-
-
-def load_dataset(dataset_name):
-    dataset = np.loadtxt(cfg.app_data + dataset_name, delimiter=',')
-    print(dataset_name, dataset.shape)
-    return dataset
-
-
-# [range_0, ..., range_n]
-def get_range(start, end, window=cfg.window_duration):
-    ss = str(window) + 'S'
-    return pd.date_range(start, end, freq=ss).floor(ss)
-
-
-# convert "2018-10-05 21:47:57" to (int)timestamp 
-def string_to_timestamp(timer_string, fs=cfg.format_string):
-    ts = time.mktime(datetime.strptime(timer_string, fs).timetuple())
-    return ts
-
-
-# convert timestamp to string in format
-def unixtime_to_string(ts, fs=cfg.format_string):
-    return int(datetime.utcfromtimestamp(ts).strftime(fs))
-
-
-# '2018-05' --> '2018-05-01'
-def get_month_start(ym='2018-05'):
-    return ym + '-01'
-
-
-# '2018-08' --> '2018-08-31'
-def get_month_end(ym='2018-09'):
-    ss = ym.split('-')
-    return ym + '-' + str(calendar.monthrange(int(ss[0]), int(ss[1]))[1])
-
-
-# Slovakia GTM+2 = 7200 seconds
-def window_start(dir_day, log_file,
-                 timezone=cfg.timezone,
-                 fs=cfg.format_string_parquet):
-    dt = dir_day + ' ' + log_file.split('.')[1].split('-')[0]
-    dto = datetime.strptime(dt, fs) + timedelta(seconds=timezone)
-    start = dto.strftime(fs)
-    # print(start)    
-    return start
-
-
-# slide window 3600s
-def window_next(start, window_duration=cfg.window_duration,
-                fs=cfg.format_string_parquet):
-    dto = datetime.strptime(start, fs) + timedelta(seconds=window_duration)
-    end = dto.strftime(fs)
-    # end = time.mktime(dto.timetuple())           # returns seconds
-    # print(end)
-    return end
-
-
-# 2018-05-01 00:00:00
-def print_slides(dir_day, log_file, window_duration=cfg.window_duration,
-                 fs=cfg.format_string):
-    start = window_start(dir_day, log_file, window_duration, fs)
-    for i in range(0, int(3600 / window_duration) + 1):
-        print('\tslide', i,
-              window_next(start, window_duration * i, fs=cfg.format_string))
-    return
-
-
-##### @giang auxiliary - END - can be removed later #####
+##### @giang auxiliary - END - code in the above block can be removed later #####
 
 ##### @stevo @stevo @stevo#####
 

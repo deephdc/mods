@@ -120,9 +120,9 @@ batch_size_test = 1                         # don't change
 blocks = 6
 data_splits = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 data_split = 0.8
-train_time_range_begin = '2019-04-01'             # begin <= time_range < end
+train_time_range_begin = '2018-04-01'             # begin <= time_range < end
 train_time_range_end   = '2019-05-01'             # excluded
-train_time_ranges_excluded = '2019-01 -- 2019-02-15, 2018-04-01'
+train_time_ranges_excluded = '2019-01 -- 2019-02-15, 2018-12-24, 2018-10'
 train_ws_choices = ['w01h-s10m', 'w10m-s01m', 'w30m-s10m']
 train_ws = train_ws_choices[0]
 
