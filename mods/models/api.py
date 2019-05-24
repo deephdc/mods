@@ -25,6 +25,7 @@ Train models with first order differential to monitor changes
 import io
 import json
 import os
+import re
 import socket
 
 import numpy as np
@@ -39,6 +40,8 @@ import mods.dataset.data_utils as dutils
 import mods.dataset.make_dataset as mdata
 import mods.models.mods_model as MODS
 import mods.utils as utl
+
+import datetime
 
 
 def get_model(
@@ -450,7 +453,17 @@ def train(args, **kwargs):
     if bootstrap_data:
         mdata.prepare_data()
 
+    # params for data pool
+    # time range
+    time_range_beg = utl.parse_datetime(str(yaml.safe_load(args.time_range_beg)))
+    time_range_end = utl.parse_datetime(str(yaml.safe_load(args.time_range_end)))
+    time_range = (time_range_beg, time_range_end)
+    # time range exclusion filter
+    time_ranges_excluded = utl.parse_datetime_ranges(yaml.safe_load(args.time_ranges_excluded))
+    # window + slide
+    window_slide = yaml.safe_load(args.ws)
     data = yaml.safe_load(args.data)
+
     data_split = yaml.safe_load(args.data_split)
     model_name = yaml.safe_load(args.model_name)
     sequence_len = yaml.safe_load(args.sequence_len)
@@ -474,39 +487,15 @@ def train(args, **kwargs):
     backend.clear_session()
     m = MODS.mods_model(model_name)
 
-    # loading and merging training data
-    keep_cols = []
-    df_train = None
-    data_files, merge_on_col = utl.parse_data_specs(data)
-    for data_file in data_files:
-        if full_paths and data_file['file'] == cfg.data_train:
-            data_file['file'] = os.path.join(cfg.app_data_features, data_file['file'])
-        else:
-            data_file['file'] = os.path.join(cfg.app_data_features, data_file['file'])
-        # collect columns, that will be kept in the final dataset
-        keep_cols.extend(data_file['cols'])
-        # columns to be loaded: columns specified for the file as well as columns, that will be used for joins
-        data_file['cols'].extend(merge_on_col)
-        # load one of the data files
-        df = m.load_data(
-            path=data_file['file'],
-            usecols=data_file['cols'],
-            header=0
-        )
-        if df_train is None:
-            df_train = df
-        else:
-            df_train = pd.merge(df_train, df, on=merge_on_col)
-
-    # select only specified columns
-    df_train = df_train[keep_cols]
+    # read data from datapool
+    df_train = utl.datapool_read(data, time_range, window_slide, time_ranges_excluded, cfg.app_data_features)
 
     # test on df_train by default
     df_test = df_train
 
     # split the data into train and test
     if data_split < 1.0:
-        cut = int(data_split * len(df))
+        cut = int(data_split * len(df_train))
         df_test = df_train[cut:]
         df_train = df_train[:cut]
 

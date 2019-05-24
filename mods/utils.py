@@ -43,6 +43,7 @@ from sklearn.metrics import r2_score
 from sklearn.preprocessing import MinMaxScaler
 from numpy import dot
 from numpy.linalg import norm
+from dateutil.relativedelta import *
 
 import keras
 
@@ -508,13 +509,190 @@ def parse_data_specs(specs):
             # remove merge column specification
             specs = specs[:-1]
     
-    files = []
+    protocols = []
     for spec in specs:
         # parse an array of file names (separated by |)
         parsed = re.compile(r'\s*\|\s*').split(spec)
-        file = parsed[0]
+        protocol = parsed[0]
         columns = parsed[1:] if len(parsed) > 1 else []
         
         # columns.extend(merge_on_col)
-        files.append({'file': file, 'cols': columns})
-    return (files, merge_on_col)
+        protocols.append({'protocol': protocol, 'cols': columns})
+    return (protocols, merge_on_col)
+
+
+# @stevo
+REGEX_DATAPOOLTIME = re.compile(r'^\s*(?P<year>\d{4})([^0-9]{0,1}(?P<month>\d{2})([^0-9]{0,1}(?P<day>\d{2}))?)?\s*$')
+def parse_datetime(s):
+    print('parse_datetime(%s)' % s)
+    match = REGEX_DATAPOOLTIME.match(s)
+    if match:
+        y = int(match.group('year'))
+        m = match.group('month')
+        d = match.group('day')
+        print('y=%s, m=%s, d=%s' % (y, m, d))
+        if m is None:
+            return datetime.datetime(y, 1, 1)
+        elif d is None:
+            return datetime.datetime(y, int(m), 1)
+        else:
+            return datetime.datetime(y, int(m), int(d))
+    return None
+
+
+# @stevo
+def expand_to_datetime(y, m, d):
+    assert y is not None
+    print('expand_to_datetime(%s, %s, %s)' % (y, m, d))
+    if m is None:
+        return datetime.datetime(int(y), 1, 1)
+    elif d is None:
+        return datetime.datetime(int(y), int(m), 1)
+    else:
+        return datetime.datetime(int(y), int(m), int(d))
+
+
+# @stevo
+def expand_to_datetime_range(y, m, d):
+    assert y is not None
+    print('expand_to_datetime_range(%s, %s, %s)' % (y, m, d))
+    if m is None:
+        d = datetime.datetime(int(y), 1, 1)
+        return (
+            d,
+            d + relativedelta(years=+1)
+        )
+    elif d is None:
+        d = datetime.datetime(int(y), int(m), 1)
+        return (
+            d,
+            d + relativedelta(months=+1)
+        )
+    else:
+        d = datetime.datetime(int(y), int(m), int(d))
+        return (
+            d,
+            d + relativedelta(days=+1)
+        )
+
+
+# @stevo
+REGEX_DATAPOOLTIMERANGE = re.compile(r'^\s*(?P<beg_year>\d{4})([^0-9]{0,1}(?P<beg_month>\d{2})([^0-9]{0,1}(?P<beg_day>\d{2}))?)?\s*--\s*(?P<end_year>\d{4})([^0-9]{0,1}(?P<end_month>\d{2})([^0-9]{0,1}(?P<end_day>\d{2}))?)?\s*$')
+def parse_datetime_ranges(time_ranges):
+    parsed = []
+    if isinstance(time_ranges, str):
+        time_ranges = time_ranges.split(',')
+    print(time_ranges)
+    for x in time_ranges:
+        m = REGEX_DATAPOOLTIME.match(x)
+        if m:
+            print('matched datetime: %s' % x)
+            # single date specified; e.g. 2019, 2019-01, 2019-01-01
+            r = expand_to_datetime_range(
+                m.group('year'),
+                m.group('month'),
+                m.group('day')
+            )
+            parsed.append(r)
+            continue
+        m = REGEX_DATAPOOLTIMERANGE.match(x)
+        print(m)
+        if m:
+            print('matched datetime_range: %s' % x)
+            beg = expand_to_datetime(
+                m.group('beg_year'),
+                m.group('beg_month'),
+                m.group('beg_day')
+            )
+            end = expand_to_datetime(
+                m.group('end_year'),
+                m.group('end_month'),
+                m.group('end_day')
+            )
+            parsed.append((beg, end))
+            continue
+    return parsed
+
+
+# @stevo
+def is_within_range(d, range):
+    return range[0] <= d and d < range[1]
+
+
+# @stevo
+def exclude(d, ranges):
+    for range in ranges:
+        if is_within_range(d, range):
+            return True
+
+
+# @stevo
+# regex matching directory of a day
+REGEX_DIR_DAY = re.compile(r'^' + re.escape(cfg.app_data_features.rstrip('/')) + '/[^/]+' + r'/(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})')
+
+# @stevo datapool reading
+def datapool_read(
+        data_specs_str,                 # protocol/column/merge specification
+        time_range,                     # (beg datetime.datetime, end datetime.datetime)
+        ws,                             # window/slide specification; e.g., w01h-s10m
+        excluded=[],                    # list of dates and ranges that will be omitted
+        base_dir=cfg.app_data_features  # base dir with the protocol/YYYY/MM/DD/wXXd-sXXd.tsv structure
+):
+
+    keep_cols = []
+    df_main = None
+    data_specs, merge_on_col = parse_data_specs(data_specs_str)
+
+    for ds in data_specs:
+
+        protocol = ds['protocol']
+        dir_protocol = os.path.join(base_dir, protocol)
+
+        for root, directories, filenames in os.walk(dir_protocol):
+
+            # *.tsv base dir filter
+            rematch = REGEX_DIR_DAY.match(root)
+            if not rematch:
+                continue
+
+            for f in filenames:
+
+                # windows/slide filter
+                if not f.startswith(ws):
+                    continue
+
+                # exclusion filter
+                dpt = datetime.datetime(
+                    int(rematch.group('year')),
+                    int(rematch.group('month')),
+                    int(rematch.group('day'))
+                )
+                if exclude(dpt, excluded) or not is_within_range(dpt, time_range):
+                    print('skipping: %s' % dpt)
+                    continue
+
+                # collect columns, that will be kept in the final dataset
+                keep_cols.extend(ds['cols'])
+                # columns to be loaded: columns specified for the file as well as columns, that will be used for joins
+                ds['cols'].extend(merge_on_col)
+                # load one of the data files
+                data_file = os.path.join(root, f)
+                print('loading: %s\t%s' % (dpt, data_file))
+                df = pd.read_csv(
+                    open(data_file),
+                    usecols=ds['cols'],
+                    header=0,
+                    sep='\t',
+                    skiprows=0,
+                    skipfooter=0,
+                    engine='python',
+                )
+                if df_main is None:
+                    df_main = df
+                else:
+                    df_main = pd.merge(df_main, df, on=merge_on_col)
+
+    dbg_df(df_main, '', 'df_main', True, False)
+
+    # select only specified columns
+    return df_main[keep_cols]

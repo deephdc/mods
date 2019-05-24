@@ -54,7 +54,7 @@ log_header_lines = 8
 app_data = BASE_DIR + '/data/'
 app_data_remote     = 'deepnc:/mods/data/'
 app_data_raw        = BASE_DIR + '/data/raw/'
-app_data_features   = BASE_DIR + '/data/features/'
+app_data_features   = BASE_DIR + '/data/features/tsv/'
 app_data_test       = BASE_DIR + '/data/test/'
 app_data_predict    = BASE_DIR + '/data/predict/'
 app_data_plot       = BASE_DIR + '/data/plot/'
@@ -98,7 +98,7 @@ data_test_excluded = []
 
 # training defaults
 # data_train = 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv'
-data_train = 'demo_data_bytes.tsv|number_of_conn;demo_data_bytes.tsv|sum_orig_bytes;#window_start,window_end'
+data_train = 'conn|in_sum_orig_bytes|in_count_uid;ssh|in|out;#window_start,window_end'
 
 # Data transformation defaults
 model_delta = True                          # True --> better predictions
@@ -119,6 +119,12 @@ batch_size_test = 1                         # don't change
 blocks = 6
 data_splits = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 data_split = 0.8
+train_time_range_begin = '2019-04-01'             # begin <= time_range < end
+train_time_range_end   = '2019-05-01'             # excluded
+train_time_ranges_excluded = '2019-01 -- 2019-02-15, 2018-04-01'
+train_ws_choices = ['w01h-s10m', 'w10m-s01m', 'w30m-s10m']
+train_ws = train_ws_choices[0]
+
 
 # common defaults
 model_name_all = list_dir(app_models, '*.zip')
@@ -203,11 +209,36 @@ def set_train_args():
             'type': str,
             'required': False
         },
+        'time_range_beg': {
+            'default': train_time_range_begin,
+            'help': '',
+            'type': str,
+            'required': False
+        },
+        'time_range_end': {
+            'default': train_time_range_end,
+            'help': '',
+            'type': str,
+            'required': False
+        },
+        'time_ranges_excluded': {
+            'default': train_time_ranges_excluded,
+            'help': 'A comma-separated list of time ranges to be excluded usign following format: YYYYMMDD-YYYYMMDD',
+            'type': str,
+            'required': False
+        },
+        'ws': {
+            'default': train_ws,
+            'choices': train_ws_choices,
+            'help': 'window and slide',
+            'type': str,
+            'required': False
+        },
         'data': {
             'default': data_train,
             'help':
-                'Training data to train on. Multiple files can be specified with specific columns and a column to merge then on.<br><br>Use following format:<br><i>' + html.escape(
-                    '<file1>;<file2>|<col1>|<col2>|...;<file3>;...;#<merge_col>') + '</i>',
+                'Training data to train on. Multiple protocols can be specified with specific columns and a column to merge then on.<br><br>Use following format:<br><i>' + html.escape(
+                    '<protocol1>;<protocol2>|<col1>|<col2>|...;<protocol3>;...;#<merge_col>') + '</i>',
             'required': False
         },
         'data_split' : {
