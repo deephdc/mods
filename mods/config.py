@@ -50,6 +50,13 @@ dir_parquet = DATA_DIR + 'logs_parquet/'
 dir_cleaned = DATA_DIR + 'logs_cleaned/'
 log_header_lines = 8
 
+# Feature data
+# feature_filename = 'features.tsv'
+# time_range_begin = '2018-04-14'             # begin <= time_range < end
+# time_range_end   = '2019-04-01'             # excluded
+# window_duration = '1 hour'
+# slide_duration  = '10 minutes'
+
 # Application dirs
 app_data = BASE_DIR + '/data/'
 app_data_remote     = 'deepnc:/mods/data/'
@@ -57,7 +64,7 @@ app_data_raw        = BASE_DIR + '/data/raw/'
 app_data_features   = BASE_DIR + '/data/features/tsv/'
 app_data_train      = BASE_DIR + '/data/train/'
 app_data_test       = BASE_DIR + '/data/test/'
-# app_data_predict    = BASE_DIR + '/data/predict/'     # the same as test - can be removed
+# app_data_predict    = BASE_DIR + '/data/predict/'     
 app_data_plot       = BASE_DIR + '/data/plot/'
 app_data_results    = BASE_DIR + '/data/results/'
 app_models          = BASE_DIR + '/models/'
@@ -65,38 +72,41 @@ app_models_remote   = 'deepnc:/mods/models/'
 app_checkpoints     = BASE_DIR + '/checkpoints/'
 app_visualization   = BASE_DIR + '/visualization/'
 
-# Feature data
-feature_filename = 'features.tsv'
-time_range_begin = '2018-04-14'             # begin <= time_range < end
-time_range_end   = '2019-04-01'             # excluded
-window_duration = '1 hour'
-slide_duration  = '10 minutes'
+
+# Data specification defaults (the same for train and test)
+data_specs = 'conn|in_sum_orig_bytes|in_count_uid;ssh|in;#window_start,window_end'
+data_train = data_specs
+
+ws_choices = ['w01h-s10m', 'w10m-s01m', 'w30m-s10m']
+ws_choice = ws_choices[0] 
+
+data_splits = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+data_split = 0.8
+
+train_time_range_begin = '2019-04-01'             # begin <= time_range < end
+train_time_range_end   = '2019-05-01'             # excluded 
+train_time_ranges_excluded = '2019-01 -- 2019-02-15, 2018-04-01'
+train_ws = test_ws = ws_choice
+
+
+# Datapool defaults
+data_filename_train = 'data_train.tsv'
+# data_train_begin = '20180501'
+# data_train_end   = '20181231'               # included
+# data_train_excluded = []
+
+data_filename_test  = 'data_test.tsv'
+# data_test_begin = '20190101'
+# data_test_end   = '20190430'                # included
+# data_test_excluded = []
 
 # pandas defaults
-pd_usecols = ['number_of_conn', 'sum_orig_bytes']       # code cleaning required
+pd_usecols = ['number_of_conn', 'sum_orig_bytes']       
 pd_sep = '\t'                               # ',' for csv
 pd_skiprows = 0
 pd_skipfooter = 0
 pd_engine = 'python'
 pd_header = 0
-
-# Datapool defaults
-app_data_pool = app_data_features + 'w01h-s10m/'        # 'w10m-s01m/'
-month_start_default = '201804'              # collected data starts since this month
-
-data_filename_train = 'data_train.tsv'
-data_train_begin = '20180501'
-data_train_end   = '20181231'               # included
-data_train_excluded = []
-
-data_filename_test  = 'data_test.tsv'
-data_test_begin = '20190101'
-data_test_end   = '20190430'                # included
-data_test_excluded = []
-
-# training defaults
-# data_train = 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv'
-data_train = 'conn|in_sum_orig_bytes|in_count_uid;ssh|in;#window_start,window_end'
 
 # Data transformation defaults
 model_delta = True                          # True --> better predictions
@@ -116,17 +126,6 @@ batch_size = 1                              # to be tested later
 batch_size_test = 1                         # don't change
 blocks = 6
 
-data_splits = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-data_split = 0.8
-
-ws_choices = ['w01h-s10m', 'w10m-s01m', 'w30m-s10m']
-ws_choice = ws_choices[0] 
-
-train_time_range_begin = '2019-04-01'             # begin <= time_range < end
-train_time_range_end   = '2019-05-01'             # excluded
-train_time_ranges_excluded = '2019-01 -- 2019-02-15, 2018-04-01'
-
-train_ws = test_ws = ws_choice
 
 # common defaults
 model_name_all = list_dir(app_models, '*.zip')
