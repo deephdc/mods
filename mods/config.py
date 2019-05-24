@@ -70,6 +70,7 @@ time_range_begin = '2018-04-14'             # begin <= time_range < end
 time_range_end   = '2019-04-01'             # excluded
 window_duration = '1 hour'
 slide_duration  = '10 minutes'
+time_range_inclusive = True
 
 # pandas defaults
 # pd_usecols = ['number_of_conn', 'sum_orig_kbytes']

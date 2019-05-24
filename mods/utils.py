@@ -524,13 +524,11 @@ def parse_data_specs(specs):
 # @stevo
 REGEX_DATAPOOLTIME = re.compile(r'^\s*(?P<year>\d{4})([^0-9]{0,1}(?P<month>\d{2})([^0-9]{0,1}(?P<day>\d{2}))?)?\s*$')
 def parse_datetime(s):
-    print('parse_datetime(%s)' % s)
     match = REGEX_DATAPOOLTIME.match(s)
     if match:
         y = int(match.group('year'))
         m = match.group('month')
         d = match.group('day')
-        print('y=%s, m=%s, d=%s' % (y, m, d))
         if m is None:
             return datetime.datetime(y, 1, 1)
         elif d is None:
@@ -541,39 +539,48 @@ def parse_datetime(s):
 
 
 # @stevo
-def expand_to_datetime(y, m, d):
+def expand_to_datetime(y, m, d, is_end=False, inclusive_end=cfg.time_range_inclusive):
     assert y is not None
-    print('expand_to_datetime(%s, %s, %s)' % (y, m, d))
     if m is None:
-        return datetime.datetime(int(y), 1, 1)
+        if is_end and inclusive_end:
+            return datetime.datetime(int(y), 12, 31)
+        else:
+            return datetime.datetime(int(y), 1, 1)
     elif d is None:
-        return datetime.datetime(int(y), int(m), 1)
+        if is_end and inclusive_end:
+            return datetime.datetime(int(y), int(m), 1) + relativedelta(months=+1, days=-1)
+        else:
+            return datetime.datetime(int(y), int(m), 1)
     else:
         return datetime.datetime(int(y), int(m), int(d))
 
 
 # @stevo
-def expand_to_datetime_range(y, m, d):
+def expand_to_datetime_range(y, m, d, inclusive_end=cfg.time_range_inclusive):
     assert y is not None
-    print('expand_to_datetime_range(%s, %s, %s)' % (y, m, d))
     if m is None:
-        d = datetime.datetime(int(y), 1, 1)
-        return (
-            d,
-            d + relativedelta(years=+1)
-        )
+        if inclusive_end:
+            d_beg = datetime.datetime(int(y), 1, 1)
+            d_end = datetime.datetime(int(y), 12, 31)
+            return (d_beg, d_end)
+        else:
+            d = datetime.datetime(int(y), 1, 1)
+            return (d, d + relativedelta(years=+1))
     elif d is None:
-        d = datetime.datetime(int(y), int(m), 1)
-        return (
-            d,
-            d + relativedelta(months=+1)
-        )
+        if inclusive_end:
+            d_beg = datetime.datetime(int(y), int(m), 1)
+            d_end = d_beg + relativedelta(months=+1, days=-1)
+            return (d_beg, d_end)
+        else:
+            d = datetime.datetime(int(y), int(m), 1)
+            return (d, d + relativedelta(months=+1))
     else:
-        d = datetime.datetime(int(y), int(m), int(d))
-        return (
-            d,
-            d + relativedelta(days=+1)
-        )
+        if inclusive_end:
+            d = datetime.datetime(int(y), int(m), int(d))
+            return (d, d)
+        else:
+            d = datetime.datetime(int(y), int(m), int(d))
+            return (d, d + relativedelta(days=+1))
 
 
 # @stevo
@@ -607,7 +614,8 @@ def parse_datetime_ranges(time_ranges):
             end = expand_to_datetime(
                 m.group('end_year'),
                 m.group('end_month'),
-                m.group('end_day')
+                m.group('end_day'),
+                is_end = True
             )
             parsed.append((beg, end))
             continue
@@ -615,8 +623,11 @@ def parse_datetime_ranges(time_ranges):
 
 
 # @stevo
-def is_within_range(d, range):
-    return range[0] <= d and d < range[1]
+def is_within_range(d, range, inclusive_end=cfg.time_range_inclusive):
+    if inclusive_end:
+        return range[0] <= d and d <= range[1]
+    else:
+        return range[0] <= d and d < range[1]
 
 
 # @stevo
@@ -675,12 +686,13 @@ def datapool_read(
                     int(rematch.group('month')),
                     int(rematch.group('day'))
                 )
+
+                data_file = os.path.join(root, f)
                 if exclude(dpt, excluded) or not is_within_range(dpt, time_range):
                     print('skipping: %s' % data_file)
                     continue
 
                 # load one of the data files
-                data_file = os.path.join(root, f)
                 print('loading: %s' % data_file)
                 df = pd.read_csv(
                     open(data_file),
