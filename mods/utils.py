@@ -676,12 +676,12 @@ def datapool_read(
                     int(rematch.group('day'))
                 )
                 if exclude(dpt, excluded) or not is_within_range(dpt, time_range):
-                    print('skipping: %s' % dpt)
+                    print('skipping: %s' % data_file)
                     continue
 
                 # load one of the data files
                 data_file = os.path.join(root, f)
-                print('loading: %s\t%s' % (dpt, data_file))
+                print('loading: %s' % data_file)
                 df = pd.read_csv(
                     open(data_file),
                     usecols=ds['cols'],
@@ -703,8 +703,6 @@ def datapool_read(
         if df_main is None:
             df_main = df_protocol
         else:
-            dbg_df(df_main,'','df_main',True, False)
-            dbg_df(df_protocol,'','df_protocol',True, False)
             df_main = pd.merge(df_main, df_protocol, on=merge_on_col)
 
     # select only specified columns
