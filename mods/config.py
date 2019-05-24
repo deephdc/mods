@@ -55,8 +55,9 @@ app_data = BASE_DIR + '/data/'
 app_data_remote     = 'deepnc:/mods/data/'
 app_data_raw        = BASE_DIR + '/data/raw/'
 app_data_features   = BASE_DIR + '/data/features/tsv/'
+app_data_train      = BASE_DIR + '/data/train/'
 app_data_test       = BASE_DIR + '/data/test/'
-app_data_predict    = BASE_DIR + '/data/predict/'
+# app_data_predict    = BASE_DIR + '/data/predict/'     # the same as test - can be removed
 app_data_plot       = BASE_DIR + '/data/plot/'
 app_data_results    = BASE_DIR + '/data/results/'
 app_models          = BASE_DIR + '/models/'
@@ -72,10 +73,7 @@ window_duration = '1 hour'
 slide_duration  = '10 minutes'
 
 # pandas defaults
-# pd_usecols = ['number_of_conn', 'sum_orig_kbytes']
-pd_usecols = ['number_of_conn', 'sum_orig_bytes']
-# pd_usecols = ['number_of_conn']
-# pd_usecols = ['sum_orig_bytes']
+pd_usecols = ['number_of_conn', 'sum_orig_bytes']       # code cleaning required
 pd_sep = '\t'                               # ',' for csv
 pd_skiprows = 0
 pd_skipfooter = 0
@@ -87,13 +85,13 @@ app_data_pool = app_data_features + 'w01h-s10m/'        # 'w10m-s01m/'
 month_start_default = '201804'              # collected data starts since this month
 
 data_filename_train = 'data_train.tsv'
-data_train_begin = '201805'
-data_train_end   = '201812'                 # included
+data_train_begin = '20180501'
+data_train_end   = '20181231'               # included
 data_train_excluded = []
 
 data_filename_test  = 'data_test.tsv'
-data_test_begin = '201901'
-data_test_end   = '201903'                  # included
+data_test_begin = '20190101'
+data_test_end   = '20190430'                # included
 data_test_excluded = []
 
 # training defaults
@@ -103,36 +101,39 @@ data_train = 'conn|in_sum_orig_bytes|in_count_uid;ssh|in;#window_start,window_en
 # Data transformation defaults
 model_delta = True                          # True --> better predictions
 interpolate = True
-remove_peak = False                         # don't use; True --> worse predictions due to time-series nature
+remove_peak = False                         # don't use
 
 # Training parameters defaults
-multivariate = len(pd_usecols)
-sequence_len = 6                           # from 6 to 24 for w01h-s10m
+multivariate = len(pd_usecols)              # code cleaning ?
+sequence_len = 6                            # from 6 to 24 for w01h-s10m
 steps_ahead = 1                             # number of steps steps_ahead for prediction
 model_types = ['CuDNNLSTM', 'CuDNNGRU', 'Conv1D', 'MLP', 'BidirectLSTM', 'seq2seqLSTM']     # 'LSTM', 'GRU'
-# model_types = ['ConvLSTM2D']
+# model_types = ['MLP']
 model_type = model_types[0]
 num_epochs = 50
 epochs_patience = 10
 batch_size = 1                              # to be tested later
 batch_size_test = 1                         # don't change
 blocks = 6
+
 data_splits = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 data_split = 0.8
+
+ws_choices = ['w01h-s10m', 'w10m-s01m', 'w30m-s10m']
+ws_choice = ws_choices[0] 
+
 train_time_range_begin = '2019-04-01'             # begin <= time_range < end
 train_time_range_end   = '2019-05-01'             # excluded
 train_time_ranges_excluded = '2019-01 -- 2019-02-15, 2018-04-01'
-train_ws_choices = ['w01h-s10m', 'w10m-s01m', 'w30m-s10m']
-train_ws = train_ws_choices[0]
 
+train_ws = test_ws = ws_choice
 
 # common defaults
 model_name_all = list_dir(app_models, '*.zip')
-# model_name = 'mods-20180414-20181015-w1h-s10m'
 model_name = 'model-default'
 
 # prediction defaults
-data_predict = 'sample-w1h-s10m.tsv'        # can be removed later?
+# data_predict = 'sample-w1h-s10m.tsv'        # can be removed later?
 
 # test defaults
 data_test = 'data_test.tsv'                  # can be removed later?
