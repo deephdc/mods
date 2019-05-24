@@ -98,7 +98,7 @@ data_test_excluded = []
 
 # training defaults
 # data_train = 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv'
-data_train = 'conn|in_sum_orig_bytes|in_count_uid;ssh|in|out;#window_start,window_end'
+data_train = 'conn|in_sum_orig_bytes|in_count_uid;ssh|in;#window_start,window_end'
 
 # Data transformation defaults
 model_delta = True                          # True --> better predictions

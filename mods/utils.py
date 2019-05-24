@@ -645,8 +645,16 @@ def datapool_read(
 
     for ds in data_specs:
 
-        protocol = ds['protocol']
-        dir_protocol = os.path.join(base_dir, protocol)
+        dir_protocol = os.path.join(base_dir, ds['protocol'])
+
+        # protocol's collecting df
+        df_protocol = None
+
+        # collect columns, that will be kept in the final dataset
+        keep_cols.extend(ds['cols'])
+
+        # columns to be loaded: columns specified for the file as well as columns, that will be used for joins
+        ds['cols'].extend(merge_on_col)
 
         for root, directories, filenames in os.walk(dir_protocol):
 
@@ -671,10 +679,6 @@ def datapool_read(
                     print('skipping: %s' % dpt)
                     continue
 
-                # collect columns, that will be kept in the final dataset
-                keep_cols.extend(ds['cols'])
-                # columns to be loaded: columns specified for the file as well as columns, that will be used for joins
-                ds['cols'].extend(merge_on_col)
                 # load one of the data files
                 data_file = os.path.join(root, f)
                 print('loading: %s\t%s' % (dpt, data_file))
@@ -687,12 +691,21 @@ def datapool_read(
                     skipfooter=0,
                     engine='python',
                 )
-                if df_main is None:
-                    df_main = df
-                else:
-                    df_main = pd.merge(df_main, df, on=merge_on_col)
 
-    dbg_df(df_main, '', 'df_main', True, False)
+                if df_protocol is None:
+                    df_protocol = df
+                else:
+                    df_protocol = df_protocol.append(df)
+
+        if df_protocol is None:
+            continue
+
+        if df_main is None:
+            df_main = df_protocol
+        else:
+            dbg_df(df_main,'','df_main',True, False)
+            dbg_df(df_protocol,'','df_protocol',True, False)
+            df_main = pd.merge(df_main, df_protocol, on=merge_on_col)
 
     # select only specified columns
     return df_main[keep_cols]
