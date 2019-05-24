@@ -58,13 +58,13 @@ log_header_lines = 8
 # slide_duration  = '10 minutes'
 
 # Application dirs
-app_data = BASE_DIR + '/data/'
+app_data = BASE_DIR + '/data/'                  # data_train.tsv, data_test.tsv
 app_data_remote     = 'deepnc:/mods/data/'
 app_data_raw        = BASE_DIR + '/data/raw/'
 app_data_features   = BASE_DIR + '/data/features/tsv/'
-app_data_train      = BASE_DIR + '/data/train/'
-app_data_test       = BASE_DIR + '/data/test/'
-# app_data_predict    = BASE_DIR + '/data/predict/'     
+app_data_train      = BASE_DIR + '/data/features/train/'    # temporary
+app_data_test       = BASE_DIR + '/data/features/test/'     # temporary
+# app_data_predict    = BASE_DIR + '/data/predict/'         # remove later? 
 app_data_plot       = BASE_DIR + '/data/plot/'
 app_data_results    = BASE_DIR + '/data/results/'
 app_models          = BASE_DIR + '/models/'
