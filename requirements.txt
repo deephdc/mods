@@ -10,6 +10,7 @@ gevent==1.2.1
 requests
 numpy
 sympy
+statsmodels
 scikit-learn
 matplotlib
 seaborn
