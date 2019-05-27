@@ -74,7 +74,7 @@ if __name__ == '__main__':
                             type=type(val['default']),  # may just put str
                             help=val['help'])
 
-    parser.add_argument('--file', type=str, default=cfg.data_test, help='File to do test on')
+    parser.add_argument('--file', type=str, default=cfg.test_data, help='File to do test on')
     parser.add_argument('--url', type=str, help='URL with the data to do prediction on')
     # parser.add_argument('--data', type=str, help='String with data to do prediction on')
 

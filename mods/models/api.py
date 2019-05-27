@@ -448,23 +448,39 @@ def train(args, **kwargs):
         kwargs
     ))
 
-    # prepare data
+    # prepare the data
     bootstrap_data = yaml.safe_load(args.bootstrap_data)
     if bootstrap_data:
         mdata.prepare_data()
 
-    # params for data pool
-    # time range
-    time_range_beg = utl.parse_datetime(str(yaml.safe_load(args.time_range_beg)))
-    time_range_end = utl.parse_datetime(str(yaml.safe_load(args.time_range_end)))
-    time_range = (time_range_beg, time_range_end)
-    # time range exclusion filter
-    time_ranges_excluded = utl.parse_datetime_ranges(yaml.safe_load(args.time_ranges_excluded))
-    # window + slide
-    window_slide = yaml.safe_load(args.ws)
-    data = yaml.safe_load(args.data)
+    # selecting protocols, protocol columns and data merging specification
+    data_select_query = yaml.safe_load(args.data_select_query)
 
-    data_split = yaml.safe_load(args.data_split)
+    # window + slide
+    window_slide = yaml.safe_load(args.window_slide)
+
+    # train - time range
+    train_time_range = str(yaml.safe_load(args.train_time_range)).split('--', 1)
+    assert train_time_range
+    assert len(train_time_range) == 2
+    train_time_range_beg = utl.parse_datetime(train_time_range[0])
+    train_time_range_end = utl.parse_datetime(train_time_range[1])
+    train_time_range = (train_time_range_beg, train_time_range_end)
+
+    # train - time range exclusion filter
+    train_time_range_excluded = utl.parse_datetime_ranges(yaml.safe_load(args.train_time_ranges_excluded))
+
+    # test - time range
+    test_time_range = str(yaml.safe_load(args.test_time_range)).split('--', 1)
+    assert test_time_range
+    assert len(test_time_range) == 2
+    test_time_range_beg = utl.parse_datetime(test_time_range[0])
+    test_time_range_end = utl.parse_datetime(test_time_range[1])
+    test_time_range = (test_time_range_beg, test_time_range_end)
+
+    # test - time range exclusion filter
+    test_time_range_excluded = utl.parse_datetime_ranges(yaml.safe_load(args.test_time_ranges_excluded))
+
     model_name = yaml.safe_load(args.model_name)
     sequence_len = yaml.safe_load(args.sequence_len)
     model_delta = yaml.safe_load(args.model_delta)
@@ -475,7 +491,6 @@ def train(args, **kwargs):
     blocks = yaml.safe_load(args.blocks)
     steps_ahead = yaml.safe_load(args.steps_ahead)
     batch_size = yaml.safe_load(args.batch_size)
-    pd_usecols = [utl.parse_int_or_str(col) for col in yaml.safe_load(args.pd_usecols).split(',')]
 
     # support full paths for command line calls
     models_dir = cfg.app_models
@@ -484,22 +499,15 @@ def train(args, **kwargs):
         models_dir = os.path.dirname(model_name)
         model_name = os.path.basename(model_name)
 
+    # read train data from the datapool
+    df_train = utl.datapool_read(data_select_query, train_time_range, window_slide, train_time_range_excluded, cfg.app_data_features)
+
+    # read test data from the datapool
+    df_test = utl.datapool_read(data_select_query, test_time_range, window_slide, test_time_range_excluded, cfg.app_data_features)
+
     backend.clear_session()
-    m = MODS.mods_model(model_name)
-
-    # read data from datapool
-    df_train = utl.datapool_read(data, time_range, window_slide, time_ranges_excluded, cfg.app_data_features)
-
-    # test on df_train by default
-    df_test = df_train
-
-    # split the data into train and test
-    if data_split < 1.0:
-        cut = int(data_split * len(df_train))
-        df_test = df_train[cut:]
-        df_train = df_train[:cut]
-
-    m.train(
+    model = MODS.mods_model(model_name)
+    model.train(
         df_train=df_train,
         multivariate=len(df_train.columns),
         sequence_len=sequence_len,
@@ -514,19 +522,18 @@ def train(args, **kwargs):
     )
 
     # evaluate the model
-    pred = m.predict(df_test)
+    predictions = model.predict(df_test)
     metrics = utl.compute_metrics(
-        df_test[m.get_sequence_len():-steps_ahead],
-        pred[:-steps_ahead],  # here, we predict # steps_ahead
-        m,
+        df_test[model.get_sequence_len():-steps_ahead],
+        predictions[:-steps_ahead],  # here, we predict # steps_ahead
+        model,
     )
-    metrics['split'] = data_split
 
     # put computed metrics into the model to be saved in model's zip
-    m.update_metrics(metrics)
+    model.update_metrics(metrics)
 
     # save model locally
-    file = m.save(os.path.join(models_dir, model_name))
+    file = model.save(os.path.join(models_dir, model_name))
     dir_remote = cfg.app_models_remote
 
     # upload model using rclone
@@ -537,17 +544,19 @@ def train(args, **kwargs):
     )
     print('rclone_copy(%s, %s):\nout: %s\nerr: %s' % (file, dir_remote, out, err))
 
-
     message = {
         'status': 'ok',
         'dir_models': models_dir,
         'model_name': model_name,
-        'train_data': data,
-        'steps_ahead': m.get_steps_ahead(),
-        'batch_size': m.get_batch_size(),
-        'training_time': m.get_training_time(),
-        'usecols': pd_usecols,
-        'evaluation': m.get_metrics()
+        'steps_ahead': model.get_steps_ahead(),
+        'batch_size': model.get_batch_size(),
+        'training_time': model.get_training_time(),
+        'data_select_query': data_select_query,
+        'train_time_range': utl.datetime2str(train_time_range),
+        'train_time_range_excluded': utl.datetime2str(train_time_range_excluded),
+        'test_time_range': utl.datetime2str(test_time_range),
+        'test_time_range_excluded': utl.datetime2str(test_time_range_excluded),
+        'evaluation': model.get_metrics(),
     }
 
     return message
@@ -596,7 +605,7 @@ def test_file(*args, **kwargs):
             if model_name != cfg.model_name:
                 dir_models = os.path.dirname(model_name)
                 model_name = os.path.basename(model_name)
-            if data_test != cfg.data_test:
+            if data_test != cfg.test_data:
                 dir_data_test = os.path.dirname(data_test)
                 data_test = os.path.basename(data_test)
 

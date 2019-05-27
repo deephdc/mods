@@ -278,7 +278,6 @@ class mods_model:
         return {
             mods_model.__MODEL: {
                 mods_model.__FILE: 'model.h5',
-                mods_model.__MULTIVARIATE: len(cfg.pd_usecols),
                 mods_model.__SEQUENCE_LEN: cfg.sequence_len,
                 mods_model.__MODEL_DELTA: cfg.model_delta,
                 mods_model.__INTERPOLATE: cfg.interpolate,

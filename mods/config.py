@@ -64,19 +64,10 @@ app_models_remote   = 'deepnc:/mods/models/'
 app_checkpoints     = BASE_DIR + '/checkpoints/'
 app_visualization   = BASE_DIR + '/visualization/'
 
-# Feature data
-feature_filename = 'features.tsv'
-time_range_begin = '2018-04-14'             # begin <= time_range < end
-time_range_end   = '2019-04-01'             # excluded
-window_duration = '1 hour'
-slide_duration  = '10 minutes'
-time_range_inclusive = True
+# Generic settings
+time_range_inclusive = True                 # True: <beg, end>; False: <beg, end)
 
 # pandas defaults
-# pd_usecols = ['number_of_conn', 'sum_orig_kbytes']
-pd_usecols = ['number_of_conn', 'sum_orig_bytes']
-# pd_usecols = ['number_of_conn']
-# pd_usecols = ['sum_orig_bytes']
 pd_sep = '\t'                               # ',' for csv
 pd_skiprows = 0
 pd_skipfooter = 0
@@ -87,19 +78,8 @@ pd_header = 0
 app_data_pool = app_data_features + 'w01h-s10m/'        # 'w10m-s01m/'
 month_start_default = '201804'              # collected data starts since this month
 
-data_filename_train = 'data_train.tsv'
-data_train_begin = '201805'
-data_train_end   = '201812'                 # included
-data_train_excluded = []
-
-data_filename_test  = 'data_test.tsv'
-data_test_begin = '201901'
-data_test_end   = '201903'                  # included
-data_test_excluded = []
-
 # training defaults
-# data_train = 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv'
-data_train = 'conn|in_sum_orig_bytes|in_count_uid;ssh|in;#window_start,window_end'
+train_data_select_query = 'conn|in_sum_orig_bytes|in_count_uid;ssh|in#window_start,window_end'
 
 # Data transformation defaults
 model_delta = True                          # True --> better predictions
@@ -107,7 +87,7 @@ interpolate = True
 remove_peak = False                         # don't use; True --> worse predictions due to time-series nature
 
 # Training parameters defaults
-multivariate = len(pd_usecols)
+multivariate = 3
 sequence_len = 6                           # from 6 to 24 for w01h-s10m
 steps_ahead = 1                             # number of steps steps_ahead for prediction
 model_types = ['CuDNNLSTM', 'CuDNNGRU', 'Conv1D', 'MLP', 'BidirectLSTM', 'seq2seqLSTM']     # 'LSTM', 'GRU'
@@ -118,11 +98,9 @@ epochs_patience = 10
 batch_size = 1                              # to be tested later
 batch_size_test = 1                         # don't change
 blocks = 6
-data_splits = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-data_split = 0.8
-train_time_range_begin = '2018-04-01'             # begin <= time_range < end
-train_time_range_end   = '2019-05-01'             # excluded
-train_time_ranges_excluded = '2019-01 -- 2019-02-15, 2018-12-24, 2018-10'
+
+train_time_range = '2019-04-01 -- 2019-05-01'
+train_time_range_excluded = '2019-01 -- 2019-02-15, 2018-12-24, 2018-10'
 train_ws_choices = ['w01h-s10m', 'w10m-s01m', 'w30m-s10m']
 train_ws = train_ws_choices[0]
 
@@ -136,7 +114,10 @@ model_name = 'model-default'
 data_predict = 'sample-w1h-s10m.tsv'        # can be removed later?
 
 # test defaults
-data_test = 'data_test.tsv'                  # can be removed later?
+test_data = 'data_test.tsv'                         # can be removed later?
+test_data_select_query = train_data_select_query    # same as for train - differs only in the time range
+test_time_range = '2019-05-02 -- 2019-05-26'
+test_time_range_excluded = ''
 
 # Evaluation metrics on real values
 eval_filename = 'eval.tsv'
@@ -168,11 +149,6 @@ def set_common_args():
 
 def set_pandas_args():
     pandas_args = {
-        'pd_usecols': {
-            'default': ','.join(pd_usecols),
-            'help': 'A list of column names separated by comma; e.g., number_of_conn,sum_orig_kbytes',
-            'required': False
-        },
         # 'pd_sep': {
         #     'default': pd_sep,
         #     'help': '',
@@ -210,42 +186,60 @@ def set_train_args():
             'type': str,
             'required': False
         },
-        'time_range_beg': {
-            'default': train_time_range_begin,
-            'help': '',
+        'data_select_query': {
+            'default': train_data_select_query,
+            'help': """\
+Select protocols and columns for training and testing and specify columns for merging the data.
+Multiple protocols and columns can be specified for data selection.
+Multiple columns can be specified for data merging.
+
+Use following format:
+<font color="blue">protocol1</font>&nbsp;<b>;</b>&nbsp;<font color="blue">protocol2</font>&nbsp;<b>|</b>&nbsp;<font color="green">col1</font>&nbsp;<b>|</b>&nbsp;<font color="green">col2</font>&nbsp;<b>|</b>&nbsp;...&nbsp;<b>;</b>&nbsp;...&nbsp;<b>#</b>&nbsp;<font color="purple">merge_col1</font>&nbsp;<b>,</b>&nbsp;<font color="purple">merge_col2</font>&nbsp;<b>,</b>&nbsp;...
+""",
+            'required': False
+        },
+        'train_time_range': {
+            'default': train_time_range,
+            'help': '<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]&nbsp;<b>--</b>&nbsp;<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]',
             'type': str,
             'required': False
         },
-        'time_range_end': {
-            'default': train_time_range_end,
-            'help': '',
+        'train_time_ranges_excluded': {
+            'default': train_time_range_excluded,
+            'help': """\
+A comma-separated list of time and time ranges to be excluded.
+
+Use following formats in the list:
+<ul>
+    <li><font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]</li>
+    <li><font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]&nbsp;<b>--</b>&nbsp;<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]</li>
+</ul>""",
             'type': str,
             'required': False
         },
-        'time_ranges_excluded': {
-            'default': train_time_ranges_excluded,
-            'help': 'A comma-separated list of time ranges to be excluded usign following format: YYYYMMDD-YYYYMMDD',
+        'test_time_range': {
+            'default': test_time_range,
+            'help': '<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]&nbsp;<b>--</b>&nbsp;<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]',
             'type': str,
             'required': False
         },
-        'ws': {
+        'test_time_ranges_excluded': {
+            'default': test_time_range_excluded,
+            'help': """\
+A comma-separated list of time and time ranges to be excluded.
+
+Use following formats in the list:
+<ul>
+    <li><font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]</li>
+    <li><font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]&nbsp;<b>--</b>&nbsp;<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]</li>
+</ul>""",
+            'type': str,
+            'required': False
+        },
+        'window_slide': {
             'default': train_ws,
             'choices': train_ws_choices,
-            'help': 'window and slide',
-            'type': str,
-            'required': False
-        },
-        'data': {
-            'default': data_train,
-            'help':
-                'Training data to train on. Multiple protocols can be specified with specific columns and a column to merge then on.<br><br>Use following format:<br><i>' + html.escape(
-                    '<protocol1>;<protocol2>|<col1>|<col2>|...;<protocol3>;...;#<merge_col>') + '</i>',
-            'required': False
-        },
-        'data_split' : {
-            'default': data_split,
-            'choices': data_splits,
-            'help': 'Specify the split of the input data into the training and test data.',
+            'help': 'window and window slide',
             'type': str,
             'required': False
         },
@@ -332,7 +326,7 @@ def set_test_args():
             'required': False
         },
         'data': {
-            'default': data_test,
+            'default': test_data,
             'help': 'Data to test on',
             'required': False
         },

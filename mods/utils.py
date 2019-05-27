@@ -379,26 +379,28 @@ def dbg_scaler(scaler, msg, debug=False):
 
 # @stevo - parses data specification in order to support multiple data files merging
 def parse_data_specs(specs):
-    specs = re.compile(r'\s*;\s*').split(specs.strip())
-    merge_on_col = []
-    
-    if len(specs) > 1:
-        if specs[-1].startswith('#'):
-            # parse an array of column names (separated by ,) and filter empty strings
-            merge_on_col = list(filter(None, re.compile(r'\s*,\s*').split(specs[-1][1:])))
-            
-            # remove merge column specification
-            specs = specs[:-1]
-    
+
     protocols = []
-    for spec in specs:
-        # parse an array of file names (separated by |)
-        parsed = re.compile(r'\s*\|\s*').split(spec)
-        protocol = parsed[0]
-        columns = parsed[1:] if len(parsed) > 1 else []
-        
-        # columns.extend(merge_on_col)
-        protocols.append({'protocol': protocol, 'cols': columns})
+    merge_on_col = []
+
+    specs = re.compile(r'\s*;\s*').split(specs.strip())
+
+    if specs and len(specs) > 0:
+
+        x = re.compile(r'\s*#\s*').split(specs[-1], 1)
+        if x and len(x) == 2:
+            specs[-1] = x[0]
+            merge_on_col = list(filter(None, re.compile(r'\s*,\s*').split(x[1])))
+
+        for spec in specs:
+            # parse an array of file names (separated by |)
+            parsed = re.compile(r'\s*\|\s*').split(spec)
+            protocol = parsed[0]
+            columns = parsed[1:] if len(parsed) > 1 else []
+
+            # columns.extend(merge_on_col)
+            protocols.append({'protocol': protocol, 'cols': columns})
+
     return (protocols, merge_on_col)
 
 
@@ -470,7 +472,8 @@ def parse_datetime_ranges(time_ranges):
     parsed = []
     if isinstance(time_ranges, str):
         time_ranges = time_ranges.split(',')
-    print(time_ranges)
+    if time_ranges is None:
+        return parsed
     for x in time_ranges:
         m = REGEX_DATAPOOLTIME.match(x)
         if m:
@@ -521,6 +524,7 @@ def exclude(d, ranges):
 # @stevo
 # regex matching directory of a day
 REGEX_DIR_DAY = re.compile(r'^' + re.escape(cfg.app_data_features.rstrip('/')) + '/[^/]+' + r'/(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})')
+
 
 # @stevo datapool reading
 def datapool_read(
@@ -600,3 +604,18 @@ def datapool_read(
 
     # select only specified columns
     return df_main[keep_cols]
+
+
+# @stevo - converts datetime.datetime dates to str in order to overcome json serialization error.
+def datetime2str(obj):
+    if isinstance(obj, datetime.datetime):
+        return obj.strftime('%Y-%m-%d')
+    if isinstance(obj, list):
+        for i in range(len(obj)):
+            obj[i] = datetime2str(obj[i])
+    elif isinstance(obj, tuple):
+        a = []
+        for x in obj:
+            a.append(datetime2str(x))
+        obj = a
+    return obj
