@@ -503,7 +503,6 @@ def train(args, **kwargs):
     model = MODS.mods_model(model_name)
     model.train(
         df_train=df_train,
-        multivariate=len(df_train.columns),
         sequence_len=sequence_len,
         model_delta=model_delta,
         interpolate=interpolate,

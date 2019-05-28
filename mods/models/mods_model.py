@@ -389,7 +389,6 @@ class mods_model:
     def train(
             self,
             df_train,
-            multivariate=cfg.multivariate,
             sequence_len=cfg.sequence_len,
             model_delta=cfg.model_delta,
             interpolate=cfg.interpolate,
@@ -400,10 +399,8 @@ class mods_model:
             steps_ahead=cfg.steps_ahead,
             batch_size=cfg.batch_size
     ):
-        if multivariate is None:
-            multivariate = self.get_multivariate()
-        else:
-            self.set_multivariate(multivariate)
+        multivariate = len(df_train.columns)
+        self.set_multivariate(multivariate)
 
         if sequence_len is None:
             sequence_len = self.get_sequence_len()
