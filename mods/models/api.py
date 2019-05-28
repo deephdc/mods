@@ -500,10 +500,10 @@ def train(args, **kwargs):
         model_name = os.path.basename(model_name)
 
     # read train data from the datapool
-    df_train = utl.datapool_read(data_select_query, train_time_range, window_slide, train_time_range_excluded, cfg.app_data_features)
+    df_train, cached_file_train = utl.datapool_read(data_select_query, train_time_range, window_slide, train_time_range_excluded, cfg.app_data_features)
 
     # read test data from the datapool
-    df_test = utl.datapool_read(data_select_query, test_time_range, window_slide, test_time_range_excluded, cfg.app_data_features)
+    df_test, cached_file_test = utl.datapool_read(data_select_query, test_time_range, window_slide, test_time_range_excluded, cfg.app_data_features)
 
     backend.clear_session()
     model = MODS.mods_model(model_name)
@@ -554,8 +554,10 @@ def train(args, **kwargs):
         'data_select_query': data_select_query,
         'train_time_range': utl.datetime2str(train_time_range),
         'train_time_range_excluded': utl.datetime2str(train_time_range_excluded),
+        'train_cached_df': cached_file_train,
         'test_time_range': utl.datetime2str(test_time_range),
         'test_time_range_excluded': utl.datetime2str(test_time_range_excluded),
+        'test_cached_df': cached_file_test,
         'evaluation': model.get_metrics(),
     }
 
