@@ -192,7 +192,6 @@ def predict_data(*args, **kwargs):
             file_storage = arg.files
             buffer = io.BytesIO(file_storage.read())
 
-            usecols = cfg.pd_usecols
             sep = cfg.pd_sep
             skiprows = cfg.pd_skiprows
             skipfooter = cfg.pd_skipfooter
@@ -219,7 +218,6 @@ def predict_data(*args, **kwargs):
 
             df_data = m.read_file_or_buffer(
                 buffer,
-                usecols=usecols,
                 sep=sep,
                 skiprows=skiprows,
                 skipfooter=skipfooter,
@@ -236,7 +234,6 @@ def predict_data(*args, **kwargs):
                 'data': file_storage.filename,
                 'steps_ahead': m.get_steps_ahead(),
                 'batch_size': m.get_batch_size(),
-                'usecols': usecols,
                 'evaluation': utl.compute_metrics(
                     df_data[m.get_sequence_len():-m.get_steps_ahead()],
                     predictions[:-m.get_steps_ahead()],
