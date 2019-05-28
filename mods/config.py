@@ -26,7 +26,6 @@ import fnmatch
 import os
 from os import path
 from os.path import expanduser
-import html
 
 
 def list_dir(dir, pattern='*.tsv'):
