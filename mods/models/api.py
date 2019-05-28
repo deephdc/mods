@@ -25,7 +25,6 @@ Train models with first order differential to monitor changes
 import io
 import json
 import os
-import re
 import socket
 
 import numpy as np
@@ -40,8 +39,6 @@ import mods.dataset.data_utils as dutils
 import mods.dataset.make_dataset as mdata
 import mods.models.mods_model as MODS
 import mods.utils as utl
-
-import datetime
 
 
 def get_model(
