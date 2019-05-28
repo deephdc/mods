@@ -20,32 +20,23 @@ Created on Mon Apr 23 12:48:52 2018
 @author: stefan dlugolinsky
 """
 
-import calendar
 import datetime
-import glob
 import json
-import matplotlib
-import matplotlib.pyplot as plt
-import numpy as np
 import os
-import pandas as pd
 import re
-import seaborn as sns
-import string
-import time
 # from datetime import datetime
-from datetime import timedelta
 from math import sqrt
-from os.path import basename
-from random import randint
-from sklearn.metrics import mean_squared_error
-from sklearn.metrics import r2_score
-from sklearn.preprocessing import MinMaxScaler
-from numpy import dot
-from numpy.linalg import norm
-from dateutil.relativedelta import *
 
 import keras
+import numpy as np
+import pandas as pd
+from dateutil.relativedelta import *
+from numpy import dot
+from numpy.linalg import norm
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import r2_score
+
+import hashlib
 
 import mods.config as cfg
 
@@ -471,7 +462,7 @@ REGEX_DATAPOOLTIMERANGE = re.compile(r'^\s*(?P<beg_year>\d{4})([^0-9]{0,1}(?P<be
 def parse_datetime_ranges(time_ranges):
     parsed = []
     if isinstance(time_ranges, str):
-        time_ranges = time_ranges.split(',')
+        time_ranges = re.compile(r'\s*,\s*').split(time_ranges)
     if time_ranges is None:
         return parsed
     for x in time_ranges:
@@ -534,12 +525,31 @@ def datapool_read(
         excluded=[],                    # list of dates and ranges that will be omitted
         base_dir=cfg.app_data_features  # base dir with the protocol/YYYY/MM/DD/wXXd-sXXd.tsv structure
 ):
-
     keep_cols = []
     df_main = None
-    data_specs, merge_on_col = parse_data_specs(data_specs_str)
 
-    for ds in data_specs:
+    protocols, merge_on_col = parse_data_specs(data_specs_str)
+
+    # read dataset from cache
+    cache_dir = None
+    cache_key = None
+    cache_file = None
+    if cfg.data_pool_caching:
+        cache_dir = os.path.dirname(cfg.app_data_pool_cache)
+        cache_key = data_cache_key(protocols, merge_on_col, ws, time_range, excluded)
+        cache_file = os.path.join(cache_dir, cache_key)
+        if os.path.isfile(cache_file):
+            df = pd.read_csv(
+                cache_file,
+                header=0,
+                sep='\t',
+                skiprows=0,
+                skipfooter=0,
+                engine='python',
+            )
+            return df, cache_file
+
+    for ds in protocols:
 
         dir_protocol = os.path.join(base_dir, ds['protocol'])
 
@@ -603,19 +613,45 @@ def datapool_read(
             df_main = pd.merge(df_main, df_protocol, on=merge_on_col)
 
     # select only specified columns
-    return df_main[keep_cols]
+    df_main = df_main[keep_cols]
+
+    # save dataset to cache
+    if cfg.data_pool_caching:
+        assert cache_dir is not None
+        assert cache_key is not None
+        assert cache_file is not None
+        if not os.path.exists(cache_dir):
+            os.makedirs(cache_dir, exist_ok=False)
+        df_main.to_csv(
+            cache_file,
+            index=None,
+            header=True,
+            sep='\t'
+        )
+
+    return df_main, cache_file
 
 
 # @stevo - converts datetime.datetime dates to str in order to overcome json serialization error.
 def datetime2str(obj):
     if isinstance(obj, datetime.datetime):
         return obj.strftime('%Y-%m-%d')
-    if isinstance(obj, list):
-        for i in range(len(obj)):
-            obj[i] = datetime2str(obj[i])
-    elif isinstance(obj, tuple):
+    if isinstance(obj, list) or isinstance(obj, tuple):
         a = []
         for x in obj:
             a.append(datetime2str(x))
-        obj = a
+        return a
     return obj
+
+def compare_protocol_spec(p):
+    assert isinstance(p, dict)
+    return (str(p['protocol']) + str(sorted(p['cols']))).lower()
+
+def data_cache_key(protocols, merge_on_col, ws, time_range, excluded):
+    protocols = sorted(protocols, key=compare_protocol_spec)
+    merge_on_col = sorted(merge_on_col)
+    k = str(str(protocols) + str(merge_on_col) + ';' + ws + ';' + str(datetime2str(time_range)) + ';' + str(datetime2str(excluded))).lower()
+    print('HASH in: %s' % k)
+    m = hashlib.md5()
+    m.update(k.encode('utf-8'))
+    return m.hexdigest()

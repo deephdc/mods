@@ -63,6 +63,7 @@ app_models          = BASE_DIR + '/models/'
 app_models_remote   = 'deepnc:/mods/models/'
 app_checkpoints     = BASE_DIR + '/checkpoints/'
 app_visualization   = BASE_DIR + '/visualization/'
+app_data_pool_cache = BASE_DIR + '/data/cache/datapool'
 
 # Generic settings
 time_range_inclusive = True                 # True: <beg, end>; False: <beg, end)
@@ -77,6 +78,7 @@ pd_header = 0
 # Datapool defaults
 app_data_pool = app_data_features + 'w01h-s10m/'        # 'w10m-s01m/'
 month_start_default = '201804'              # collected data starts since this month
+data_pool_caching = True
 
 # training defaults
 train_data_select_query = 'conn|in_sum_orig_bytes|in_count_uid;ssh|in#window_start,window_end'
