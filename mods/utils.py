@@ -21,13 +21,11 @@ Created on Mon Apr 23 12:48:52 2018
 """
 
 import datetime
-import json
+import hashlib
 import os
 import re
-# from datetime import datetime
 from math import sqrt
 
-import keras
 import numpy as np
 import pandas as pd
 from dateutil.relativedelta import *
@@ -35,8 +33,6 @@ from numpy import dot
 from numpy.linalg import norm
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
-
-import hashlib
 
 import mods.config as cfg
 
@@ -82,6 +78,7 @@ def read_data(data_filename):
     return data
 
 
+# TODO: delete, dead code
 # @giang: get X from TimeseriesGenerator data
 def getX(tsg_data):
     X = list()
@@ -90,6 +87,7 @@ def getX(tsg_data):
     return np.array(X)
 
 
+# TODO: delete, dead code
 # @giang: get Y from TimeseriesGenerator data
 def getY(tsg_data):
     Y = list()
@@ -98,6 +96,7 @@ def getY(tsg_data):
     return np.array(Y)
 
 
+# TODO: delete, dead code
 # @giang: get XY from TimeseriesGenerator data
 def getXY(tsg_data):
     X, Y = list(), list()
@@ -107,6 +106,7 @@ def getXY(tsg_data):
     return np.array(X), np.array(Y)
 
 
+# TODO: delete, dead code
 # @giang: first order differential d(y)/d(t)=f(y,t)=y' for numpy array
 def delta_timeseries(arr):
     return arr[1:] - arr[:-1]
@@ -171,6 +171,8 @@ def smape(y_true, y_pred):
 
 
 ##### @giang auxiliary - BEGIN - code in this block can be removed later #####
+
+# TODO: delete, dead code
 # @giang
 def create_data_from_datapool(data_filename,
                               data_begin,
@@ -210,54 +212,6 @@ def create_data_from_datapool(data_filename,
 ##### @giang auxiliary - END - code in the above block can be removed later #####
 
 ##### @stevo @stevo @stevo#####
-
-# @stevo
-REGEX_TIME_INTERVAL = re.compile(
-    r'((?P<years>\d)\s+years?\s+)?((?P<months>\d)\s+months?\s+)?((?P<days>\d)\s+days?\s+)?(?P<hours>\d{2}):(?P<minutes>\d{2}):(?P<seconds>\d{2})(?P<nanoseconds>\.\d+)')
-
-
-# @stevo
-def parseInterval(s):
-    global REGEX_TIME_INTERVAL
-    time_array = [['nanoseconds', 1],
-                  ['seconds', 1],
-                  ['minutes', 60],
-                  ['hours', 3600],
-                  ['days', 86400],
-                  ['months', 1036800],
-                  ['years', 378432000]]
-
-    m = REGEX_TIME_INTERVAL.search(s.strip())
-    seconds = float(0.0)
-    for t in time_array:
-        seconds += float(m.group(t[0])) * t[1] if m.group(t[0]) else 0
-    return seconds
-
-
-# returns metadata filename based on model filename
-def get_metadata_filename(model_filename):
-    return re.sub(r'\.[^.]+$', r'.json', model_filename)
-
-
-# loads model and model's metadata
-def load_model(filename, metadata_filename):
-    try:
-        model = keras.models.__load_model(filename)
-        metadata = load_model_metadata(metadata_filename)
-        return model, metadata
-    except Exception as e:
-        print(e)
-        return None
-
-
-# loads and returns model metadata
-def load_model_metadata(metadata_filename):
-    try:
-        with open(metadata_filename, 'rb') as f:
-            return json.load(f)
-    except Exception as e:
-        print(e)
-    return None
 
 
 # @stevo
@@ -655,7 +609,6 @@ def data_cache_key(protocols, merge_on_col, ws, time_range, excluded):
     protocols = sorted(protocols, key=compare_protocol_spec)
     merge_on_col = sorted(merge_on_col)
     k = str(str(protocols) + str(merge_on_col) + ';' + ws + ';' + str(datetime2str(time_range)) + ';' + str(datetime2str(excluded))).lower()
-    print('HASH in: %s' % k)
     m = hashlib.md5()
     m.update(k.encode('utf-8'))
     return m.hexdigest()
