@@ -608,7 +608,16 @@ def compare_protocol_spec(p):
 def data_cache_key(protocols, merge_on_col, ws, time_range, excluded):
     protocols = sorted(protocols, key=compare_protocol_spec)
     merge_on_col = sorted(merge_on_col)
-    k = str(str(protocols) + str(merge_on_col) + ';' + ws + ';' + str(datetime2str(time_range)) + ';' + str(datetime2str(excluded))).lower()
+    key_str = str(
+        str(protocols) \
+        + str(merge_on_col) \
+        + ';' \
+        + ws \
+        + ';' \
+        + str(datetime2str(time_range)) \
+        + ';' \
+        + str(datetime2str(excluded))
+    ).lower()
     m = hashlib.md5()
-    m.update(k.encode('utf-8'))
+    m.update(key_str.encode('utf-8'))
     return m.hexdigest()
