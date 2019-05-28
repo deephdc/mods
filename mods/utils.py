@@ -643,10 +643,14 @@ def datetime2str(obj):
         return a
     return obj
 
+
+# @stevo - helper function for protocol dict comparison
 def compare_protocol_spec(p):
     assert isinstance(p, dict)
     return (str(p['protocol']) + str(sorted(p['cols']))).lower()
 
+
+# @stevo - computes hash key for caching
 def data_cache_key(protocols, merge_on_col, ws, time_range, excluded):
     protocols = sorted(protocols, key=compare_protocol_spec)
     merge_on_col = sorted(merge_on_col)
