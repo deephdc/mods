@@ -79,7 +79,7 @@ app_data_pool = app_data_features + 'w01h-s10m/'        # 'w10m-s01m/'
 data_pool_caching = True
 
 # training defaults
-train_data_select_query = 'conn|in_sum_orig_bytes|in_count_uid;ssh|in#window_start,window_end'
+train_data_select_query = 'conn|in_sum_orig_bytes~A|in_count_uid~B;ssh|in~C#window_start,window_end'
 
 # Data transformation defaults
 model_delta = True                          # True --> better predictions

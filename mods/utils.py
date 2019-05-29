@@ -323,26 +323,32 @@ def dbg_scaler(scaler, msg, debug=False):
 
 
 # @stevo - parses data specification in order to support multiple data files merging
+REGEX_SPLIT_SEMICOLON = re.compile(r'\s*;\s*')
+REGEX_SPLIT_COMMA = re.compile(r'\s*,\s*')
+REGEX_SPLIT_HASH = re.compile(r'\s*#\s*')
+REGEX_SPLIT_PIPE = re.compile(r'\s*\|\s*')
+REGEX_SPLIT_TILDE = re.compile(r'\s*~\s*')
 def parse_data_specs(specs):
 
     protocols = []
     merge_on_col = []
 
-    specs = re.compile(r'\s*;\s*').split(specs.strip())
+    specs = REGEX_SPLIT_SEMICOLON.split(specs.strip())
 
     if specs and len(specs) > 0:
 
-        x = re.compile(r'\s*#\s*').split(specs[-1], 1)
+        x = REGEX_SPLIT_HASH.split(specs[-1], 1)
         if x and len(x) == 2:
             specs[-1] = x[0]
-            merge_on_col = list(filter(None, re.compile(r'\s*,\s*').split(x[1])))
+            merge_on_col = list(filter(None, REGEX_SPLIT_COMMA.split(x[1])))
 
         for spec in specs:
             # parse an array of file names (separated by |)
-            parsed = re.compile(r'\s*\|\s*').split(spec)
+            parsed = REGEX_SPLIT_PIPE.split(spec)
             protocol = parsed[0]
             columns = parsed[1:] if len(parsed) > 1 else []
-
+            # column rename rules
+            columns = [REGEX_SPLIT_TILDE.split(col, 1) for col in columns]
             # columns.extend(merge_on_col)
             protocols.append({'protocol': protocol, 'cols': columns})
 
@@ -510,11 +516,17 @@ def datapool_read(
         # protocol's collecting df
         df_protocol = None
 
+        # original column names
+        cols_orig = [x[0] for x in ds['cols']]
+        # column names after renaming
+        cols = [x[1] if len(x) == 2 else x[0] for x in ds['cols']]
+
         # collect columns, that will be kept in the final dataset
-        keep_cols.extend(ds['cols'])
+        keep_cols.extend(cols)
 
         # columns to be loaded: columns specified for the file as well as columns, that will be used for joins
-        ds['cols'].extend(merge_on_col)
+        # TODO: check duplicate columns?
+        cols_orig.extend(merge_on_col)
 
         for root, directories, filenames in os.walk(dir_protocol):
 
@@ -545,7 +557,7 @@ def datapool_read(
                 print('loading: %s' % data_file)
                 df = pd.read_csv(
                     open(data_file),
-                    usecols=ds['cols'],
+                    usecols=cols_orig,
                     header=0,
                     sep='\t',
                     skiprows=0,
@@ -560,6 +572,10 @@ def datapool_read(
 
         if df_protocol is None:
             continue
+
+        # rename columns
+        rename_rule = {x[0]: x[1] for x in ds['cols'] if len(x) == 2}
+        df_protocol = df_protocol.rename(index=str, columns=rename_rule)
 
         if df_main is None:
             df_main = df_protocol
