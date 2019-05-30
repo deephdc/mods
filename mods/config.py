@@ -100,7 +100,7 @@ blocks = 6
 
 train_time_range = '2019-04-01 -- 2019-05-01'
 train_time_range_excluded = '2019-01 -- 2019-02-15, 2018-12-24, 2018-10'
-train_ws_choices = ['w01h-s10m', 'w10m-s01m', 'w30m-s10m']
+train_ws_choices = ['w01h-s10m', 'w10m-s01m']
 train_ws = train_ws_choices[0]
 
 
@@ -191,9 +191,12 @@ def set_train_args():
 Select protocols and columns for training and testing and specify columns for merging the data.
 Multiple protocols and columns can be specified for data selection.
 Multiple columns can be specified for data merging.
+Columns can be renamed prior to merging.
 
-Use following format:
+Use the following format:
 <font color="blue">protocol1</font>&nbsp;<b>;</b>&nbsp;<font color="blue">protocol2</font>&nbsp;<b>|</b>&nbsp;<font color="green">col1</font>&nbsp;<b>|</b>&nbsp;<font color="green">col2</font>&nbsp;<b>|</b>&nbsp;...&nbsp;<b>;</b>&nbsp;...&nbsp;<b>#</b>&nbsp;<font color="purple">merge_col1</font>&nbsp;<b>,</b>&nbsp;<font color="purple">merge_col2</font>&nbsp;<b>,</b>&nbsp;...
+
+To rename a column, use a tilde (<b>~</b>) followed by a new name after the column name; e.g., col1<b>~A</b>
 """,
             'required': False
         },
