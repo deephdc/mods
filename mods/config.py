@@ -256,10 +256,9 @@ Use following formats in the list:
             'help': '',
             'required': False
         },
-        'interpolate': {
-            'default': interpolate,
-            'choices': [True, False],
-            'help': '',
+        'steps_ahead': {
+            'default': steps_ahead,
+            'help': 'Number of steps to predict ahead of current time',
             'required': False
         },
         'model_type': {
@@ -283,18 +282,12 @@ Use following formats in the list:
             'help': '',
             'required': False
         },
-        'steps_ahead': {
-            'default': steps_ahead,
-            'help': 'Number of steps to predict ahead of current time',
-            'required': False
-        },
         'batch_size': {
             'default': batch_size,
             'help': '',
             'required': False
         }
     }
-    train_args.update(set_pandas_args())
     train_args.update(set_common_args())
     return train_args
 
@@ -314,7 +307,6 @@ def set_predict_args():
             'required': False
         }
     }
-    predict_args.update(set_pandas_args())
     predict_args.update(set_common_args())
     return predict_args
 

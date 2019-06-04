@@ -40,6 +40,8 @@ import mods.dataset.make_dataset as mdata
 import mods.models.mods_model as MODS
 import mods.utils as utl
 
+import urllib
+
 
 def get_model(
         model_name=cfg.model_name,
@@ -253,6 +255,16 @@ def predict_url(*args, **kwargs):
     print('predict_url - args: %s' % args)
     print('predict_url - kwargs: %s' % kwargs)
     message = 'Not implemented in the model (predict_url)'
+    #
+    # urls = yaml.safe_load(args.urls)
+    #
+    # for url in urls:
+    #     print(url)
+    #     o = urllib.urlparse(url)
+    #     print(o)
+    #     q = urllib.parse.parse_qs(o.query)
+    #     print(q)
+
     return message
 
 
@@ -478,7 +490,6 @@ def train(args, **kwargs):
     model_name = yaml.safe_load(args.model_name)
     sequence_len = yaml.safe_load(args.sequence_len)
     model_delta = yaml.safe_load(args.model_delta)
-    interpolate = yaml.safe_load(args.interpolate)
     model_type = yaml.safe_load(args.model_type)
     num_epochs = yaml.safe_load(args.num_epochs)
     epochs_patience = yaml.safe_load(args.epochs_patience)
@@ -505,7 +516,6 @@ def train(args, **kwargs):
         df_train=df_train,
         sequence_len=sequence_len,
         model_delta=model_delta,
-        interpolate=interpolate,
         model_type=model_type,
         num_epochs=num_epochs,
         epochs_patience=epochs_patience,
