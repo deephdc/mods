@@ -455,8 +455,7 @@ def train(args, **kwargs):
     ))
 
     # prepare the data
-    bootstrap_data = yaml.safe_load(args.bootstrap_data)
-    if bootstrap_data:
+    if not (os.path.exists(cfg.app_data_features) and os.path.isdir(cfg.app_data_features)):
         mdata.prepare_data()
 
     # selecting protocols, protocol columns and data merging specification
@@ -506,9 +505,11 @@ def train(args, **kwargs):
 
     # read train data from the datapool
     df_train, cached_file_train = utl.datapool_read(data_select_query, train_time_range, window_slide, train_time_range_excluded, cfg.app_data_features)
+    df_train = utl.fix_missing_num_values(df_train)
 
     # read test data from the datapool
     df_test, cached_file_test = utl.datapool_read(data_select_query, test_time_range, window_slide, test_time_range_excluded, cfg.app_data_features)
+    df_test = utl.fix_missing_num_values(df_test)
 
     backend.clear_session()
     model = MODS.mods_model(model_name)

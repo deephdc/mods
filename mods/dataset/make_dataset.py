@@ -3,12 +3,41 @@
 """
 """
 import logging
+import os
+import zipfile
 from pathlib import Path
 
 from dotenv import find_dotenv, load_dotenv
 
 import mods.config as cfg
 import mods.dataset.data_utils as dutils
+
+
+def unzip(file, dst_dir=None):
+    if not dst_dir:
+        dst_dir = os.path.dirname(os.path.abspath(file))
+
+    # extract all
+    # zip_ref = zipfile.ZipFile(file, 'r')
+    # zip_ref.extractall(dst_dir)
+    # zip_ref.close()
+
+    # extract non-existing
+    with zipfile.ZipFile(file) as zip_file:
+        for member in zip_file.namelist():
+            ff = os.path.join(dst_dir, member)
+            if not (os.path.exists(ff) and os.path.isfile(ff)):
+                zip_file.extract(member, dst_dir)
+
+
+def find_n_unzip(dir, depth=0):
+    for f in os.listdir(dir):
+        path = os.path.join(dir, f)
+        if depth != 0 and os.path.isdir(path):
+            find_n_unzip(path, depth - 1)
+        elif os.path.isfile(path) and path.lower().endswith('zip'):
+            print('unzipping: %s' % path)
+            unzip(path)
 
 
 def prepare_data(
@@ -25,6 +54,9 @@ def prepare_data(
         cmd='copy'
     )
     print('rclone_copy(%s, %s):\nout: %s\nerr: %s' % (remote_data_dir, local_data_dir, out, err))
+
+    # find and unzip data
+    find_n_unzip(local_data_dir, depth=1)
 
     out, err = dutils.rclone_call(
         src_path=remote_models_dir,

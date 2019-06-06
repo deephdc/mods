@@ -146,37 +146,6 @@ def set_common_args():
     return common_args
 
 
-def set_pandas_args():
-    pandas_args = {
-        # 'pd_sep': {
-        #     'default': pd_sep,
-        #     'help': '',
-        #     'required': False
-        # },
-        'pd_skiprows': {
-            'default': pd_skiprows,
-            'help': '',
-            'required': False
-        },
-        'pd_skipfooter': {
-            'default': pd_skipfooter,
-            'help': '',
-            'required': False
-        },
-        # 'pd_engine': {
-        #     'default': pd_engine,
-        #     'help': '',
-        #     'required': False
-        # },
-        'pd_header': {
-            'default': pd_header,
-            'help': '',
-            'required': False
-        }
-    }
-    return pandas_args
-
-
 def set_train_args():
     train_args = {
         'model_name': {
@@ -330,6 +299,5 @@ def set_test_args():
             'required': False
         }
     }
-    test_args.update(set_pandas_args())
     test_args.update(set_common_args())
     return test_args

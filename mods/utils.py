@@ -35,6 +35,7 @@ from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
 
 import mods.config as cfg
+import mods.dataset.make_dataset as mdata
 
 
 # matplotlib.style.use('ggplot')
@@ -483,7 +484,7 @@ def datapool_read(
         time_range,                     # (beg datetime.datetime, end datetime.datetime)
         ws,                             # window/slide specification; e.g., w01h-s10m
         excluded=[],                    # list of dates and ranges that will be omitted
-        base_dir=cfg.app_data_features  # base dir with the protocol/YYYY/MM/DD/wXXd-sXXd.tsv structure
+        base_dir=cfg.app_data_features, # base dir with the protocol/YYYY/MM/DD/wXXd-sXXd.tsv structure
 ):
     keep_cols = []
     df_main = None
@@ -637,3 +638,21 @@ def data_cache_key(protocols, merge_on_col, ws, time_range, excluded):
     m = hashlib.md5()
     m.update(key_str.encode('utf-8'))
     return m.hexdigest()
+
+
+# @stevo
+def fix_missing_num_values(df, cols=None):
+    if cols:
+        for col in cols:
+            df['col'] = pd.to_numeric(df['col'], errors='coerce')
+            df['col'] = df['col'].replace(r'^\s*$', np.nan, regex=True, inplace=True)
+            df['col'] = df['col'].replace([np.inf, -np.inf], np.nan, inplace=True)
+            df['col'] = df['col'].replace(['NaN', np.nan], 0, inplace=True)
+            df['col'] = df['col'].interpolate(inplace=True)
+    else:
+        df = df.apply(pd.to_numeric, errors='coerce')
+        df.replace(r'^\s*$', np.nan, regex=True, inplace=True)
+        df.replace([np.inf, -np.inf], np.nan, inplace=True)
+        df.replace(['NaN', np.nan], 0, inplace=True)
+        df.interpolate(inplace=True)
+    return df
