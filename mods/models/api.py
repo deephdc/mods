@@ -95,7 +95,7 @@ def predict_file(*args, **kwargs):
             # prepare data
             if not data_prepared:
                 bootstrap_data = yaml.safe_load(arg.bootstrap_data)
-                if bootstrap_data:
+                if bootstrap_data or not (os.path.exists(cfg.app_data_features) and os.path.isdir(cfg.app_data_features)):
                     mdata.prepare_data()
                     data_prepared = True
 
@@ -182,7 +182,7 @@ def predict_data(*args, **kwargs):
             # prepare data
             if not data_prepared:
                 bootstrap_data = yaml.safe_load(arg.bootstrap_data)
-                if bootstrap_data:
+                if bootstrap_data or not (os.path.exists(cfg.app_data_features) and os.path.isdir(cfg.app_data_features)):
                     mdata.prepare_data()
                     data_prepared = True
 
