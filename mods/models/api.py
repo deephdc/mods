@@ -81,72 +81,79 @@ def predict_file(*args, **kwargs):
     Function to make prediction on a local file
     """
 
-    print('predict_file - args: %s' % args)
-    print('predict_file - kwargs: %s' % kwargs)
+    # DEBUG:
+    # print('predict_file - args: %s' % args)
+    # print('predict_file - kwargs: %s' % kwargs)
 
+    messages = []
     data_prepared = False
-
-    message = 'Error reading input data'
 
     if args:
         for arg in args:
-            message = {'status': 'ok', 'predictions': []}
-
-            # prepare data
-            if not data_prepared:
+            message = {}
+            try:
+                # read input parameters
+                model_name = yaml.safe_load(arg.model_name)
+                data_file = yaml.safe_load(arg.file)
                 bootstrap_data = yaml.safe_load(arg.bootstrap_data)
-                if bootstrap_data or not (os.path.exists(cfg.app_data_features) and os.path.isdir(cfg.app_data_features)):
-                    mdata.prepare_data()
-                    data_prepared = True
 
-            model_name = yaml.safe_load(arg.model_name)
-            data_file = yaml.safe_load(arg.file)
+                # prepare the data
+                if not data_prepared:
+                    if bootstrap_data or not (os.path.exists(cfg.app_data_features) and os.path.isdir(cfg.app_data_features)):
+                        mdata.prepare_data()
+                        data_prepared = True
 
-            # support full paths for command line calls
-            models_dir = cfg.app_models
-            full_paths = kwargs['full_paths'] if 'full_paths' in kwargs else False
+                # support full paths for command line calls
+                models_dir = cfg.app_models
+                full_paths = kwargs['full_paths'] if 'full_paths' in kwargs else False
 
-            if full_paths:
-                if model_name.rstrip('.zip') == cfg.model_name.rstrip('.zip'):
-                    models_dir = cfg.app_models
+                if full_paths:
+                    if model_name.rstrip('.zip') == cfg.model_name.rstrip('.zip'):
+                        models_dir = cfg.app_models
+                    else:
+                        models_dir = os.path.dirname(model_name)
+                        model_name = os.path.basename(model_name)
+                    if data_file == cfg.data_predict:
+                        data_file = os.path.join(cfg.app_data_predict, data_file)
                 else:
-                    models_dir = os.path.dirname(model_name)
-                    model_name = os.path.basename(model_name)
-                if data_file == cfg.data_predict:
                     data_file = os.path.join(cfg.app_data_predict, data_file)
-            else:
-                data_file = os.path.join(cfg.app_data_predict, data_file)
 
-            m = get_model(
-                models_dir=models_dir,
-                model_name=model_name
-            )
+                # load the model
+                m = get_model(
+                    models_dir=models_dir,
+                    model_name=model_name
+                )
 
-            # override batch_size
-            batch_size = yaml.safe_load(arg.batch_size)
-            m.set_batch_size(batch_size)
+                # override batch_size
+                batch_size = yaml.safe_load(arg.batch_size)
+                m.set_batch_size(batch_size)
 
-            df_data = m.read_file_or_buffer(data_file)
+                # read the data
+                df_data = m.read_file_or_buffer(data_file)
 
-            predictions = m.predict(df_data)
+                # predict
+                predictions = m.predict(df_data)
 
-            message = {
-                'status': 'ok',
-                'dir_models': models_dir,
-                'model_name': model_name,
-                'data': data_file,
-                'steps_ahead': m.get_steps_ahead(),
-                'batch_size': m.get_batch_size(),
-                'evaluation': utl.compute_metrics(
+                # evaluate
+                evaluation = utl.compute_metrics(
                     df_data[m.get_sequence_len():-m.get_steps_ahead()],
                     predictions[:-m.get_steps_ahead()],
                     m,
                 )
-            }
 
-            message['predictions'] = predictions.tolist()
+                message['data'] = data_file
+                message['dir_models'] = models_dir
+                message['model_name'] = model_name
+                message['predictions'] = predictions.tolist()
+                message['evaluation'] = evaluation
 
-    return message
+            except Exception as e:
+                message['status'] = 'error'
+                message['detail'] = str(e)
+
+            messages.append(message)
+
+    return messages
 
 
 def predict_data(*args, **kwargs):
