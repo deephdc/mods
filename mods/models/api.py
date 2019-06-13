@@ -86,7 +86,7 @@ def predict_file(*args, **kwargs):
     # print('predict_file - kwargs: %s' % kwargs)
 
     messages = []
-    data_prepared = False
+    bootstrap_done = False
 
     if args:
         for arg in args:
@@ -95,13 +95,12 @@ def predict_file(*args, **kwargs):
                 # read input parameters
                 model_name = yaml.safe_load(arg.model_name)
                 data_file = yaml.safe_load(arg.file)
-                bootstrap_data = yaml.safe_load(arg.bootstrap_data)
 
-                # prepare the data
-                if not data_prepared:
-                    if bootstrap_data or not (os.path.exists(cfg.app_data_features) and os.path.isdir(cfg.app_data_features)):
-                        mdata.prepare_data()
-                        data_prepared = True
+                # prepare models and data
+                if not bootstrap_done:
+                    mdata.prepare_models()
+                    mdata.prepare_data()
+                    bootstrap_done = True
 
                 # support full paths for command line calls
                 models_dir = cfg.app_models
@@ -158,75 +157,79 @@ def predict_file(*args, **kwargs):
 
 def predict_data(*args, **kwargs):
     """
-    Function to make prediction on an uploaded file
+    Function to make prediction on a local file
     """
 
-    print('predict_data - args: %s' % str(args))
-    print('predict_data - kwargs: %s' % str(kwargs))
+    # DEBUG:
+    # print('predict_data - args: %s' % args)
+    # print('predict_data - kwargs: %s' % kwargs)
 
-    data_prepared = False
-
-    message = 'Error reading input data'
+    messages = []
+    bootstrap_done = False
 
     if args:
         for arg in args:
-            message = {'status': 'ok', 'predictions': []}
-
-            # prepare data
-            if not data_prepared:
-                bootstrap_data = yaml.safe_load(arg.bootstrap_data)
-                if bootstrap_data or not (os.path.exists(cfg.app_data_features) and os.path.isdir(cfg.app_data_features)):
-                    mdata.prepare_data()
-                    data_prepared = True
-
+            message = {}
             try:
+                # read input parameters
                 model_name = yaml.safe_load(arg.model_name)
-            except Exception:
-                model_name = cfg.model_name
 
-            file_storage = arg.files
-            buffer = io.BytesIO(file_storage.read())
+                # prepare models and data
+                if not bootstrap_done:
+                    mdata.prepare_models()
+                    mdata.prepare_data()
+                    bootstrap_done = True
 
-            # support full paths for command line calls
-            models_dir = cfg.app_models
-            full_paths = kwargs['full_paths'] if 'full_paths' in kwargs else False
-            if full_paths:
-                if model_name == cfg.model_name:
-                    models_dir = cfg.app_models
-                else:
-                    models_dir = os.path.dirname(model_name)
-                    model_name = os.path.basename(model_name)
+                file_storage = arg.files
+                buffer = io.BytesIO(file_storage.read())
 
-            m = get_model(
-                models_dir=models_dir,
-                model_name=model_name
-            )
+                # support full paths for command line calls
+                models_dir = cfg.app_models
+                full_paths = kwargs['full_paths'] if 'full_paths' in kwargs else False
 
-            # override batch_size
-            batch_size = yaml.safe_load(arg.batch_size)
-            m.set_batch_size(batch_size)
+                if full_paths:
+                    if model_name.rstrip('.zip') == cfg.model_name.rstrip('.zip'):
+                        models_dir = cfg.app_models
+                    else:
+                        models_dir = os.path.dirname(model_name)
+                        model_name = os.path.basename(model_name)
 
-            df_data = m.read_file_or_buffer(buffer)
+                # load the model
+                m = get_model(
+                    models_dir=models_dir,
+                    model_name=model_name
+                )
 
-            predictions = m.predict(df_data)
+                # override batch_size
+                batch_size = yaml.safe_load(arg.batch_size)
+                m.set_batch_size(batch_size)
 
-            message = {
-                'status': 'ok',
-                'dir_models': models_dir,
-                'model_name': model_name,
-                'data': file_storage.filename,
-                'steps_ahead': m.get_steps_ahead(),
-                'batch_size': m.get_batch_size(),
-                'evaluation': utl.compute_metrics(
+                # read the data
+                df_data = m.read_file_or_buffer(buffer)
+
+                # predict
+                predictions = m.predict(df_data)
+
+                # evaluate
+                evaluation = utl.compute_metrics(
                     df_data[m.get_sequence_len():-m.get_steps_ahead()],
                     predictions[:-m.get_steps_ahead()],
                     m,
                 )
-            }
 
-            message['predictions'] = predictions.tolist()
+                message['data'] = file_storage.filename
+                message['dir_models'] = models_dir
+                message['model_name'] = model_name
+                message['predictions'] = predictions.tolist()
+                message['evaluation'] = evaluation
 
-    return message
+            except Exception as e:
+                message['status'] = 'error'
+                message['detail'] = str(e)
+
+            messages.append(message)
+
+    return messages
 
 
 # http://127.0.0.1:5000/.../?time_range=&time_range_excluded=&model
@@ -454,8 +457,7 @@ def train(args, **kwargs):
     ))
 
     # prepare the data
-    if not (os.path.exists(cfg.app_data_features) and os.path.isdir(cfg.app_data_features)):
-        mdata.prepare_data()
+    mdata.prepare_data()
 
     # selecting protocols, protocol columns and data merging specification
     data_select_query = yaml.safe_load(args.data_select_query)

@@ -122,14 +122,7 @@ timezone = 3600
 
 
 def set_common_args():
-    common_args = {
-        'bootstrap_data': {
-            'default': True,
-            'choices': [True, False],
-            'help': 'Download data from remote datastore',
-            'required': False
-        }
-    }
+    common_args = {}
     return common_args
 
 
