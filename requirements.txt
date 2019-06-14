@@ -10,9 +10,9 @@ gevent==1.2.1
 requests
 numpy
 sympy
+statsmodels
 scikit-learn
 matplotlib
 seaborn
 deepaas>=0.4.0
 pyyaml
-

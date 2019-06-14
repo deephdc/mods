@@ -40,6 +40,8 @@ import mods.dataset.make_dataset as mdata
 import mods.models.mods_model as MODS
 import mods.utils as utl
 
+import urllib
+
 
 def get_model(
         model_name=cfg.model_name,
@@ -79,115 +81,158 @@ def predict_file(*args, **kwargs):
     Function to make prediction on a local file
     """
 
-    print('predict_file - args: %s' % args)
-    print('predict_file - kwargs: %s' % kwargs)
+    # DEBUG:
+    # print('predict_file - args: %s' % args)
+    # print('predict_file - kwargs: %s' % kwargs)
 
-    mdata.prepare_data()
-
-    message = 'Error reading input data'
+    messages = []
+    bootstrap_done = False
 
     if args:
         for arg in args:
-            message = {'status': 'ok', 'predictions': []}
-            model_name = yaml.safe_load(arg.model_name)
+            message = {}
+            try:
+                # read input parameters
+                model_name = yaml.safe_load(arg.model_name)
+                data_file = yaml.safe_load(arg.file)
 
-            data = yaml.safe_load(arg.file)
+                # prepare models and data
+                if not bootstrap_done:
+                    mdata.prepare_models()
+                    mdata.prepare_data()
+                    bootstrap_done = True
 
-            usecols = [utl.parse_int_or_str(col) for col in yaml.safe_load(arg.pd_usecols).split(',')]
-            skiprows = yaml.safe_load(arg.pd_skiprows)
-            skipfooter = yaml.safe_load(arg.pd_skipfooter)
-            header = yaml.safe_load(arg.pd_header)
+                # support full paths for command line calls
+                models_dir = cfg.app_models
+                full_paths = kwargs['full_paths'] if 'full_paths' in kwargs else False
 
-            # support full paths for command line calls
-            models_dir = cfg.app_models
-            full_paths = kwargs['full_paths'] if 'full_paths' in kwargs else False
-
-            if full_paths:
-                if model_name == cfg.model_name:
-                    models_dir = cfg.app_models
+                if full_paths:
+                    if model_name.rstrip('.zip') == cfg.model_name.rstrip('.zip'):
+                        models_dir = cfg.app_models
+                    else:
+                        models_dir = os.path.dirname(model_name)
+                        model_name = os.path.basename(model_name)
+                    if data_file == cfg.data_predict:
+                        data_file = os.path.join(cfg.app_data_predict, data_file)
                 else:
-                    models_dir = os.path.dirname(model_name)
-                    model_name = os.path.basename(model_name)
-                if data == cfg.data_predict:
-                    data = os.path.join(cfg.app_data_predict, data)
-            else:
-                data = os.path.join(cfg.app_data_predict, data)
+                    data_file = os.path.join(cfg.app_data_predict, data_file)
 
-            predictions = get_model(
-                models_dir=models_dir,
-                model_name=model_name
-            ).predict_file_or_buffer(
-                data,
-                usecols=usecols,
-                sep='\t',
-                skiprows=skiprows,
-                skipfooter=skipfooter,
-                engine='python',
-                header=header
-            )
+                # load the model
+                m = get_model(
+                    models_dir=models_dir,
+                    model_name=model_name
+                )
 
-            message['predictions'] = predictions.tolist()
+                # override batch_size
+                batch_size = yaml.safe_load(arg.batch_size)
+                m.set_batch_size(batch_size)
 
-    return message
+                # read the data
+                df_data = m.read_file_or_buffer(data_file)
+
+                # predict
+                predictions = m.predict(df_data)
+
+                # evaluate
+                evaluation = utl.compute_metrics(
+                    df_data[m.get_sequence_len():-m.get_steps_ahead()],
+                    predictions[:-m.get_steps_ahead()],
+                    m,
+                )
+
+                message['data'] = data_file
+                message['dir_models'] = models_dir
+                message['model_name'] = model_name
+                message['predictions'] = predictions.tolist()
+                message['evaluation'] = evaluation
+
+            except Exception as e:
+                message['status'] = 'error'
+                message['detail'] = str(e)
+
+            messages.append(message)
+
+    return messages
 
 
 def predict_data(*args, **kwargs):
     """
-    Function to make prediction on an uploaded file
+    Function to make prediction on a local file
     """
 
-    print('predict_data - args: %s' % str(args))
-    print('predict_data - kwargs: %s' % str(kwargs))
+    # DEBUG:
+    # print('predict_data - args: %s' % args)
+    # print('predict_data - kwargs: %s' % kwargs)
 
-    mdata.prepare_data()
-
-    message = 'Error reading input data'
+    messages = []
+    bootstrap_done = False
 
     if args:
         for arg in args:
-            message = {'status': 'ok', 'predictions': []}
-
+            message = {}
             try:
-                model_name = yaml.safe_load(kwargs['model_name'])
-            except Exception:
-                model_name = cfg.model_name
+                # read input parameters
+                model_name = yaml.safe_load(arg.model_name)
 
-            buffer = io.BytesIO(arg[0])
+                # prepare models and data
+                if not bootstrap_done:
+                    mdata.prepare_models()
+                    mdata.prepare_data()
+                    bootstrap_done = True
 
-            usecols = cfg.pd_usecols
-            sep = cfg.pd_sep
-            skiprows = cfg.pd_skiprows
-            skipfooter = cfg.pd_skipfooter
-            header = cfg.pd_header
+                file_storage = arg.files
+                buffer = io.BytesIO(file_storage.read())
 
-            # support full paths for command line calls
-            models_dir = cfg.app_models
-            full_paths = kwargs['full_paths'] if 'full_paths' in kwargs else False
-            if full_paths:
-                if model_name == cfg.model_name:
-                    models_dir = cfg.app_models
-                else:
-                    models_dir = os.path.dirname(model_name)
-                    model_name = os.path.basename(model_name)
+                # support full paths for command line calls
+                models_dir = cfg.app_models
+                full_paths = kwargs['full_paths'] if 'full_paths' in kwargs else False
 
-            predictions = get_model(
-                models_dir=models_dir,
-                model_name=model_name
-            ).predict_file_or_buffer(
-                buffer,
-                usecols=usecols,
-                sep=sep,
-                skiprows=skiprows,
-                skipfooter=skipfooter,
-                engine='python',
-                header=header
-            )
+                if full_paths:
+                    if model_name.rstrip('.zip') == cfg.model_name.rstrip('.zip'):
+                        models_dir = cfg.app_models
+                    else:
+                        models_dir = os.path.dirname(model_name)
+                        model_name = os.path.basename(model_name)
 
-            message['predictions'] = predictions.tolist()
+                # load the model
+                m = get_model(
+                    models_dir=models_dir,
+                    model_name=model_name
+                )
 
-    return message
+                # override batch_size
+                batch_size = yaml.safe_load(arg.batch_size)
+                m.set_batch_size(batch_size)
+
+                # read the data
+                df_data = m.read_file_or_buffer(buffer)
+
+                # predict
+                predictions = m.predict(df_data)
+
+                # evaluate
+                evaluation = utl.compute_metrics(
+                    df_data[m.get_sequence_len():-m.get_steps_ahead()],
+                    predictions[:-m.get_steps_ahead()],
+                    m,
+                )
+
+                message['data'] = file_storage.filename
+                message['dir_models'] = models_dir
+                message['model_name'] = model_name
+                message['predictions'] = predictions.tolist()
+                message['evaluation'] = evaluation
+
+            except Exception as e:
+                message['status'] = 'error'
+                message['detail'] = str(e)
+
+            messages.append(message)
+
+    return messages
 
 
+# http://127.0.0.1:5000/.../?time_range=&time_range_excluded=&model
 def predict_url(*args, **kwargs):
     """
     Function to make prediction on a local file
@@ -195,6 +240,33 @@ def predict_url(*args, **kwargs):
     print('predict_url - args: %s' % args)
     print('predict_url - kwargs: %s' % kwargs)
     message = 'Not implemented in the model (predict_url)'
+
+    # urls = yaml.safe_load(args.urls)
+    #
+    # for url in urls:
+    #     print(url)
+    #     o = urllib.urlparse(url)
+    #     print(o)
+    #     q = urllib.parse.parse_qs(o.query)
+    #     print(q)
+    #
+    # # test - time range
+    # test_time_range = str(yaml.safe_load(args.test_time_range)).split('--', 1)
+    # assert test_time_range
+    # assert len(test_time_range) == 2
+    # test_time_range_beg = utl.parse_datetime(test_time_range[0])
+    # test_time_range_end = utl.parse_datetime(test_time_range[1])
+    # test_time_range = (test_time_range_beg, test_time_range_end)
+    #
+    # # test - time range exclusion filter
+    # test_time_range_excluded = utl.parse_datetime_ranges(yaml.safe_load(args.test_time_ranges_excluded))
+    #
+    # data_select_query = m.get_data_select_query()
+    #
+    # # read test data from the datapool
+    # df_test, cached_file_test = utl.datapool_read(data_select_query, test_time_range, window_slide, test_time_range_excluded, cfg.app_data_features)
+    # df_test = utl.fix_missing_num_values(df_test)
+
     return message
 
 
@@ -361,7 +433,8 @@ def get_train_args():
     return train_args
 
 
-def get_predict_args():
+# !!! deepaas calls get_test_args() to get args for 'predict'
+def get_test_args():
     predict_args = cfg.set_predict_args()
 
     # convert default values and possible 'choices' into strings
@@ -374,26 +447,55 @@ def get_predict_args():
     return predict_args
 
 
-def train(train_args, **kwargs):
+def train(args, **kwargs):
     """
     Train network
     """
+    print("train(args, **kwargs)\n\targs:\n%s\n\tkwargs:\n%s" % (
+        args,
+        kwargs
+    ))
 
-    print("train_args:", train_args)
-    print("kwargs:", kwargs)
+    # prepare the data
+    mdata.prepare_data()
 
-    data = yaml.safe_load(train_args.data)
-    model_name = yaml.safe_load(train_args.model_name)
-    multivariate = yaml.safe_load(train_args.multivariate)
-    sequence_len = yaml.safe_load(train_args.sequence_len)
-    model_delta = yaml.safe_load(train_args.model_delta)
-    interpolate = yaml.safe_load(train_args.interpolate)
-    model_type = yaml.safe_load(train_args.model_type)
-    num_epochs = yaml.safe_load(train_args.num_epochs)
-    epochs_patience = yaml.safe_load(train_args.epochs_patience)
-    blocks = yaml.safe_load(train_args.blocks)
-    pd_usecols = [utl.parse_int_or_str(col) for col in yaml.safe_load(train_args.pd_usecols).split(',')]
-    pd_header = yaml.safe_load(train_args.pd_header)
+    # selecting protocols, protocol columns and data merging specification
+    data_select_query = yaml.safe_load(args.data_select_query)
+
+    # window + slide
+    window_slide = yaml.safe_load(args.window_slide)
+
+    # train - time range
+    train_time_range = str(yaml.safe_load(args.train_time_range)).split('--', 1)
+    assert train_time_range
+    assert len(train_time_range) == 2
+    train_time_range_beg = utl.parse_datetime(train_time_range[0])
+    train_time_range_end = utl.parse_datetime(train_time_range[1])
+    train_time_range = (train_time_range_beg, train_time_range_end)
+
+    # train - time range exclusion filter
+    train_time_range_excluded = utl.parse_datetime_ranges(yaml.safe_load(args.train_time_ranges_excluded))
+
+    # test - time range
+    test_time_range = str(yaml.safe_load(args.test_time_range)).split('--', 1)
+    assert test_time_range
+    assert len(test_time_range) == 2
+    test_time_range_beg = utl.parse_datetime(test_time_range[0])
+    test_time_range_end = utl.parse_datetime(test_time_range[1])
+    test_time_range = (test_time_range_beg, test_time_range_end)
+
+    # test - time range exclusion filter
+    test_time_range_excluded = utl.parse_datetime_ranges(yaml.safe_load(args.test_time_ranges_excluded))
+
+    model_name = yaml.safe_load(args.model_name)
+    sequence_len = yaml.safe_load(args.sequence_len)
+    model_delta = yaml.safe_load(args.model_delta)
+    model_type = yaml.safe_load(args.model_type)
+    num_epochs = yaml.safe_load(args.num_epochs)
+    epochs_patience = yaml.safe_load(args.epochs_patience)
+    blocks = yaml.safe_load(args.blocks)
+    steps_ahead = yaml.safe_load(args.steps_ahead)
+    batch_size = yaml.safe_load(args.batch_size)
 
     # support full paths for command line calls
     models_dir = cfg.app_models
@@ -401,37 +503,45 @@ def train(train_args, **kwargs):
     if full_paths:
         models_dir = os.path.dirname(model_name)
         model_name = os.path.basename(model_name)
-        if data == cfg.data_train:
-            data = os.path.join(cfg.app_data_features, data)
-    else:
-        data = os.path.join(cfg.app_data_features, data)
 
-    mdata.prepare_data()
+    # read train data from the datapool
+    df_train, cached_file_train = utl.datapool_read(data_select_query, train_time_range, window_slide, train_time_range_excluded, cfg.app_data_features)
+    df_train = utl.fix_missing_num_values(df_train)
+
+    # read test data from the datapool
+    df_test, cached_file_test = utl.datapool_read(data_select_query, test_time_range, window_slide, test_time_range_excluded, cfg.app_data_features)
+    df_test = utl.fix_missing_num_values(df_test)
 
     backend.clear_session()
-    m = MODS.mods_model(model_name)
-
-    # loading training data
-    df_train = m.load_data(
-        path=data,
-        usecols=pd_usecols,
-        header=pd_header
-    )
-
-    m.train(
+    model = MODS.mods_model(model_name)
+    model.train(
         df_train=df_train,
-        multivariate=multivariate,
         sequence_len=sequence_len,
         model_delta=model_delta,
-        interpolate=interpolate,
         model_type=model_type,
         num_epochs=num_epochs,
         epochs_patience=epochs_patience,
-        blocks=blocks
+        blocks=blocks,
+        steps_ahead=steps_ahead,
+        batch_size=batch_size
     )
 
+    # evaluate the model
+    predictions = model.predict(df_test)
+    metrics = utl.compute_metrics(
+        df_test[model.get_sequence_len():-steps_ahead],
+        predictions[:-steps_ahead],  # here, we predict # steps_ahead
+        model,
+    )
+
+    # put computed metrics into the model to be saved in model's zip
+    model.update_metrics(metrics)
+
+    # put data select query into the model
+    model.set_data_select_query(data_select_query)
+
     # save model locally
-    file = m.save(os.path.join(models_dir, model_name))
+    file = model.save(os.path.join(models_dir, model_name))
     dir_remote = cfg.app_models_remote
 
     # upload model using rclone
@@ -442,7 +552,24 @@ def train(train_args, **kwargs):
     )
     print('rclone_copy(%s, %s):\nout: %s\nerr: %s' % (file, dir_remote, out, err))
 
-    return "OK"
+    message = {
+        'status': 'ok',
+        'dir_models': models_dir,
+        'model_name': model_name,
+        'steps_ahead': model.get_steps_ahead(),
+        'batch_size': model.get_batch_size(),
+        'training_time': model.get_training_time(),
+        'data_select_query': data_select_query,
+        'train_time_range': utl.datetime2str(train_time_range),
+        'train_time_range_excluded': utl.datetime2str(train_time_range_excluded),
+        'train_cached_df': cached_file_train,
+        'test_time_range': utl.datetime2str(test_time_range),
+        'test_time_range_excluded': utl.datetime2str(test_time_range_excluded),
+        'test_cached_df': cached_file_test,
+        'evaluation': model.get_metrics(),
+    }
+
+    return message
 
 
 def test_file(*args, **kwargs):
@@ -450,8 +577,8 @@ def test_file(*args, **kwargs):
     Function to make test on a local file
     """
 
-    # prepare data
-    mdata.prepare_data()
+    print("args:", args)
+    print("kwargs:", kwargs)
 
     message = {
         'status': 'error',
@@ -463,12 +590,21 @@ def test_file(*args, **kwargs):
 
     messages = []
 
+    data_prepared = False
+
     for arg in args:
+
+        if not data_prepared:
+            # prepare data
+            bootstrap_data = yaml.safe_load(arg.bootstrap_data)
+            if bootstrap_data:
+                mdata.prepare_data()
+                data_prepared = True
 
         dir_models = cfg.app_models
         model_name = yaml.safe_load(arg.model_name)
-        dir_data = cfg.app_data_test
-        data = yaml.safe_load(arg.file)
+        dir_data_test = cfg.app_data_test
+        data_test = yaml.safe_load(arg.file)
         usecols = [utl.parse_int_or_str(col) for col in yaml.safe_load(arg.pd_usecols).split(',')]
         skiprows = yaml.safe_load(arg.pd_skiprows)
         skipfooter = yaml.safe_load(arg.pd_skipfooter)
@@ -479,9 +615,9 @@ def test_file(*args, **kwargs):
             if model_name != cfg.model_name:
                 dir_models = os.path.dirname(model_name)
                 model_name = os.path.basename(model_name)
-            if data != cfg.data_test:
-                dir_data = os.path.dirname(data)
-                data = os.path.basename(data)
+            if data_test != cfg.test_data:
+                dir_data_test = os.path.dirname(data_test)
+                data_test = os.path.basename(data_test)
 
         # important!
         backend.clear_session()
@@ -494,30 +630,35 @@ def test_file(*args, **kwargs):
         m = MODS.mods_model(model_name)
         m.load(file_model)
 
+        # override batch_size
+        batch_size = yaml.safe_load(arg.batch_size)
+        m.set_batch_size(batch_size)
+
         # load data
         df_test = m.load_data(
-            path=os.path.join(dir_data, data),
+            path=os.path.join(dir_data_test, data_test),
             usecols=usecols,
             skiprows=skiprows,
             skipfooter=skipfooter,
             header=header
         )
 
-        eval_result = m.eval(df_test)
-
-        i = 0
-        result = {}
-        for metric in m.model.metrics_names:
-            result[metric] = eval_result[i]
-            i += 1
+        # predict
+        predictions = m.predict(df_test)
 
         messages.append({
             'status': 'ok',
             'dir_models': dir_models,
             'model_name': model_name,
-            'test_data': data,
+            'test_data': data_test,
+            'steps_ahead': m.get_steps_ahead(),
+            'batch_size': m.get_batch_size(),
             'usecols': usecols,
-            'evaluation': result
+            'evaluation': utl.compute_metrics(
+                df_test[m.get_sequence_len():-m.get_steps_ahead()],
+                predictions[:-m.get_steps_ahead()],
+                m,
+            )
         })
 
     return messages

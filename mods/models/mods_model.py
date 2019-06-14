@@ -20,17 +20,24 @@ Created on Mon Jan 11 13:34:37 2019
 @author: stefan dlugolinsky
 """
 
+DEBUG = False
+
 import io
 import json
 import os
 import tempfile
+import time
 from zipfile import ZipFile
 
 import keras
+import numpy as np
 import pandas as pd
+from keras import backend as K
 from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
 from keras.layers import Bidirectional
+from keras.layers import CuDNNGRU
+from keras.layers import CuDNNLSTM
 from keras.layers import Dense
 from keras.layers import Flatten
 from keras.layers import Input
@@ -44,7 +51,6 @@ from keras.preprocessing.sequence import TimeseriesGenerator
 from sklearn.externals import joblib
 from sklearn.preprocessing import MinMaxScaler
 
-# import project config.py
 import mods.config as cfg
 import mods.utils as utl
 
@@ -57,11 +63,13 @@ class mods_model:
     __MULTIVARIATE = 'multivariate'
     __SEQUENCE_LEN = 'sequence_len'
     __MODEL_DELTA = 'model_delta'
-    __INTERPOLATE = 'interpolate'
     __MODEL_TYPE = 'model_type'
     __EPOCHS = 'epochs'
     __EPOCHS_PATIENCE = 'epochs_patience'
     __BLOCKS = 'blocks'
+    __STEPS_AHEAD = 'steps_ahead'
+    __BATCH_SIZE = 'batch_size'
+    __DATA_SELECT_QUERY = 'data_select_query'
     # scaler
     __SCALER = 'scaler'
     # sample data
@@ -71,7 +79,8 @@ class mods_model:
     __SKIPFOOTER = 'skipfooter'
     __ENGINE = 'engine'
     __USECOLS = 'usecols'
-
+    # metrics
+    __TRAINING_TIME = 'training_time'
 
     def __init__(self, name):
         self.name = name
@@ -79,6 +88,7 @@ class mods_model:
         self.model = None
         self.__scaler = None
         self.sample_data = None
+        self.__metrics = {}
         self.config = self.__default_config()
 
 
@@ -115,6 +125,7 @@ class mods_model:
             self.__save_model(zip, self.config[mods_model.__MODEL])
             self.__save_scaler(zip, self.config[mods_model.__SCALER])
             self.__save_sample_data(zip, self.__get_sample_data_cfg())
+            self.__save_metrics(zip, 'metrics.json')
             zip.close()
 
         print('Model saved')
@@ -131,6 +142,7 @@ class mods_model:
             self.__load_model(zip, self.config[mods_model.__MODEL])
             self.__load_scaler(zip, self.config[mods_model.__SCALER])
             self.__load_sample_data(zip, self.__get_sample_data_cfg())
+            self.__load_metrics(zip, 'metrics.json')
             zip.close()
 
         print('Model loaded')
@@ -150,6 +162,22 @@ class mods_model:
             self.config = json.loads(data.decode('utf-8'))
         print('Model config:\n%s' % json.dumps(self.config, indent=True))
 
+
+    def __save_metrics(self, zip, file):
+        with zip.open(file, mode='w') as f:
+            data = json.dumps(self.__metrics)
+            f.write(bytes(data, 'utf-8'))
+
+
+    def __load_metrics(self, zip, file):
+        print('Loading model metrics')
+        try:
+            with zip.open(file) as f:
+                data = f.read()
+                self.__metrics = json.loads(data.decode('utf-8'))
+            print('Model metrics:\n%s' % json.dumps(self.__metrics, indent=True))
+        except Exception as e:
+            print('Error: Could not load model metrics [%s]' % str(e))
 
     def __save_model(self, zip, model_config):
         print('Saving keras model')
@@ -251,14 +279,14 @@ class mods_model:
         return {
             mods_model.__MODEL: {
                 mods_model.__FILE: 'model.h5',
-                mods_model.__MULTIVARIATE: len(cfg.pd_usecols),
                 mods_model.__SEQUENCE_LEN: cfg.sequence_len,
                 mods_model.__MODEL_DELTA: cfg.model_delta,
-                mods_model.__INTERPOLATE: cfg.interpolate,
                 mods_model.__MODEL_TYPE: cfg.model_type,
                 mods_model.__EPOCHS: cfg.num_epochs,
                 mods_model.__EPOCHS_PATIENCE: cfg.epochs_patience,
-                mods_model.__BLOCKS: cfg.blocks
+                mods_model.__BLOCKS: cfg.blocks,
+                mods_model.__STEPS_AHEAD: cfg.steps_ahead,
+                mods_model.__BATCH_SIZE: cfg.batch_size,
             },
             mods_model.__SCALER: {
                 mods_model.__FILE: 'scaler.pkl'
@@ -269,101 +297,109 @@ class mods_model:
     def cfg_model(self):
         return self.config[mods_model.__MODEL]
 
-
     def set_multivariate(self, multivariate):
         self.cfg_model()[mods_model.__MULTIVARIATE] = multivariate
-
 
     def get_multivariate(self):
         return self.cfg_model()[mods_model.__MULTIVARIATE]
 
-
     def set_sequence_len(self, sequence_len):
         self.cfg_model()[mods_model.__SEQUENCE_LEN] = sequence_len
-
 
     def get_sequence_len(self):
         return self.cfg_model()[mods_model.__SEQUENCE_LEN]
 
-
     def set_model_delta(self, model_delta):
         self.cfg_model()[mods_model.__MODEL_DELTA] = model_delta
-
 
     def isdelta(self):
         return self.cfg_model()[mods_model.__MODEL_DELTA]
 
-
-    def set_interpolate(self, interpolate):
-        self.cfg_model()[mods_model.__INTERPOLATE] = interpolate
-
-
-    def get_interpolate(self):
-        return self.cfg_model()[mods_model.__INTERPOLATE]
-
-
     def set_model_type(self, model_type):
         self.cfg_model()[mods_model.__MODEL_TYPE] = model_type
-
 
     def get_model_type(self):
         return self.cfg_model()[mods_model.__MODEL_TYPE]
 
-
     def set_epochs(self, epochs):
         self.cfg_model()[mods_model.__EPOCHS] = epochs
-
 
     def get_epochs(self):
         return self.cfg_model()[mods_model.__EPOCHS]
 
-
     def set_epochs_patience(self, epochs_patience):
         self.cfg_model()[mods_model.__EPOCHS_PATIENCE] = epochs_patience
-
 
     def get_epochs_patience(self):
         return self.cfg_model()[mods_model.__EPOCHS_PATIENCE]
 
-
     def set_blocks(self, blocks):
         self.cfg_model()[mods_model.__BLOCKS] = blocks
-
 
     def get_blocks(self):
         return self.cfg_model()[mods_model.__BLOCKS]
 
+    def set_steps_ahead(self, steps_ahead):
+        self.cfg_model()[mods_model.__STEPS_AHEAD] = steps_ahead
+
+    def get_steps_ahead(self):
+        return self.cfg_model()[mods_model.__STEPS_AHEAD]
+
+    def set_batch_size(self, batch_size):
+        self.cfg_model()[mods_model.__BATCH_SIZE] = batch_size
+
+    def get_batch_size(self):
+        return self.cfg_model()[mods_model.__BATCH_SIZE]
+
+    def set_training_time(self, training_time):
+        self.__metrics[self.__TRAINING_TIME] = training_time
+
+    def get_training_time(self):
+        # backward compatibility
+        try:
+            t = self.cfg_model()[mods_model.__TRAINING_TIME]
+            if t is not None:
+                return t
+        except Exception as e:
+            return self.__metrics[self.__TRAINING_TIME]
 
     def get_scaler(self):
         if not self.__scaler:
             self.__scaler = MinMaxScaler(feature_range=(0, 1))
         return self.__scaler
 
-
     def set_scaler(self, scaler):
         self.__scaler = scaler
-
 
     def set_sample_data(self, df):
         self.sample_data = df
 
+    def update_metrics(self, metrics):
+        self.__metrics.update(metrics)
+
+    def get_metrics(self):
+        return self.__metrics
+
+    def set_data_select_query(self, data_select_query):
+        self.cfg_model()[self.__DATA_SELECT_QUERY] = data_select_query
+
+    def get_data_select_query(self):
+        return self.cfg_model()[self.__DATA_SELECT_QUERY]
 
     def train(
             self,
             df_train,
-            multivariate=cfg.multivariate,
             sequence_len=cfg.sequence_len,
             model_delta=cfg.model_delta,
-            interpolate=cfg.interpolate,
             model_type=cfg.model_type,
             num_epochs=cfg.num_epochs,
             epochs_patience=cfg.epochs_patience,
-            blocks=cfg.blocks
+            blocks=cfg.blocks,
+            steps_ahead=cfg.steps_ahead,
+            batch_size=cfg.batch_size
     ):
-        if multivariate is None:
-            multivariate = self.get_multivariate()
-        else:
-            self.set_multivariate(multivariate)
+        multivariate = len(df_train.columns)
+        self.set_multivariate(multivariate)
 
         if sequence_len is None:
             sequence_len = self.get_sequence_len()
@@ -374,11 +410,6 @@ class mods_model:
             model_delta = self.isdelta()
         else:
             self.set_model_delta(model_delta)
-
-        if interpolate is None:
-            interpolate = self.get_interpolate()
-        else:
-            self.set_interpolate(interpolate)
 
         if model_type is None:
             model_type = self.get_model_type()
@@ -400,31 +431,51 @@ class mods_model:
         else:
             self.set_blocks(blocks)
 
+        if steps_ahead is None:
+            steps_ahead = self.get_steps_ahead()
+        else:
+            self.set_steps_ahead(steps_ahead)
+
+        if batch_size is None:
+            batch_size = self.get_batch_size()
+        else:
+            self.set_batch_size(batch_size)
+
         # Define model
-        # TODO: divide into multiple model classes according to model_type
+        if len(K.tensorflow_backend._get_available_gpus()) == 0:
+            if model_type == 'CuDNNLSTM':
+                model_type = 'LSTM'
+            elif model_type == 'CuDNNGRU':
+                model_type = 'GRU'
+
         x = Input(shape=(sequence_len, multivariate))
+
         if model_type == 'GRU':
             h = GRU(blocks)(x)
-        elif model_type == 'bidirect':
+        elif model_type == 'CuDNNLSTM':
+            h = CuDNNLSTM(blocks)(x)
+        elif model_type == 'CuDNNGRU':
+            h = CuDNNGRU(blocks)(x)
+        elif model_type == 'BidirectLSTM':
             h = Bidirectional(LSTM(blocks))(x)
-        elif model_type == 'seq2seq':
+        elif model_type == 'seq2seqLSTM':
             h = LSTM(blocks)(x)
             h = RepeatVector(sequence_len)(h)
             h = LSTM(blocks, return_sequences=True)(h)
             h = Flatten()(h)
-        elif model_type == 'CNN':
+        elif model_type == 'Conv1D':
             h = Conv1D(filters=64, kernel_size=2, activation='relu')(x)
             h = MaxPooling1D(pool_size=2)(h)
             h = Flatten()(h)
         elif model_type == 'MLP':
             h = Dense(units=multivariate, activation='relu')(x)
-            # h = Dense(units=multivariate, activation='relu')(h)
+            # h = Dense(units=multivariate, activation='relu')(h)   # stacked
             h = Flatten()(h)
         else:  # default LSTM
             h = LSTM(blocks)(x)
-            # h = LSTM(blocks)(h)         # stacked
+            # h = LSTM(cfg.blocks)(h)                               # stacked
 
-        y = Dense(units=multivariate, activation='sigmoid')(h)  # 'softmax'
+        y = Dense(units=multivariate, activation='sigmoid')(h)      # 'softmax'
 
         self.model = Model(inputs=x, outputs=y)
 
@@ -434,8 +485,8 @@ class mods_model:
         # Compile model
         self.model.compile(
             loss='mean_squared_error',
-            optimizer='adam',  # 'adagrad', 'rmsprop'
-            metrics=['mse', 'mae', 'mape']  # 'cosine'
+            optimizer='adam',               # 'adagrad', 'rmsprop'
+            metrics=['mse', 'mae']          # 'cosine', 'mape'
         )
 
         # Checkpointing and earlystopping
@@ -460,29 +511,27 @@ class mods_model:
         df_train.replace('None', 0, inplace=True)
 
         # Add missing values
-        if self.get_interpolate():
-            df_train.interpolate(inplace=True)
+        df_train.interpolate(inplace=True)
 
         # Data transformation
-        df_train = df_train.values.astype('float32')
+        # df_train = df_train.values.astype('float32')
         df_train = self.transform(df_train)
         df_train = self.normalize(df_train, self.get_scaler())
+        tsg_train = self.get_tsg(df_train, steps_ahead=steps_ahead, batch_size=batch_size)
 
-        tsg_train = self.get_tsg(df_train)
+        if DEBUG:
+            print(self.config)
 
-        # TODO: remove later
-        print(self.config)
-
+        start_time = time.time()
         self.model.fit_generator(
             tsg_train,
             epochs=num_epochs,
             callbacks=callbacks_list
         )
-
+        self.set_training_time(time.time() - start_time)
 
     def plot(self, *args):
         print('this method is not yet implemented')
-
 
     def __init(self):
         print('Initializing model')
@@ -490,13 +539,15 @@ class mods_model:
             self.predict(self.sample_data)
         print('Model initialized')
 
-
     # First order differential for numpy array      y' = d(y)/d(t) = f(y,t)
     # be carefull                                   len(dt) == len(data)-1
     # e.g., [5,2,9,1] --> [2-5,9-2,1-9] == [-3,7,-8]
     def delta(self, df):
+        if isinstance(df, pd.DataFrame):
+            # pandas data frame
+            return df.diff(periods=1, axis=0)[1:]
+        # numpy ndarray
         return df[1:] - df[:-1]
-
 
     def transform(self, df):
         if self.isdelta():
@@ -505,67 +556,89 @@ class mods_model:
             # bucketing, taxo, fuzzy
             return df
 
-
-    def inverse_transform(self, original, transformed, prediction):
+    def inverse_transform(self, original, pred_denorm):
         if self.isdelta():
-            beg = self.get_sequence_len()
-            end = beg + len(prediction)
-            y = original[beg + 1:end + 1]
-            return y - transformed[beg:end] + prediction
+            seql = self.get_sequence_len()
+            y = original[seql:]
+            utl.dbg_df(y, self.name, 'y.tsv', print=DEBUG, save=DEBUG)
+            d = pred_denorm
+            utl.dbg_df(d, self.name, 'd.tsv', print=DEBUG, save=DEBUG)
+            return y + d
         else:
-            return prediction
+            return pred_denorm
 
-
-    # normalizes data
-    def normalize(self, df, scaler):
+    # normalizes data, returns np.ndarray
+    def normalize(self, df, scaler, fit=True):
         # Scale all metrics but each separately
-        df = scaler.fit_transform(df)
+        df = scaler.fit_transform(df) if fit else scaler.transform(df)
+        utl.dbg_scaler(scaler, 'normalize', debug=DEBUG)
         return df
-
 
     # inverse method to @normalize
     def inverse_normalize(self, df):
-        return self.get_scaler().inverse_transform(df)
+        scaler = self.get_scaler()
+        utl.dbg_scaler(scaler, 'inverse_normalize', debug=DEBUG)
+        return scaler.inverse_transform(df)
 
 
-    # returns time series generator
-    def get_tsg(self, df):
-        return TimeseriesGenerator(df,
-                                   df,
-                                   length=self.get_sequence_len(),
-                                   sampling_rate=1,
-                                   stride=1,
-                                   batch_size=1)
+    def get_tsg(self, df,
+                steps_ahead=cfg.steps_ahead,
+                batch_size=cfg.batch_size
+                ):
+
+        x = y = df
+        length = self.get_sequence_len()
+        if steps_ahead > 1:
+            x = df[:-(steps_ahead - 1)]
+            y = df[steps_ahead - 1:]
+
+        return TimeseriesGenerator(
+            x,
+            y,
+            length=length,
+            sampling_rate=1,
+            stride=1,
+            batch_size=batch_size
+        )
 
 
     def predict(self, df):
-        interpol = df
-        if self.get_interpolate():
-            interpol = df.interpolate()
-            interpol = interpol.values.astype('float32')
-            # print('interpolated:\n%s' % interpol)
 
-        trans = self.transform(interpol)
-        # print('transformed:\n%s' % transf)
+        utl.dbg_df(df, self.name, 'original', print=DEBUG, save=DEBUG)
 
-        norm = self.normalize(trans, self.get_scaler())
-        # print('normalized:\n%s' % norm)
+        trans = self.transform(df)
+        utl.dbg_df(trans, self.name, 'transformed', print=DEBUG, save=DEBUG)
 
-        tsg = self.get_tsg(norm)
+        norm = self.normalize(trans, self.get_scaler(), fit=False)
+        utl.dbg_df(norm, self.name, 'normalized', print=DEBUG, save=DEBUG)
+
+        # append #steps_ahead dummy rows at the end of the norm
+        # np.ndarray in order to tsg generate last sample
+        # for prediction of the future state
+        dummy = [np.nan] * self.get_multivariate()
+        for i in range(self.get_steps_ahead()):
+            norm = np.append(norm, [dummy], axis=0)
+        utl.dbg_df(norm, self.name, 'normalized+nan', print=DEBUG, save=DEBUG)
+
+        tsg = self.get_tsg(norm, steps_ahead=self.get_steps_ahead(), batch_size=self.get_batch_size())
+        utl.dbg_tsg(tsg, 'norm_tsg', debug=DEBUG)
+
         pred = self.model.predict_generator(tsg)
-        # print('prediction:\n%s' % pred)
+        utl.dbg_df(pred, self.name, 'prediction', print=DEBUG, save=DEBUG)
 
-        denorm = self.inverse_normalize(pred)
-        # print('denormalized:\n%s' % denorm)
+        pred_denorm = self.inverse_normalize(pred)
+        utl.dbg_df(pred_denorm, self.name, 'pred_denormalized', print=DEBUG, save=DEBUG)
 
-        invtrans = self.inverse_transform(interpol, trans, denorm)
-        # print('inverse transformed:\n%s' % invtrans)
+        pred_invtrans = self.inverse_transform(df, pred_denorm)
+        utl.dbg_df(pred_invtrans, self.name, 'pred_inv_trans', print=DEBUG, save=DEBUG)
 
-        return invtrans
+        if isinstance(pred_invtrans, pd.DataFrame):
+            pred_invtrans = pred_invtrans.values
 
+        return pred_invtrans
 
     # This function wraps pandas._read_csv(), reads the csv data and calls predict() on them
-    def predict_file_or_buffer(self, *args, **kwargs):
+    def read_file_or_buffer(self, *args, **kwargs):
         if kwargs is not None:
             kwargs = {k: v for k, v in kwargs.items() if k in [
                 'usecols', 'sep', 'skiprows', 'skipfooter', 'engine', 'header'
@@ -587,21 +660,23 @@ class mods_model:
                     if len(kwargs['header']) == 1:
                         kwargs['header'] = kwargs['header'][0]
             # print('HEADER: %s' % kwargs['pd_header'])
-
+        if kwargs is None:
+            kwargs = {}
+        kwargs['sep'] = '\t'
         df = pd.read_csv(*args, **kwargs)
-        return self.predict(df)
+        return df
 
+    def predict_file_or_buffer(self, *args, **kwargs):
+        df = self.read_file_or_buffer(*args, **kwargs)
+        return self.predict(df)
 
     def predict_url(self, url):
         pass
 
-
     def eval(self, df):
-        interpol = df
-        if self.get_interpolate():
-            interpol = df.interpolate()
-            interpol = interpol.values.astype('float32')
-            # print('interpolated:\n%s' % interpol)
+        interpol = df.interpolate()
+        interpol = interpol.values.astype('float32')
+        # print('interpolated:\n%s' % interpol)
 
         trans = self.transform(interpol)
         # print('transformed:\n%s' % transf)
@@ -609,6 +684,6 @@ class mods_model:
         norm = self.normalize(trans, self.get_scaler())
         # print('normalized:\n%s' % norm)
 
-        tsg = self.get_tsg(norm)
+        tsg = self.get_tsg(norm, self.get_steps_ahead(), cfg.batch_size_test)
 
         return self.model.evaluate_generator(tsg)

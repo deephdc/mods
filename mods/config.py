@@ -40,137 +40,90 @@ def list_dir(dir, pattern='*.tsv'):
 # identify basedir for the package
 BASE_DIR = path.dirname(path.normpath(path.dirname(__file__)))
 
-
 # Data repository
 DATA_DIR = expanduser("~") + '/data/deep-dm/'  # app_data_raw
+
 # Data dirs
 dir_logs = DATA_DIR + 'logs/'
 dir_parquet = DATA_DIR + 'logs_parquet/'
 dir_cleaned = DATA_DIR + 'logs_cleaned/'
 log_header_lines = 8
 
-
 # Application dirs
 app_data = BASE_DIR + '/data/'
-app_data_remote = 'deepnc:/mods/data/'
-app_data_raw = BASE_DIR + '/data/raw/'  # ln -s ...
-app_data_features = BASE_DIR + '/data/features/'  # extracted features
-app_data_test = BASE_DIR + '/data/test/'
-app_data_predict = BASE_DIR + '/data/predict/'
-app_models = BASE_DIR + '/models/'
-app_models_remote = 'deepnc:/mods/models/'
-app_checkpoints = BASE_DIR + '/checkpoints/'
-app_visualization = BASE_DIR + '/visualization/'
+app_data_remote     = 'deepnc:/mods/data/'
+app_data_raw        = BASE_DIR + '/data/raw/'
+app_data_features   = BASE_DIR + '/data/features/tsv/'
+app_data_test       = BASE_DIR + '/data/test/'
+app_data_predict    = BASE_DIR + '/data/predict/'
+app_data_plot       = BASE_DIR + '/data/plot/'
+app_data_results    = BASE_DIR + '/data/results/'
+app_models          = BASE_DIR + '/models/'
+app_models_remote   = 'deepnc:/mods/models/'
+app_checkpoints     = BASE_DIR + '/checkpoints/'
+app_visualization   = BASE_DIR + '/visualization/'
+app_data_pool_cache = BASE_DIR + '/data/cache/datapool/'
 
+# Generic settings
+time_range_inclusive = True                 # True: <beg, end>; False: <beg, end)
 
-# Feature data
-feature_filename = 'features.tsv'
-# time_range_begin = '2018-04-14'         # begin <= time_range < end
-# time_range_end   = '2018-10-15'         # excluded
-time_range_begin = '2018-07-14'
-time_range_end = '2018-10-15'
-window_duration = '1 hour'
-slide_duration = '10 minutes'
-
-
-# ML data
-column_separator = '\t'  # for tsv
-# column_separator = ','                                                    # for csv
-
-
-# ML and time series datasets
-split_ratio = 0.67  # train:test = 2:1
-batch_size = 1  # delta (6), without_delta(1)
-
-
-# Auxiliary
-rate_RMSE = True
-
-
-# Auxiliary: plotting
-plot = False
-fig_size_x = 15  # max 2^16 pixels = 650 inch
-fig_size_y = 4
-
-
-# Auxiliary: DayTime format
-format_string = '%Y-%m-%d %H:%M:%S'
-format_string_parquet = '%Y-%m-%d %H_%M_%S'  # parquet format without ":"
-timezone = 3600
-
-
-# pandas defaults
-pd_usecols = ['number_of_conn', 'sum_orig_kbytes']
-# pd_usecols = ['number_of_conn']
-# pd_usecols = ['sum_orig_kbytes']
-pd_sep = '\t'
-pd_skiprows = 0
-pd_skipfooter = 0
-pd_engine = 'python'
-pd_header = 0
-
+# Datapool defaults
+app_data_pool = app_data_features + 'w01h-s10m/'        # 'w10m-s01m/'
+data_pool_caching = True
 
 # training defaults
-data_train_all = list_dir(app_data_features, '*.tsv')
-data_train = 'features-20180414-20181015-win-1_hour-slide-10_minutes.tsv'
-multivariate = len(pd_usecols)
-sequence_len = 6
-model_delta = False
+train_data_select_query = 'conn|in_sum_orig_bytes~A|in_count_uid~B;ssh|in~C#window_start,window_end'
+
+# Data transformation defaults
+model_delta = True                          # True --> better predictions
 interpolate = True
-model_types = ['LSTM', 'bidirect', 'seq2seq', 'GRU', 'CNN', 'MLP']
+
+# Training parameters defaults
+multivariate = 3
+sequence_len = 6                           # from 6 to 24 for w01h-s10m
+steps_ahead = 1                             # number of steps steps_ahead for prediction
+model_types = ['CuDNNLSTM', 'CuDNNGRU', 'Conv1D', 'MLP', 'BidirectLSTM', 'seq2seqLSTM']     # 'LSTM', 'GRU'
 model_type = model_types[0]
 num_epochs = 50
 epochs_patience = 10
+batch_size = 1                              # to be tested later
+batch_size_test = 1                         # don't change
 blocks = 6
 
-
-# prediction defaults
-data_predict = 'sample-w1h-s10m.tsv'
-
-
-# test defaults
-data_test = 'w1h-s10m.tsv'
+train_time_range = '2018-04-14 -- 2019-04-14'
+train_time_range_excluded = ''
+train_ws_choices = ['w01h-s10m', 'w10m-s01m']
+train_ws = train_ws_choices[0]
 
 
 # common defaults
 model_name_all = list_dir(app_models, '*.zip')
-model_name = 'mods-20180414-20181015-w1h-s10m'
+model_name = 'model-default-1y'
+
+# prediction defaults
+data_predict = 'model-default-1y-test.tsv'        # can be removed later?
+
+# test defaults
+test_data = 'model-default-1y-test.tsv'             # can be removed later?
+test_data_select_query = train_data_select_query    # same as for train - differs only in the time range
+test_time_range = '2019-04-15 -- 2019-05-15'
+test_time_range_excluded = ''
+
+# Plotting
+plot = False
+plot_filename = 'plot_data.png'
+fig_size_x = 25                             # max 2^16 pixels = 650 inch
+fig_size_y = 4
+
+# Auxiliary: DayTime format
+format_string = '%Y-%m-%d %H:%M:%S'
+format_string_parquet = '%Y-%m-%d %H_%M_%S'     # parquet format without ":"
+timezone = 3600
 
 
-def set_pandas_args():
-    pandas_args = {
-        'pd_usecols': {
-            'default': ','.join(pd_usecols),
-            'help': 'A list of column names separated by comma; e.g., number_of_conn,sum_orig_kbytes',
-            'required': False
-        },
-        # 'pd_sep': {
-        #     'default': pd_sep,
-        #     'help': '',
-        #     'required': False
-        # },
-        'pd_skiprows': {
-            'default': pd_skiprows,
-            'help': '',
-            'required': False
-        },
-        'pd_skipfooter': {
-            'default': pd_skipfooter,
-            'help': '',
-            'required': False
-        },
-        # 'pd_engine': {
-        #     'default': pd_engine,
-        #     'help': '',
-        #     'required': False
-        # },
-        'pd_header': {
-            'default': pd_header,
-            'help': '',
-            'required': False
-        }
-    }
-    return pandas_args
+def set_common_args():
+    common_args = {}
+    return common_args
 
 
 def set_train_args():
@@ -181,15 +134,64 @@ def set_train_args():
             'type': str,
             'required': False
         },
-        'data': {
-            'default': data_train,
-            'choices': data_train_all,
-            'help': 'Training data to train on',
+        'data_select_query': {
+            'default': train_data_select_query,
+            'help': """\
+Select protocols and columns for training and testing and specify columns for merging the data.
+Multiple protocols and columns can be specified for data selection.
+Multiple columns can be specified for data merging.
+Columns can be renamed prior to merging.
+
+Use the following format:
+<font color="blue">protocol1</font>&nbsp;<b>;</b>&nbsp;<font color="blue">protocol2</font>&nbsp;<b>|</b>&nbsp;<font color="green">col1</font>&nbsp;<b>|</b>&nbsp;<font color="green">col2</font>&nbsp;<b>|</b>&nbsp;...&nbsp;<b>;</b>&nbsp;...&nbsp;<b>#</b>&nbsp;<font color="purple">merge_col1</font>&nbsp;<b>,</b>&nbsp;<font color="purple">merge_col2</font>&nbsp;<b>,</b>&nbsp;...
+
+To rename a column, use a tilde (<b>~</b>) followed by a new name after the column name; e.g., col1<b>~A</b>
+""",
             'required': False
         },
-        'multivariate': {
-            'default': multivariate,
-            'help': '',
+        'train_time_range': {
+            'default': train_time_range,
+            'help': '<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]&nbsp;<b>--</b>&nbsp;<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]',
+            'type': str,
+            'required': False
+        },
+        'train_time_ranges_excluded': {
+            'default': train_time_range_excluded,
+            'help': """\
+A comma-separated list of time and time ranges to be excluded.
+
+Use following formats in the list:
+<ul>
+    <li><font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]</li>
+    <li><font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]&nbsp;<b>--</b>&nbsp;<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]</li>
+</ul>""",
+            'type': str,
+            'required': False
+        },
+        'test_time_range': {
+            'default': test_time_range,
+            'help': '<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]&nbsp;<b>--</b>&nbsp;<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]',
+            'type': str,
+            'required': False
+        },
+        'test_time_ranges_excluded': {
+            'default': test_time_range_excluded,
+            'help': """\
+A comma-separated list of time and time ranges to be excluded.
+
+Use following formats in the list:
+<ul>
+    <li><font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]</li>
+    <li><font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]&nbsp;<b>--</b>&nbsp;<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]</li>
+</ul>""",
+            'type': str,
+            'required': False
+        },
+        'window_slide': {
+            'default': train_ws,
+            'choices': train_ws_choices,
+            'help': 'window and window slide',
+            'type': str,
             'required': False
         },
         'sequence_len': {
@@ -199,12 +201,13 @@ def set_train_args():
         },
         'model_delta': {
             'default': model_delta,
+            'choices': [True, False],
             'help': '',
             'required': False
         },
-        'interpolate': {
-            'default': interpolate,
-            'help': '',
+        'steps_ahead': {
+            'default': steps_ahead,
+            'help': 'Number of steps to predict ahead of current time',
             'required': False
         },
         'model_type': {
@@ -227,27 +230,57 @@ def set_train_args():
             'default': blocks,
             'help': '',
             'required': False
+        },
+        'batch_size': {
+            'default': batch_size,
+            'help': '',
+            'required': False
         }
     }
-    train_args.update(set_pandas_args())
+    train_args.update(set_common_args())
     return train_args
 
 
 def set_predict_args():
     predict_args = {
         'model_name': {
-            'default': model_name,
+            'default': model_name + '.zip',
             'choices': model_name_all,
             'help': 'Name of the model used for prediction',
             'type': str,
             'required': False
+        },
+        'batch_size': {
+            'default': batch_size_test,
+            'help': '',
+            'required': False
+        },
+        'test_time_range': {
+            'default': test_time_range,
+            'help': '<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]&nbsp;<b>--</b>&nbsp;<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]',
+            'type': str,
+            'required': False
+        },
+        'test_time_ranges_excluded': {
+            'default': test_time_range_excluded,
+            'help': """\
+A comma-separated list of time and time ranges to be excluded.
+
+Use following formats in the list:
+<ul>
+    <li><font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]</li>
+    <li><font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]&nbsp;<b>--</b>&nbsp;<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]</li>
+</ul>""",
+            'type': str,
+            'required': False
         }
     }
-    predict_args.update(set_pandas_args())
+    predict_args.update(set_common_args())
     return predict_args
 
+
 def set_test_args():
-    predict_args = {
+    test_args = {
         'model_name': {
             'default': model_name,
             'help': 'Name of the model used for a test',
@@ -255,10 +288,15 @@ def set_test_args():
             'required': False
         },
         'data': {
-            'default': data_test,
+            'default': test_data,
             'help': 'Data to test on',
+            'required': False
+        },
+        'batch_size': {
+            'default': batch_size_test,
+            'help': '',
             'required': False
         }
     }
-    predict_args.update(set_pandas_args())
-    return predict_args
+    test_args.update(set_common_args())
+    return test_args

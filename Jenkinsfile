@@ -106,6 +106,7 @@ Check console output at:\n\n
 *  ${env.BUILD_URL}/console\n\n
 and resultant Docker image rebuilding job at (may be empty in case of FAILURE):\n\n
 *  ${job_result_url}\n\n
+
 DEEP Jenkins CI service"""
 
                 EmailSend(subject, body, "${author_email}")
