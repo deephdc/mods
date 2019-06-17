@@ -79,8 +79,8 @@ model_delta = True                          # True --> better predictions
 interpolate = True
 
 # Training parameters defaults
-multivariate = 3
-sequence_len = 6                           # from 6 to 24 for w01h-s10m
+multivariate = 3                            # ?
+sequence_len = 12                           # from 6 to 24 for w01h-s10m
 steps_ahead = 1                             # number of steps steps_ahead for prediction
 model_types = ['CuDNNLSTM', 'CuDNNGRU', 'Conv1D', 'MLP', 'BidirectLSTM', 'seq2seqLSTM']     # 'LSTM', 'GRU'
 model_type = model_types[0]
