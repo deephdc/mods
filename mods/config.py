@@ -86,13 +86,15 @@ data_pool_caching = True
 #     'ssh|in~in_count_uid;' +\
 #     'ssl|in~in_count_uid' +\
 #     '#window_start,window_end'
+
+# !!! column names must be distinct (use tilde (~) to rename column; e.g., orig_col_name~new_col_name !!!
 data_select_query = \
-    'conn|internal_count_uid|out_count_uid;' +\
-    'dns|internal_distinct_query;' +\
-    'sip|internal_count_uid;' +\
-    'http|in~internal_count_uid;' +\
-    'ssh|in~internal_count_uid;' +\
-    'ssl|in~internal_count_uid' +\
+    'conn|internal_count_uid~conn_in|out_count_uid~conn_out;' +\
+    'dns|internal_distinct_query~dns_in_q;' +\
+    'sip|internal_count_uid~sip_in;' +\
+    'http|in~http_in;' +\
+    'ssh|in~ssh_in;' +\
+    'ssl|in~ssl_in' +\
     '#window_start,window_end'
 
 # Datapools: window-slide
