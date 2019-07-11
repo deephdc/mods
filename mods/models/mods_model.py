@@ -50,6 +50,7 @@ from keras.models import Model
 from keras.preprocessing.sequence import TimeseriesGenerator
 from sklearn.externals import joblib
 from sklearn.preprocessing import MinMaxScaler
+from tcn import TCN
 
 import mods.config as cfg
 import mods.utils as utl
@@ -448,40 +449,72 @@ class mods_model:
             self.set_batch_size(batch_size)
 
         # Define model
-        if len(K.tensorflow_backend._get_available_gpus()) == 0:
-            if model_type == 'CuDNNLSTM':
-                model_type = 'LSTM'
-            elif model_type == 'CuDNNGRU':
-                model_type = 'GRU'
-
         x = Input(shape=(sequence_len, multivariate))
 
-        if model_type == 'GRU':
-            h = GRU(blocks)(x)
-        elif model_type == 'CuDNNLSTM':
-            h = CuDNNLSTM(blocks)(x)
-        elif model_type == 'CuDNNGRU':
-            h = CuDNNGRU(blocks)(x)
-        elif model_type == 'BidirectLSTM':
-            h = Bidirectional(LSTM(blocks))(x)
-        elif model_type == 'seq2seqLSTM':
-            h = LSTM(blocks)(x)
-            h = RepeatVector(sequence_len)(h)
-            h = LSTM(blocks, return_sequences=True)(h)
+        if model_type == 'MLP':  # MLP
+            h = Dense(units=multivariate, activation='relu')(x)
             h = Flatten()(h)
-        elif model_type == 'Conv1D':
+        elif model_type == 'autoencoderMLP':  # autoencoder MLP
+            nn = [128, 64, 32, 16, 32, 64, 128]
+            h = Dense(units=nn[0], activation='relu')(x)
+            for n in nn[1:]:
+                h = Dense(units=n, activation='relu')(h)
+            h = Flatten()(h)
+        elif model_type == 'Conv1D':  # CNN
             h = Conv1D(filters=64, kernel_size=2, activation='relu')(x)
             h = MaxPooling1D(pool_size=2)(h)
             h = Flatten()(h)
-        elif model_type == 'MLP':
-            h = Dense(units=multivariate, activation='relu')(x)
-            # h = Dense(units=multivariate, activation='relu')(h)   # stacked
-            h = Flatten()(h)
-        else:  # default LSTM
-            h = LSTM(blocks)(x)
-            # h = LSTM(cfg.blocks)(h)                               # stacked
+        elif model_type == 'TCN':  # https://pypi.org/project/keras-tcn/
+            h = TCN(return_sequences=False)(x)
+        elif model_type == 'stackedTCN' and stacked_blocks > 1:  # stacked TCN
+            h = TCN(return_sequences=True)(x)
+            if stacked_blocks > 2:
+                for i in range(stacked_blocks - 2):
+                    h = TCN(return_sequences=True)(h)
+            h = TCN(return_sequences=False)(h)
 
-        y = Dense(units=multivariate, activation='sigmoid')(h)      # 'softmax'
+        if len(K.tensorflow_backend._get_available_gpus()) == 0:  # CPU running
+            if model_type == 'GRU':  # GRU
+                h = GRU(cfg.blocks)(x)
+            else:  # default LSTM
+                h = LSTM(cfg.blocks)(x)
+        else:  # GPU running
+            print('Running on GPU')
+            if model_type == 'GRU':  # GRU
+                h = CuDNNGRU(cfg.blocks)(x)
+            elif model_type == 'LSTM':  # LSTM
+                h = CuDNNLSTM(cfg.blocks)(x)
+            elif model_type == 'bidirectLSTM':  # bidirectional LSTM
+                h = Bidirectional(CuDNNLSTM(cfg.blocks))(x)
+            elif model_type == 'attentionLSTM':  # https://pypi.org/project/keras-self-attention/
+                h = Bidirectional(CuDNNLSTM(cfg.blocks, return_sequences=True))(x)
+                h = SeqSelfAttention(attention_activation='sigmoid')(h)
+                h = Flatten()(h)
+            elif model_type == 'seq2seqLSTM':
+                if batch_normalization:  # https://leimao.github.io/blog/Batch-Normalization/
+                    h = CuDNNLSTM(cfg.blocks)(x)
+                    BatchNormalization()(h)
+                    h = RepeatVector(sequence_len)(h)
+                    h = CuDNNLSTM(cfg.blocks)(h)
+                    BatchNormalization()(h)
+                elif 0.0 < dropout_rate < 1.0:  # dropout
+                    h = CuDNNLSTM(cfg.blocks)(x)
+                    h = Dropout(dropout_rate)(h)
+                    h = RepeatVector(sequence_len)(h)
+                    h = CuDNNLSTM(cfg.blocks)(h)
+                    h = Dropout(dropout_rate)(h)
+                else:  # seq2seq LSTM
+                    h = CuDNNLSTM(cfg.blocks)(x)
+                    h = RepeatVector(sequence_len)(h)
+                    h = CuDNNLSTM(cfg.blocks)(h)
+            elif model_type == 'stackedLSTM' and stacked_blocks > 1:  # stacked LSTM
+                h = CuDNNLSTM(cfg.blocks, return_sequences=True)(x)
+                if stacked_blocks > 2:
+                    for i in range(stacked_blocks - 2):
+                        h = CuDNNLSTM(cfg.blocks, return_sequences=True)(h)
+                h = CuDNNLSTM(cfg.blocks)(x)
+
+        y = Dense(units=multivariate, activation='sigmoid')(h)  # 'softmax' for multiclass classification
 
         self.model = Model(inputs=x, outputs=y)
 

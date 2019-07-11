@@ -75,7 +75,7 @@ def read_data(data_filename):
 
     # Data: pandas dataframe to numpy array
     data = df.values.astype('float32')
-    print('read_data: ', data_filename, data.dtype, cfg.multivariate)
+    print('read_data: ', data_filename, data.dtype)
     return data
 
 

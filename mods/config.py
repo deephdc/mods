@@ -77,53 +77,71 @@ pd_header = 0
 # Datapool defaults
 app_data_pool = app_data_features + 'w01h-s10m/'        # 'w10m-s01m/'
 data_pool_caching = True
+# TODO: missing 'dns|internal_count_uid' in datapool, check it (@stevo)
+# data_select_query = \
+#     'conn|in_count_uid|out_count_uid;' +\
+#     'dns|in_count_uid|in_distinct_query;' +\
+#     'sip|in_count_uid;' +\
+#     'http|in~in_count_uid;' +\
+#     'ssh|in~in_count_uid;' +\
+#     'ssl|in~in_count_uid' +\
+#     '#window_start,window_end'
+data_select_query = \
+    'conn|internal_count_uid|out_count_uid;' +\
+    'dns|internal_distinct_query;' +\
+    'sip|internal_count_uid;' +\
+    'http|in~internal_count_uid;' +\
+    'ssh|in~internal_count_uid;' +\
+    'ssl|in~internal_count_uid' +\
+    '#window_start,window_end'
 
-# training defaults
-train_data_select_query = 'conn|in_sum_orig_bytes~A|in_count_uid~B;ssh|in~C#window_start,window_end'
-
-# Data transformation defaults
-model_delta = True                          # True --> better predictions
-interpolate = True
+# Datapools: window-slide
+ws_choices = ['w01h-s10m', 'w10m-s01m']
+ws_choice = ws_choices[0]
 
 # Training parameters defaults
-multivariate = 3
-sequence_len = 6                           # from 6 to 24 for w01h-s10m
-steps_ahead = 1                             # number of steps steps_ahead for prediction
-model_types = ['CuDNNLSTM', 'CuDNNGRU', 'Conv1D', 'MLP', 'BidirectLSTM', 'seq2seqLSTM']     # 'LSTM', 'GRU'
-# model_types = ['ConvLSTM2D']
+train_data_select_query = data_select_query
+model_delta = True                          # True --> better predictions, first order differential
+sequence_len = 12                           # p in <6, 24> for w01h-s10m
+steps_ahead = 1                             # k in <1, 12> for w01h-s10m; k < p
+model_types = ['MLP', 'Conv1D', 'autoencoderMLP', 'LSTM', 'GRU', 'bidirectLSTM', 'seq2seqLSTM', 'stackedLSTM', 'attentionLSTM', 'TCN', 'stackedTCN']
 model_type = model_types[0]
-num_epochs = 50
-epochs_patience = 10
-batch_size = 1                              # to be tested later
+
+# Training defaults - rarely changed
+blocks = 12                                 # number of RNN blocks
+num_epochs = 50                             # number of training epochs
+epochs_patience = 10                        # early stopping
+batch_size = 1                              # faster training --> to be tested later
 batch_size_test = 1                         # don't change
-blocks = 6
 
-train_time_range = '2019-04-01 -- 2019-05-01'
-train_time_range_excluded = '2019-01 -- 2019-02-15, 2018-12-24, 2018-10'
-train_ws_choices = ['w01h-s10m', 'w10m-s01m']
-train_ws = train_ws_choices[0]
-
-
-# common defaults
-model_name_all = list_dir(app_models, '*.zip')
-# model_name = 'mods-20180414-20181015-w1h-s10m'
-model_name = 'model-default'
+train_time_range = '2018-04-14 -- 2019-04-13'
+train_time_range_excluded = ''                  # example: '2019-01 -- 2019-02-15, 2018-12-24, 2018-10'
+train_ws_choices = ws_choices
+train_ws = ws_choice
 
 # prediction defaults
 data_predict = 'sample-w1h-s10m.tsv'        # can be removed later?
 
 # test defaults
-test_data = 'data_test.tsv'                         # can be removed later?
-test_data_select_query = train_data_select_query    # same as for train - differs only in the time range
-test_time_range = '2019-05-02 -- 2019-05-26'
+test_data = 'data_test.tsv'                         # can be removed later? TODO: we first need to support datapool in the DEEPaaS web interface (@stevo)
+test_data_select_query = data_select_query          # same as for train - differs only in the time range
+test_time_range = '2019-04-14 -- 2019-05-14'
 test_time_range_excluded = ''
 
+# Data transformation defaults
+interpolate = False
+
+# common defaults
+model_name_all = list_dir(app_models, '*.zip')
+model_name = 'model-default'
+
 # Evaluation metrics on real values
-eval_filename = 'eval.tsv'
 eval_metrics = ['SMAPE', 'R2', 'COSINE']    # 'MAPE', 'RMSE'
+eval_filename = 'eval.tsv'
 
 # Plotting
 plot = False
+plot_dir = app_data_plot
 plot_filename = 'plot_data.png'
 fig_size_x = 25                             # max 2^16 pixels = 650 inch
 fig_size_y = 4
