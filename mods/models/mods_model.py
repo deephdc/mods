@@ -49,6 +49,7 @@ from keras.layers.convolutional import MaxPooling1D
 from keras.layers.recurrent import GRU
 from keras.layers.recurrent import LSTM
 from keras.models import Model
+from keras.optimizers import Adam
 from keras.preprocessing.sequence import TimeseriesGenerator
 from keras_self_attention import SeqSelfAttention
 from sklearn.externals import joblib
@@ -570,12 +571,14 @@ class mods_model:
         # Drawing model
         print(self.model.summary())
 
+        # Optimizer
+        opt = Adam(clipnorm=1.0, clipvalue=0.5)
+
         # Compile model
         self.model.compile(
-            loss='mean_squared_error',
-            optimizer='adam',               # 'adagrad', 'rmsprop'
-            metrics=['mse', 'mae']          # 'cosine', 'mape'
-        )
+            loss='mean_squared_error',  # Adam
+            optimizer=opt,              # 'adam', 'adagrad', 'rmsprop', opt
+            metrics=['mse', 'mae'])     # 'cosine', 'mape'
 
         # Checkpointing and earlystopping
         filepath = cfg.app_checkpoints + self.name + '-{epoch:02d}.hdf5'
