@@ -35,10 +35,12 @@ import pandas as pd
 from keras import backend as K
 from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
+from keras.layers import BatchNormalization
 from keras.layers import Bidirectional
 from keras.layers import CuDNNGRU
 from keras.layers import CuDNNLSTM
 from keras.layers import Dense
+from keras.layers import Dropout
 from keras.layers import Flatten
 from keras.layers import Input
 from keras.layers import RepeatVector
@@ -48,6 +50,7 @@ from keras.layers.recurrent import GRU
 from keras.layers.recurrent import LSTM
 from keras.models import Model
 from keras.preprocessing.sequence import TimeseriesGenerator
+from keras_self_attention import SeqSelfAttention
 from sklearn.externals import joblib
 from sklearn.preprocessing import MinMaxScaler
 from tcn import TCN
@@ -69,8 +72,11 @@ class mods_model:
     __EPOCHS = 'epochs'
     __EPOCHS_PATIENCE = 'epochs_patience'
     __BLOCKS = 'blocks'
+    __STACKED_BLOCKS = 'stacked_blocks'
     __STEPS_AHEAD = 'steps_ahead'
     __BATCH_SIZE = 'batch_size'
+    __BATCH_NORMALIZATION = 'batch_normalization'
+    __DROPOUT_RATE = 'dropout_rate'
     __TRAINING_TIME = 'training_time'   # moved to metrics.json
     # scaler
     __SCALER = 'scaler'
@@ -286,8 +292,11 @@ class mods_model:
                 mods_model.__EPOCHS: cfg.num_epochs,
                 mods_model.__EPOCHS_PATIENCE: cfg.epochs_patience,
                 mods_model.__BLOCKS: cfg.blocks,
+                mods_model.__STACKED_BLOCKS: cfg.stacked_blocks,
                 mods_model.__STEPS_AHEAD: cfg.steps_ahead,
                 mods_model.__BATCH_SIZE: cfg.batch_size,
+                mods_model.__BATCH_NORMALIZATION: cfg.batch_normalization,
+                mods_model.__DROPOUT_RATE: cfg.dropout_rate,
             },
             mods_model.__SCALER: {
                 mods_model.__FILE: 'scaler.pkl'
@@ -346,6 +355,12 @@ class mods_model:
     def get_blocks(self):
         return self.cfg_model()[mods_model.__BLOCKS]
 
+    def set_stacked_blocks(self, stacked_blocks):
+        self.cfg_model()[mods_model.__STACKED_BLOCKS] = stacked_blocks
+
+    def get_stacked_blocks(self):
+        return self.cfg_model()[mods_model.__STACKED_BLOCKS]
+
     def set_steps_ahead(self, steps_ahead):
         self.cfg_model()[mods_model.__STEPS_AHEAD] = steps_ahead
 
@@ -357,6 +372,18 @@ class mods_model:
 
     def get_batch_size(self):
         return self.cfg_model()[mods_model.__BATCH_SIZE]
+
+    def set_batch_normalization(self, batch_normalization):
+        self.cfg_model()[mods_model.__BATCH_NORMALIZATION] = batch_normalization
+
+    def get_batch_normalization(self):
+        return self.cfg_model()[mods_model.__BATCH_NORMALIZATION]
+
+    def set_dropout_rate(self, dropout_rate):
+        self.cfg_model()[mods_model.__DROPOUT_RATE] = dropout_rate
+
+    def get_dropout_rate(self):
+        return self.cfg_model()[mods_model.__DROPOUT_RATE]
 
     def set_training_time(self, training_time):
         self.__metrics[self.__TRAINING_TIME] = training_time
@@ -397,8 +424,11 @@ class mods_model:
             num_epochs=cfg.num_epochs,
             epochs_patience=cfg.epochs_patience,
             blocks=cfg.blocks,
+            stacked_blocks=cfg.stacked_blocks,
             steps_ahead=cfg.steps_ahead,
-            batch_size=cfg.batch_size
+            batch_size=cfg.batch_size,
+            batch_normalization=cfg.batch_normalization,
+            dropout_rate=cfg.dropout_rate
     ):
         multivariate = len(df_train.columns)
         self.set_multivariate(multivariate)
@@ -438,6 +468,11 @@ class mods_model:
         else:
             self.set_blocks(blocks)
 
+        if stacked_blocks is None:
+            stacked_blocks = self.get_stacked_blocks()
+        else:
+            self.set_stacked_blocks(stacked_blocks)
+
         if steps_ahead is None:
             steps_ahead = self.get_steps_ahead()
         else:
@@ -448,7 +483,18 @@ class mods_model:
         else:
             self.set_batch_size(batch_size)
 
+        if batch_normalization is None:
+            batch_normalization = self.get_batch_normalization()
+        else:
+            self.set_batch_normalization(batch_normalization)
+
+        if dropout_rate is None:
+            dropout_rate = self.get_dropout_rate()
+        else:
+            self.set_dropout_rate(dropout_rate)
+
         # Define model
+        h = None
         x = Input(shape=(sequence_len, multivariate))
 
         if model_type == 'MLP':  # MLP
@@ -513,6 +559,9 @@ class mods_model:
                     for i in range(stacked_blocks - 2):
                         h = CuDNNLSTM(cfg.blocks, return_sequences=True)(h)
                 h = CuDNNLSTM(cfg.blocks)(x)
+
+        if h is None:
+            raise Exception('model not specified (h is None)')
 
         y = Dense(units=multivariate, activation='sigmoid')(h)  # 'softmax' for multiclass classification
 

@@ -116,6 +116,10 @@ epochs_patience = 10                        # early stopping
 batch_size = 1                              # faster training --> to be tested later
 batch_size_test = 1                         # don't change
 
+stacked_blocks = 3                          # 1 = no stack
+batch_normalization = False                 # no significant effect when used with ADAM
+dropout_rate = 1.0                          # range <0.5, 0.8>, 0.0=no outputs, 1.0=no dropout
+
 train_time_range = '2018-04-14 -- 2019-04-13'
 train_time_range_excluded = ''                  # example: '2019-01 -- 2019-02-15, 2018-12-24, 2018-10'
 train_ws_choices = ws_choices
@@ -271,9 +275,24 @@ Use following formats in the list:
             'help': '',
             'required': False
         },
+        'stacked_blocks': {
+            'default': stacked_blocks,
+            'help': '',
+            'required': False
+        },
         'batch_size': {
             'default': batch_size,
             'help': '',
+            'required': False
+        },
+        'batch_normalization': {
+            'default': batch_normalization,
+            'help': 'seq2seqLSTM models only',
+            'required': False
+        },
+        'dropout_rate': {
+            'default': dropout_rate,
+            'help': 'seq2seqLSTM models only',
             'required': False
         }
     }
