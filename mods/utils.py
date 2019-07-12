@@ -581,12 +581,12 @@ def datapool_read(
         # convert units:
         # from B to kB, MB, GB use _kB, MB, GB
         for col in df_protocol.columns:
-            if col.lower().endswith('_kB'):
-                df_protocol[col] = df_protocol[col]/1024
-            elif col.lower().endswith('_MB'):
-                df_protocol[col] = df_protocol[col]/1048576
-            elif col.lower().endswith('_GB'):
-                df_protocol[col] = df_protocol[col]/1073741824
+            if col.lower().endswith('_kb'):
+                df_protocol[col] /= 1024
+            elif col.lower().endswith('_mb'):
+                df_protocol[col] /= 1048576
+            elif col.lower().endswith('_gb'):
+                df_protocol[col] /= 1073741824
 
         if df_main is None:
             df_main = df_protocol
