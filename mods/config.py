@@ -88,10 +88,10 @@ data_pool_caching = True
 #     '#window_start,window_end'
 
 # !!! column names must be distinct (use tilde (~) to rename column; e.g., orig_col_name~new_col_name !!!
+# TODO: NaN problem: 'sip|internal_count_uid~sip_in;' +\
 data_select_query = \
     'conn|internal_count_uid~conn_in|out_count_uid~conn_out;' +\
     'dns|internal_distinct_query~dns_in_q;' +\
-    'sip|internal_count_uid~sip_in;' +\
     'http|in~http_in;' +\
     'ssh|in~ssh_in;' +\
     'ssl|in~ssl_in' +\
