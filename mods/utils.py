@@ -582,11 +582,11 @@ def datapool_read(
         # from B to kB, MB, GB use _kB, MB, GB
         for col in df_protocol.columns:
             if col.lower().endswith('_kb'):
-                df_protocol[col] /= 1024
+                df_protocol[col] = df_protocol[col].div(1024).astype(int)
             elif col.lower().endswith('_mb'):
-                df_protocol[col] /= 1048576
+                df_protocol[col] = df_protocol[col].div(1048576).astype(int)
             elif col.lower().endswith('_gb'):
-                df_protocol[col] /= 1073741824
+                df_protocol[col] = df_protocol[col].div(1073741824).astype(int)
 
         if df_main is None:
             df_main = df_protocol
