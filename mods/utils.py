@@ -578,6 +578,16 @@ def datapool_read(
         rename_rule = {x[0]: x[1] for x in ds['cols'] if len(x) == 2}
         df_protocol = df_protocol.rename(index=str, columns=rename_rule)
 
+        # convert units:
+        # from B to kB, MB, GB use _kB, MB, GB
+        for col in df_protocol.columns:
+            if col.lower().endswith('_kB'):
+                df_protocol[col] = df_protocol[col]/1024
+            elif col.lower().endswith('_MB'):
+                df_protocol[col] = df_protocol[col]/1048576
+            elif col.lower().endswith('_GB'):
+                df_protocol[col] = df_protocol[col]/1073741824
+
         if df_main is None:
             df_main = df_protocol
         else:
