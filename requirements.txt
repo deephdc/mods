@@ -8,7 +8,7 @@ h5py
 keras
 keras-self-attention
 keras-tcn
-gevent==1.2.1
+gevent>=1.4.0
 requests
 numpy
 sympy
