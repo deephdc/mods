@@ -70,47 +70,77 @@ time_range_inclusive = True                 # True: <beg, end>; False: <beg, end
 # Datapool defaults
 app_data_pool = app_data_features + 'w01h-s10m/'        # 'w10m-s01m/'
 data_pool_caching = True
+# TODO: missing 'dns|internal_count_uid' in datapool, check it (@stevo)
+# data_select_query = \
+#     'conn|in_count_uid|out_count_uid;' +\
+#     'dns|in_count_uid|in_distinct_query;' +\
+#     'sip|in_count_uid;' +\
+#     'http|in~in_count_uid;' +\
+#     'ssh|in~in_count_uid;' +\
+#     'ssl|in~in_count_uid' +\
+#     '#window_start,window_end'
 
-# training defaults
-train_data_select_query = 'conn|in_sum_orig_bytes~A|in_count_uid~B;ssh|in~C#window_start,window_end'
+# !!! column names must be distinct (use tilde (~) to rename column; e.g., orig_col_name~new_col_name !!!
+# TODO: NaN problem: 'sip|internal_count_uid~sip_in;' +\
+data_select_query = \
+    'conn|internal_count_uid~conn_in|out_count_uid~conn_out;' +\
+    'dns|internal_distinct_query~dns_in_q;' +\
+    'http|in~http_in;' +\
+    'ssh|in~ssh_in;' +\
+    'ssl|in~ssl_in' +\
+    '#window_start,window_end'
 
-# Data transformation defaults
-model_delta = True                          # True --> better predictions
-interpolate = True
+# Datapools: window-slide
+ws_choices = ['w01h-s10m', 'w10m-s01m']
+ws_choice = ws_choices[0]
 
 # Training parameters defaults
-multivariate = 3                            # ?
-sequence_len = 12                           # from 6 to 24 for w01h-s10m
-steps_ahead = 1                             # number of steps steps_ahead for prediction
-model_types = ['CuDNNLSTM', 'CuDNNGRU', 'Conv1D', 'MLP', 'BidirectLSTM', 'seq2seqLSTM']     # 'LSTM', 'GRU'
+train_data_select_query = data_select_query
+model_delta = True                          # True --> better predictions, first order differential
+sequence_len = 12                           # p in <6, 24> for w01h-s10m
+steps_ahead = 1                             # k in <1, 12> for w01h-s10m; k < p
+model_types = ['MLP', 'Conv1D', 'autoencoderMLP', 'LSTM', 'GRU', 'bidirectLSTM', 'seq2seqLSTM', 'stackedLSTM', 'attentionLSTM', 'TCN', 'stackedTCN']
 model_type = model_types[0]
-num_epochs = 50
-epochs_patience = 10
-batch_size = 1                              # to be tested later
+
+# Training defaults - rarely changed
+blocks = 12                                 # number of RNN blocks
+num_epochs = 50                             # number of training epochs
+epochs_patience = 10                        # early stopping
+batch_size = 1                              # faster training --> to be tested later
 batch_size_test = 1                         # don't change
-blocks = 6
 
-train_time_range = '2018-04-14 -- 2019-04-14'
-train_time_range_excluded = ''
-train_ws_choices = ['w01h-s10m', 'w10m-s01m']
-train_ws = train_ws_choices[0]
+stacked_blocks = 3                          # 1 = no stack
+batch_normalization = False                 # no significant effect when used with ADAM
+dropout_rate = 1.0                          # range <0.5, 0.8>, 0.0=no outputs, 1.0=no dropout
 
-
-# common defaults
-model_name_all = list_dir(app_models, '*.zip')
-model_name = 'model-default-1y'
+train_time_range = '2018-04-14 -- 2019-04-13'
+train_time_range_excluded = ''                  # example: '2019-01 -- 2019-02-15, 2018-12-24, 2018-10'
+train_ws_choices = ws_choices
+train_ws = ws_choice
 
 # prediction defaults
 data_predict = 'model-default-1y-test.tsv'        # can be removed later?
 
 # test defaults
-test_data = 'model-default-1y-test.tsv'             # can be removed later?
-test_data_select_query = train_data_select_query    # same as for train - differs only in the time range
-test_time_range = '2019-04-15 -- 2019-05-15'
+test_data = 'data_test.tsv'                         # can be removed later? TODO: we first need to support datapool in the DEEPaaS web interface (@stevo)
+test_data_select_query = data_select_query          # same as for train - differs only in the time range
+test_time_range = '2019-04-14 -- 2019-05-14'
 test_time_range_excluded = ''
+
+# Data transformation defaults
+interpolate = False
+
+# common defaults
+model_name_all = list_dir(app_models, '*.zip')
+model_name = 'model-default'
+
+# Evaluation metrics on real values
+eval_metrics = ['SMAPE', 'R2', 'COSINE']    # 'MAPE', 'RMSE'
+eval_filename = 'eval.tsv'
 
 # Plotting
 plot = False
+plot_dir = app_data_plot
 plot_filename = 'plot_data.png'
 fig_size_x = 25                             # max 2^16 pixels = 650 inch
 fig_size_y = 4
@@ -231,9 +261,24 @@ Use following formats in the list:
             'help': '',
             'required': False
         },
+        'stacked_blocks': {
+            'default': stacked_blocks,
+            'help': '',
+            'required': False
+        },
         'batch_size': {
             'default': batch_size,
             'help': '',
+            'required': False
+        },
+        'batch_normalization': {
+            'default': batch_normalization,
+            'help': 'seq2seqLSTM models only',
+            'required': False
+        },
+        'dropout_rate': {
+            'default': dropout_rate,
+            'help': 'seq2seqLSTM models only',
             'required': False
         }
     }

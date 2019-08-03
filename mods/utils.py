@@ -75,7 +75,7 @@ def read_data(data_filename):
 
     # Data: pandas dataframe to numpy array
     data = df.values.astype('float32')
-    print('read_data: ', data_filename, data.dtype, cfg.multivariate)
+    print('read_data: ', data_filename, data.dtype)
     return data
 
 
@@ -571,6 +571,16 @@ def datapool_read(
         # rename columns
         rename_rule = {x[0]: x[1] for x in ds['cols'] if len(x) == 2}
         df_protocol = df_protocol.rename(index=str, columns=rename_rule)
+
+        # convert units:
+        # from B to kB, MB, GB use _kB, MB, GB
+        for col in df_protocol.columns:
+            if col.lower().endswith('_kb'):
+                df_protocol[col] = df_protocol[col].div(1024).astype(int)
+            elif col.lower().endswith('_mb'):
+                df_protocol[col] = df_protocol[col].div(1048576).astype(int)
+            elif col.lower().endswith('_gb'):
+                df_protocol[col] = df_protocol[col].div(1073741824).astype(int)
 
         if df_main is None:
             df_main = df_protocol
