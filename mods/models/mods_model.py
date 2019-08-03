@@ -68,6 +68,7 @@ class mods_model:
     __MULTIVARIATE = 'multivariate'
     __SEQUENCE_LEN = 'sequence_len'
     __MODEL_DELTA = 'model_delta'
+    __INTERPOLATE = 'interpolate'
     __MODEL_TYPE = 'model_type'
     __EPOCHS = 'epochs'
     __EPOCHS_PATIENCE = 'epochs_patience'
@@ -87,8 +88,6 @@ class mods_model:
     __SKIPFOOTER = 'skipfooter'
     __ENGINE = 'engine'
     __USECOLS = 'usecols'
-    # metrics
-    __TRAINING_TIME = 'training_time'
 
     def __init__(self, name):
         self.name = name
@@ -289,6 +288,7 @@ class mods_model:
                 mods_model.__FILE: 'model.h5',
                 mods_model.__SEQUENCE_LEN: cfg.sequence_len,
                 mods_model.__MODEL_DELTA: cfg.model_delta,
+                mods_model.__INTERPOLATE: cfg.interpolate,
                 mods_model.__MODEL_TYPE: cfg.model_type,
                 mods_model.__EPOCHS: cfg.num_epochs,
                 mods_model.__EPOCHS_PATIENCE: cfg.epochs_patience,
@@ -325,6 +325,12 @@ class mods_model:
 
     def isdelta(self):
         return self.cfg_model()[mods_model.__MODEL_DELTA]
+
+    def set_interpolate(self, interpolate):
+        self.cfg_model()[mods_model.__INTERPOLATE] = interpolate
+
+    def get_interpolate(self):
+        return self.cfg_model()[mods_model.__INTERPOLATE]
 
     def set_model_type(self, model_type):
         self.cfg_model()[mods_model.__MODEL_TYPE] = model_type
@@ -409,17 +415,12 @@ class mods_model:
     def get_metrics(self):
         return self.__metrics
 
-    def set_data_select_query(self, data_select_query):
-        self.cfg_model()[self.__DATA_SELECT_QUERY] = data_select_query
-
-    def get_data_select_query(self):
-        return self.cfg_model()[self.__DATA_SELECT_QUERY]
-
     def train(
             self,
             df_train,
             sequence_len=cfg.sequence_len,
             model_delta=cfg.model_delta,
+            interpolate=cfg.interpolate,
             model_type=cfg.model_type,
             num_epochs=cfg.num_epochs,
             epochs_patience=cfg.epochs_patience,
@@ -442,6 +443,11 @@ class mods_model:
             model_delta = self.isdelta()
         else:
             self.set_model_delta(model_delta)
+
+        if interpolate is None:
+            interpolate = self.get_interpolate()
+        else:
+            self.set_interpolate(interpolate)
 
         if model_type is None:
             model_type = self.get_model_type()
@@ -596,7 +602,8 @@ class mods_model:
         df_train.replace('None', 0, inplace=True)
 
         # Add missing values
-        df_train.interpolate(inplace=True)
+        if self.get_interpolate():
+            df_train.interpolate(inplace=True)
 
         # Data transformation
         # df_train = df_train.values.astype('float32')
@@ -691,6 +698,10 @@ class mods_model:
 
         utl.dbg_df(df, self.name, 'original', print=DEBUG, save=DEBUG)
 
+        if self.get_interpolate():
+            df = df.interpolate()
+            utl.dbg_df(df, self.name, 'interpolated', print=DEBUG, save=DEBUG)
+
         trans = self.transform(df)
         utl.dbg_df(trans, self.name, 'transformed', print=DEBUG, save=DEBUG)
 
@@ -745,9 +756,7 @@ class mods_model:
                     if len(kwargs['header']) == 1:
                         kwargs['header'] = kwargs['header'][0]
             # print('HEADER: %s' % kwargs['pd_header'])
-        if kwargs is None:
-            kwargs = {}
-        kwargs['sep'] = '\t'
+
         df = pd.read_csv(*args, **kwargs)
         return df
 
@@ -759,9 +768,11 @@ class mods_model:
         pass
 
     def eval(self, df):
-        interpol = df.interpolate()
-        interpol = interpol.values.astype('float32')
-        # print('interpolated:\n%s' % interpol)
+        interpol = df
+        if self.get_interpolate():
+            interpol = df.interpolate()
+            interpol = interpol.values.astype('float32')
+            # print('interpolated:\n%s' % interpol)
 
         trans = self.transform(interpol)
         # print('transformed:\n%s' % transf)

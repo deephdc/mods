@@ -79,6 +79,40 @@ def read_data(data_filename):
     return data
 
 
+# TODO: delete, dead code
+# @giang: get X from TimeseriesGenerator data
+def getX(tsg_data):
+    X = list()
+    for x, y in tsg_data:
+        X.append(x)
+    return np.array(X)
+
+
+# TODO: delete, dead code
+# @giang: get Y from TimeseriesGenerator data
+def getY(tsg_data):
+    Y = list()
+    for x, y in tsg_data:
+        Y.append(y)
+    return np.array(Y)
+
+
+# TODO: delete, dead code
+# @giang: get XY from TimeseriesGenerator data
+def getXY(tsg_data):
+    X, Y = list(), list()
+    for x, y in tsg_data:
+        X.append(x)
+        Y.append(y)
+    return np.array(X), np.array(Y)
+
+
+# TODO: delete, dead code
+# @giang: first order differential d(y)/d(t)=f(y,t)=y' for numpy array
+def delta_timeseries(arr):
+    return arr[1:] - arr[:-1]
+
+
 # @giang: RMSE for numpy array
 def rmse(a, b):
     score = []
@@ -139,36 +173,8 @@ def smape(y_true, y_pred):
 
 ##### @giang auxiliary - BEGIN - code in this block can be removed later #####
 
-# @giang: get X from TimeseriesGenerator data
-def getX(tsg_data):
-    X = list()
-    for x, y in tsg_data:
-        X.append(x)
-    return np.array(X)
-
-
-# @giang: get Y from TimeseriesGenerator data
-def getY(tsg_data):
-    Y = list()
-    for x, y in tsg_data:
-        Y.append(y)
-    return np.array(Y)
-
-
-# @giang: get XY from TimeseriesGenerator data
-def getXY(tsg_data):
-    X, Y = list(), list()
-    for x, y in tsg_data:
-        X.append(x)
-        Y.append(y)
-    return np.array(X), np.array(Y)
-
-
-# @giang: first order differential d(y)/d(t)=f(y,t)=y' for numpy array
-def delta_timeseries(arr):
-    return arr[1:] - arr[:-1]
-
-# @giang 
+# TODO: delete, dead code
+# @giang
 def create_data_from_datapool(data_filename,
                               data_begin,
                               data_end,
