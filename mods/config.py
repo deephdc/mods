@@ -67,13 +67,6 @@ app_data_pool_cache = BASE_DIR + '/data/cache/datapool/'
 # Generic settings
 time_range_inclusive = True                 # True: <beg, end>; False: <beg, end)
 
-# pandas defaults
-pd_sep = '\t'                               # ',' for csv
-pd_skiprows = 0
-pd_skipfooter = 0
-pd_engine = 'python'
-pd_header = 0
-
 # Datapool defaults
 app_data_pool = app_data_features + 'w01h-s10m/'        # 'w10m-s01m/'
 data_pool_caching = True
@@ -126,7 +119,7 @@ train_ws_choices = ws_choices
 train_ws = ws_choice
 
 # prediction defaults
-data_predict = 'sample-w1h-s10m.tsv'        # can be removed later?
+data_predict = 'model-default-1y-test.tsv'        # can be removed later?
 
 # test defaults
 test_data = 'data_test.tsv'                         # can be removed later? TODO: we first need to support datapool in the DEEPaaS web interface (@stevo)
@@ -159,14 +152,7 @@ timezone = 3600
 
 
 def set_common_args():
-    common_args = {
-        'bootstrap_data': {
-            'default': True,
-            'choices': [True, False],
-            'help': 'Download data from remote datastore',
-            'required': False
-        }
-    }
+    common_args = {}
     return common_args
 
 
@@ -303,7 +289,7 @@ Use following formats in the list:
 def set_predict_args():
     predict_args = {
         'model_name': {
-            'default': model_name,
+            'default': model_name + '.zip',
             'choices': model_name_all,
             'help': 'Name of the model used for prediction',
             'type': str,
@@ -312,6 +298,25 @@ def set_predict_args():
         'batch_size': {
             'default': batch_size_test,
             'help': '',
+            'required': False
+        },
+        'test_time_range': {
+            'default': test_time_range,
+            'help': '<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]&nbsp;<b>--</b>&nbsp;<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]',
+            'type': str,
+            'required': False
+        },
+        'test_time_ranges_excluded': {
+            'default': test_time_range_excluded,
+            'help': """\
+A comma-separated list of time and time ranges to be excluded.
+
+Use following formats in the list:
+<ul>
+    <li><font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]</li>
+    <li><font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]&nbsp;<b>--</b>&nbsp;<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]</li>
+</ul>""",
+            'type': str,
             'required': False
         }
     }
