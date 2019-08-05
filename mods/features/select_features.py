@@ -27,6 +27,7 @@ import datetime
 import numpy as np
 import pandas as pd
 import sympy
+import statsmodels.api as sm
 
 from random import random
 from pandas.plotting import autocorrelation_plot
@@ -55,7 +56,7 @@ def test_linearity(filename):
     return
 
 
-# generate random walk serie for testing ADF
+# generate random walk series for testing ADF
 def gen_random_walk(n=1000, plot=False):
     np.random.seed(1)
     y = []
@@ -131,7 +132,7 @@ def test_mir(fn_in, fn_out='select_features_mir.tsv'):
             print(n, col, col_names[col])
 
             y = data[:, col]
-            mir = mutual_info_regression(X, y)
+            mir = mutual_info_regression(X, y, n_neighbors=7)
             mir /= np.max(mir)
 
             line = str(col) + '\t' + '\t'.join([str(format(x, '.3f')) for x in mir.tolist()]) + '\t' + col_names[col]
@@ -145,6 +146,29 @@ def test_mir(fn_in, fn_out='select_features_mir.tsv'):
             # print("f_score: \t", f_test)
     return
 
+# Autocorrelation and partial autocorrelation
+# https://stats.stackexchange.com/questions/81754/understanding-this-acf-output
+def test_autocorrelation(filename, seq_lags):
+    print('\ntest_autocorrelation:')
+
+    df = utl.create_df(filename)
+    for col in list(df):
+        print(col)
+        ts_data = df[col]
+        plt.plot(ts_data)
+        plt.show()
+
+        # autocorrelation
+        print(sm.graphics.tsa.acf(ts_data, nlags=seq_lags))
+        sm.graphics.tsa.plot_acf(ts_data, lags=seq_lags)
+        plt.show()
+
+        # partial autocorrelation
+        print(sm.graphics.tsa.acf(ts_data, nlags=seq_lags))
+        sm.graphics.tsa.plot_pacf(ts_data, lags=seq_lags)
+        plt.show()
+    return
+
 
 if __name__ == "__main__":
 #    print(cfg.BASE_DIR)
@@ -154,8 +178,9 @@ if __name__ == "__main__":
 
     fn = cfg.app_data + cfg.data_filename_train
     # test_linearity(fn)
+    test_autocorrelation(fn, cfg.sequence_len)
     # test_adf(fn)
-    test_mir(fn)
+    # test_mir(fn)
 
     # runtime report
     print('\nRuntime =', datetime.datetime.now() - timer_start)
