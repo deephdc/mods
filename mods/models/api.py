@@ -102,10 +102,10 @@ def predict_file(*args, **kwargs):
             model_name = yaml.safe_load(arg.model_name)
             data_file = yaml.safe_load(arg.file)
 
-            usecols = [utl.parse_int_or_str(col) for col in yaml.safe_load(arg.pd_usecols).split(',')]
-            skiprows = yaml.safe_load(arg.pd_skiprows)
-            skipfooter = yaml.safe_load(arg.pd_skipfooter)
-            header = yaml.safe_load(arg.pd_header)
+            sep = cfg.pd_sep
+            skiprows = cfg.pd_skiprows
+            skipfooter = cfg.pd_skipfooter
+            header = cfg.pd_header
 
             # support full paths for command line calls
             models_dir = cfg.app_models
@@ -133,8 +133,7 @@ def predict_file(*args, **kwargs):
 
             df_data = m.read_file_or_buffer(
                 data_file,
-                usecols=usecols,
-                sep='\t',
+                sep=sep,
                 skiprows=skiprows,
                 skipfooter=skipfooter,
                 engine='python',
@@ -150,7 +149,6 @@ def predict_file(*args, **kwargs):
                 'data': data_file,
                 'steps_ahead': m.get_steps_ahead(),
                 'batch_size': m.get_batch_size(),
-                'usecols': usecols,
                 'evaluation': utl.compute_metrics(
                     df_data[m.get_sequence_len():-m.get_steps_ahead()],
                     predictions[:-m.get_steps_ahead()],
