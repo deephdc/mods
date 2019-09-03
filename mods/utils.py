@@ -541,12 +541,12 @@ def datapool_read(
                 if not f.startswith(ws):
                     continue
 
+                year = int(rematch.group('year'))
+                month = int(rematch.group('month'))
+                day = int(rematch.group('day'))
+
                 # exclusion filter
-                dpt = datetime.datetime(
-                    int(rematch.group('year')),
-                    int(rematch.group('month')),
-                    int(rematch.group('day'))
-                )
+                dpt = datetime.datetime(year, month, day)
 
                 data_file = os.path.join(root, f)
                 if exclude(dpt, excluded) or not is_within_range(dpt, time_range):
@@ -564,6 +564,16 @@ def datapool_read(
                     skipfooter=0,
                     engine='python',
                 )
+
+                if cfg.fill_missing_rows:
+                    # fill missing rows for the loaded day
+                    range_beg = '%d-%02d-%2d' % (year, month, day)
+                    range_end = str(expand_to_datetime(year, month, day) + relativedelta(days=+1))
+                    df = fill_missing_rows(
+                        df,
+                        range_beg=range_beg,
+                        range_end=range_end
+                    )
 
                 if df_protocol is None:
                     df_protocol = df

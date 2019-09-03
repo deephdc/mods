@@ -138,7 +138,7 @@ def predict_file(*args, **kwargs):
                 skipfooter=skipfooter,
                 engine='python',
                 header=header,
-                fill_missing_rows=True
+                fill_missing_rows=cfg.fill_missing_rows
             )
 
             predictions = m.predict(df_data)
@@ -224,7 +224,7 @@ def predict_data(*args, **kwargs):
                 skipfooter=skipfooter,
                 engine='python',
                 header=header,
-                fill_missing_rows=True
+                fill_missing_rows=cfg.fill_missing_rows
             )
 
             predictions = m.predict(df_data)

@@ -140,6 +140,7 @@ interpolate = False
 # common defaults
 model_name_all = list_dir(app_models, '*.zip')
 model_name = 'model-default'
+fill_missing_rows = True                        # fills missing rows in time series data
 
 # Evaluation metrics on real values
 eval_metrics = ['SMAPE', 'R2', 'COSINE']    # 'MAPE', 'RMSE'
