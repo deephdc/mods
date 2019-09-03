@@ -676,6 +676,7 @@ def fix_missing_num_values(df, cols=None):
         df.interpolate(inplace=True)
     return df
 
+
 # @stevo
 def estimate_window_spec(df):
     tmpdf = df[['window_start', 'window_end']]
@@ -703,31 +704,33 @@ def fill_missing_rows(df, range_beg=None, range_end=None):
     pandas.DataFrame
         DataFrame filled with missing rows
     """
-    if not('window_start' in df.columns and 'window_end'):
+    if not ('window_start' in df.columns and 'window_end'):
         return df
-	# convert cols to datetime
-	df = df.apply(lambda x: pd.to_datetime(x) if x.name in ['window_start', 'window_end'] else x)
-	# estimate window specification
-	window_duration, slide_duration = estimate_window_spec(df)
-	tz = df[:1]['window_start'].iloc[0].tzinfo
-	if range_beg:
-		range_beg=pd.Timestamp(range_beg, tzinfo=tz)
-		if range_beg < df[:1]['window_start'].iloc[0]:
-			df = df.shift()
-			df.loc[0, 'window_start'] = range_beg
-			df.loc[0, 'window_end'] = range_beg + window_duration
-	if range_end:
-		range_end=pd.Timestamp(range_end, tzinfo=tz)
-		if range_end > df[-1:]['window_end'].iloc[0]:
-			df = df.append(pd.Series(), ignore_index=True)
-			df.loc[df.index[-1], 'window_start'] = range_end - window_duration
-			df.loc[df.index[-1], 'window_end'] = range_end
-	# set df index
-	df = df.set_index('window_start')
-	# fill missing rows using slide_duration as the frequency
-	df = df.asfreq(slide_duration)
-	# reset index to use window_start as a column
-	df = df.reset_index(level=0)
-	# compute window_end values for the newly added rows (not necessary at the moment)
-	df['window_end'] = df['window_start'] + window_duration
-	return df
+    # convert cols to datetime
+    df = df.apply(lambda x: pd.to_datetime(x) if x.name in ['window_start', 'window_end'] else x)
+    # estimate window specification
+    window_duration, slide_duration = estimate_window_spec(df)
+    tz = df[:1]['window_start'].iloc[0].tzinfo
+    if range_beg:
+        range_beg = pd.Timestamp(range_beg, tzinfo=tz)
+        if range_beg < df[:1]['window_start'].iloc[0]:
+            # add the first row for the specified range to fill from
+            df = df.shift()
+            df.loc[0, 'window_start'] = range_beg
+            df.loc[0, 'window_end'] = range_beg + window_duration
+    if range_end:
+        range_end = pd.Timestamp(range_end, tzinfo=tz)
+        if range_end > df[-1:]['window_end'].iloc[0]:
+            # add the last row for the specified range to fill to
+            df = df.append(pd.Series(), ignore_index=True)
+            df.loc[df.index[-1], 'window_start'] = range_end - window_duration
+            df.loc[df.index[-1], 'window_end'] = range_end
+    # set df index
+    df = df.set_index('window_start')
+    # fill missing rows using slide_duration as the frequency
+    df = df.asfreq(slide_duration)
+    # reset index to use window_start as a column
+    df = df.reset_index(level=0)
+    # compute window_end values for the newly added rows (not necessary at the moment)
+    df['window_end'] = df['window_start'] + window_duration
+    return df
