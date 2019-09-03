@@ -565,7 +565,7 @@ def datapool_read(
                     engine='python',
                 )
 
-                if cfg.fill_missing_rows:
+                if cfg.fill_missing_rows_in_timeseries:
                     # fill missing rows for the loaded day
                     range_beg = '%d-%02d-%2d' % (year, month, day)
                     range_end = str(expand_to_datetime(year, month, day) + relativedelta(days=+1))
