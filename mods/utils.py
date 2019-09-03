@@ -684,9 +684,9 @@ def fill_missing_rows(df, range_beg=None, range_end=None):
     df : pandas.DataFrame
         Data
     range_beg : str
-        Time range begin in 'YYYY-MM-DD hh:mm:ss.sss' format (default is None)
+        Time range begin in 'YYYY-MM-DD hh:mm:ss' format (default is None)
     range_end : str
-        Time range end in 'YYYY-MM-DD hh:mm:ss.sss' format (default is None)
+        Time range end in 'YYYY-MM-DD hh:mm:ss' format (default is None)
 
     Returns
     -------
