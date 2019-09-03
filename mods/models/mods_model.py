@@ -754,7 +754,7 @@ class mods_model:
     def read_file_or_buffer(self, *args, **kwargs):
         if kwargs is not None:
             kwargs = {k: v for k, v in kwargs.items() if k in [
-                'usecols', 'sep', 'skiprows', 'skipfooter', 'engine', 'header'
+                'usecols', 'sep', 'skiprows', 'skipfooter', 'engine', 'header', 'fill_missing_rows'
             ]}
 
             if 'usecols' in kwargs:
@@ -775,11 +775,18 @@ class mods_model:
             # print('HEADER: %s' % kwargs['pd_header'])
 
         df = pd.read_csv(*args, **kwargs)
+
+        if kwargs is not None \
+                and 'fill_missing_rows' in kwargs\
+                and kwargs['fill_missing_rows'] is True:
+            df = utl.fill_missing_rows(df)
+
         return df
 
-    def predict_file_or_buffer(self, *args, **kwargs):
-        df = self.read_file_or_buffer(*args, **kwargs)
-        return self.predict(df)
+    # not used:
+    # def predict_file_or_buffer(self, *args, **kwargs):
+    #     df = self.read_file_or_buffer(*args, **kwargs)
+    #     return self.predict(df)
 
     def predict_url(self, url):
         pass

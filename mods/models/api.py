@@ -137,7 +137,8 @@ def predict_file(*args, **kwargs):
                 skiprows=skiprows,
                 skipfooter=skipfooter,
                 engine='python',
-                header=header
+                header=header,
+                fill_missing_rows=True
             )
 
             predictions = m.predict(df_data)
@@ -222,7 +223,8 @@ def predict_data(*args, **kwargs):
                 skiprows=skiprows,
                 skipfooter=skipfooter,
                 engine='python',
-                header=header
+                header=header,
+                fill_missing_rows=True
             )
 
             predictions = m.predict(df_data)
