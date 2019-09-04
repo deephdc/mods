@@ -750,26 +750,22 @@ class mods_model:
 
         return pred_invtrans
 
-    # This function wraps pandas._read_csv(), reads the csv data and calls predict() on them
+    # This function wraps pandas._read_csv() and reads the csv data
     def read_file_or_buffer(self, *args, **kwargs):
-
         try:
             fill_missing_rows_in_timeseries = kwargs['fill_missing_rows_in_timeseries']
         except Exception:
             fill_missing_rows_in_timeseries = False
-
         if kwargs is not None:
             kwargs = {k: v for k, v in kwargs.items() if k in [
                 'usecols', 'sep', 'skiprows', 'skipfooter', 'engine', 'header'
             ]}
-
             if 'usecols' in kwargs:
                 if isinstance(kwargs['usecols'], str):
                     kwargs['usecols'] = [
                         utl.parse_int_or_str(col)
                         for col in kwargs['usecols'].split(',')
                     ]
-
             if 'header' in kwargs:
                 if isinstance(kwargs['header'], str):
                     kwargs['header'] = [
@@ -779,14 +775,12 @@ class mods_model:
                     if len(kwargs['header']) == 1:
                         kwargs['header'] = kwargs['header'][0]
             # print('HEADER: %s' % kwargs['pd_header'])
-
         df = pd.read_csv(*args, **kwargs)
-
         if fill_missing_rows_in_timeseries is True:
             df = utl.fill_missing_rows(df)
-
         return df
 
+    # TODO: delete
     # not used:
     # def predict_file_or_buffer(self, *args, **kwargs):
     #     df = self.read_file_or_buffer(*args, **kwargs)
