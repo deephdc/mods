@@ -680,9 +680,9 @@ def fix_missing_num_values(df, cols=None):
 # @stevo
 def estimate_window_spec(df):
     tmpdf = df[['window_start', 'window_end']]
-    window_duration = tmpdf['window_start'].diff()[1:].min()
+    slide_duration = tmpdf['window_start'].diff()[1:].min()
     row1 = tmpdf[:1]
-    slide_duration = row1.window_end[:1].iloc[0] - row1.window_start[:1].iloc[0]
+    window_duration = row1.window_end[:1].iloc[0] - row1.window_start[:1].iloc[0]
     return window_duration, slide_duration
 
 
@@ -706,6 +706,7 @@ def fill_missing_rows(df, range_beg=None, range_end=None):
     """
     if not ('window_start' in df.columns and 'window_end'):
         return df
+    numrows = len(df.index)
     # convert cols to datetime
     df = df.apply(lambda x: pd.to_datetime(x) if x.name in ['window_start', 'window_end'] else x)
     # estimate window specification
@@ -733,4 +734,7 @@ def fill_missing_rows(df, range_beg=None, range_end=None):
     df = df.reset_index(level=0)
     # compute window_end values for the newly added rows (not necessary at the moment)
     df['window_end'] = df['window_start'] + window_duration
+    newnumrows = len(df.index)
+    if newnumrows > numrows:
+        print('filled %d missing rows (was %d)' % (newnumrows - numrows, numrows))
     return df
