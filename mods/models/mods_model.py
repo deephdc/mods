@@ -752,9 +752,15 @@ class mods_model:
 
     # This function wraps pandas._read_csv(), reads the csv data and calls predict() on them
     def read_file_or_buffer(self, *args, **kwargs):
+
+        try:
+            fill_missing_rows_in_timeseries = kwargs['fill_missing_rows_in_timeseries']
+        except Exception:
+            fill_missing_rows_in_timeseries = False
+
         if kwargs is not None:
             kwargs = {k: v for k, v in kwargs.items() if k in [
-                'usecols', 'sep', 'skiprows', 'skipfooter', 'engine', 'header', 'fill_missing_rows_in_timeseries'
+                'usecols', 'sep', 'skiprows', 'skipfooter', 'engine', 'header'
             ]}
 
             if 'usecols' in kwargs:
@@ -776,9 +782,7 @@ class mods_model:
 
         df = pd.read_csv(*args, **kwargs)
 
-        if kwargs is not None \
-                and 'fill_missing_rows_in_timeseries' in kwargs \
-                and kwargs['fill_missing_rows_in_timeseries'] is True:
+        if fill_missing_rows_in_timeseries is True:
             df = utl.fill_missing_rows(df)
 
         return df
