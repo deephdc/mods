@@ -176,8 +176,7 @@ def predict_data(*args, **kwargs):
 
     if args:
         for arg in args:
-            message = {'status': 'ok', 'predictions': []}
-
+            message = {'status': 'internal error'}
             # prepare data
             if not data_prepared:
                 bootstrap_data = yaml.safe_load(arg.bootstrap_data)
@@ -189,9 +188,6 @@ def predict_data(*args, **kwargs):
                 model_name = yaml.safe_load(arg.model_name)
             except Exception:
                 model_name = cfg.model_name
-
-            file_storage = arg.files
-            buffer = io.BytesIO(file_storage.read())
 
             sep = cfg.pd_sep
             skiprows = cfg.pd_skiprows
@@ -217,33 +213,37 @@ def predict_data(*args, **kwargs):
             batch_size = yaml.safe_load(arg.batch_size)
             m.set_batch_size(batch_size)
 
-            df_data = m.read_file_or_buffer(
-                buffer,
-                sep=sep,
-                skiprows=skiprows,
-                skipfooter=skipfooter,
-                engine='python',
-                header=header,
-                fill_missing_rows_in_timeseries=cfg.fill_missing_rows_in_timeseries
-            )
-
-            predictions = m.predict(df_data)
-
             message = {
-                'status': 'ok',
                 'dir_models': models_dir,
                 'model_name': model_name,
-                'data': file_storage.filename,
                 'steps_ahead': m.get_steps_ahead(),
                 'batch_size': m.get_batch_size(),
-                'evaluation': utl.compute_metrics(
-                    df_data[m.get_sequence_len():-m.get_steps_ahead()],
-                    predictions[:-m.get_steps_ahead()],
-                    m,
-                )
+                'results': {}
             }
 
-            message['predictions'] = predictions.tolist()
+            file_storages = arg.files
+            for file_storage in file_storages:
+                buffer = io.BytesIO(file_storage.read())
+                df_data = m.read_file_or_buffer(
+                    buffer,
+                    sep=sep,
+                    skiprows=skiprows,
+                    skipfooter=skipfooter,
+                    engine='python',
+                    header=header,
+                    fill_missing_rows_in_timeseries=cfg.fill_missing_rows_in_timeseries
+                )
+                predictions = m.predict(df_data)
+                message['results'][file_storage.filename] = {
+                    'evaluation': utl.compute_metrics(
+                        df_data[m.get_sequence_len():-m.get_steps_ahead()],
+                        predictions[:-m.get_steps_ahead()],
+                        m,
+                    ),
+                    'prediction': predictions.tolist()
+                }
+
+            message['status'] = 'ok',
 
     return message
 
