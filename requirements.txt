@@ -16,4 +16,5 @@ statsmodels
 scikit-learn
 matplotlib
 seaborn
+deepaas>=0.4.0
 pyyaml
