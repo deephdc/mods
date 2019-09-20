@@ -554,7 +554,7 @@ def train(args, **kwargs):
         'model_name': model_name,
         'steps_ahead': model.get_steps_ahead(),
         'batch_size': model.get_batch_size(),
-        'window_slide': window_slide,
+        'training_time': model.get_training_time(),
         'data_select_query': data_select_query,
         'train_time_range': utl.datetime2str(train_time_range),
         'train_time_range_excluded': utl.datetime2str(train_time_range_excluded),
