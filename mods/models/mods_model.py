@@ -667,8 +667,8 @@ class mods_model:
 
     def inverse_transform(self, original, pred_denorm):
         if self.isdelta():
-            seql = self.get_sequence_len()
-            y = original[seql:]
+            beg = self.get_sequence_len() - self.get_steps_ahead() + 1
+            y = original[beg:]
             utl.dbg_df(y, self.name, 'y.tsv', print=DEBUG, save=DEBUG)
             d = pred_denorm
             utl.dbg_df(d, self.name, 'd.tsv', print=DEBUG, save=DEBUG)
