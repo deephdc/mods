@@ -18,3 +18,4 @@ matplotlib
 seaborn
 deepaas>=0.5.1
 pyyaml
+joblib
