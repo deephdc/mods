@@ -32,27 +32,27 @@ from zipfile import ZipFile
 import keras
 import numpy as np
 import pandas as pd
-from keras import backend as K
-from keras.callbacks import EarlyStopping
-from keras.callbacks import ModelCheckpoint
-from keras.layers import BatchNormalization
-from keras.layers import Bidirectional
-from keras.layers import CuDNNGRU
-from keras.layers import CuDNNLSTM
-from keras.layers import Dense
-from keras.layers import Dropout
-from keras.layers import Flatten
-from keras.layers import Input
-from keras.layers import RepeatVector
-from keras.layers.convolutional import Conv1D
-from keras.layers.convolutional import MaxPooling1D
-from keras.layers.recurrent import GRU
-from keras.layers.recurrent import LSTM
-from keras.models import Model
-from keras.optimizers import Adam
-from keras.preprocessing.sequence import TimeseriesGenerator
+from tensorflow.python.keras import backend as K
+from tensorflow.python.keras.callbacks import EarlyStopping
+from tensorflow.python.keras.callbacks import ModelCheckpoint
+from tensorflow.python.keras.layers import BatchNormalization
+from tensorflow.python.keras.layers import Bidirectional
+from tensorflow.python.keras.layers import CuDNNGRU
+from tensorflow.python.keras.layers import CuDNNLSTM
+from tensorflow.python.keras.layers import Dense
+from tensorflow.python.keras.layers import Dropout
+from tensorflow.python.keras.layers import Flatten
+from tensorflow.python.keras.layers import Input
+from tensorflow.python.keras.layers import RepeatVector
+from tensorflow.python.keras.layers.convolutional import Conv1D
+from tensorflow.python.keras.layers.convolutional import MaxPooling1D
+from tensorflow.python.keras.layers.recurrent import GRU
+from tensorflow.python.keras.layers.recurrent import LSTM
+from tensorflow.python.keras.models import Model
+from tensorflow.python.keras.optimizers import Adam
+from tensorflow.python.keras.preprocessing.sequence import TimeseriesGenerator
 from keras_self_attention import SeqSelfAttention
-from sklearn.externals import joblib
+import joblib
 from sklearn.preprocessing import MinMaxScaler
 from tcn import TCN
 
