@@ -52,7 +52,7 @@ from keras.models import Model
 from keras.optimizers import Adam
 from keras.preprocessing.sequence import TimeseriesGenerator
 from keras_self_attention import SeqSelfAttention
-from sklearn.externals import joblib
+import joblib
 from sklearn.preprocessing import MinMaxScaler
 from tcn import TCN
 
