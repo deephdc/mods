@@ -90,11 +90,9 @@ data_pool_caching = True
 # !!! column names must be distinct (use tilde (~) to rename column; e.g., orig_col_name~new_col_name !!!
 # TODO: NaN problem: 'sip|internal_count_uid~sip_in;' +\
 data_select_query = \
-    'conn|internal_count_uid~conn_in|out_count_uid~conn_out;' +\
-    'dns|internal_distinct_query~dns_in_q;' +\
-    'http|in~http_in;' +\
-    'ssh|in~ssh_in;' +\
-    'ssl|in~ssl_in' +\
+    'conn|in_count_uid~conn_in|out_count_uid~conn_out;' +\
+    'dns|in_distinct_query~dns_in_distinct;' +\
+    'ssh|in~ssh_in' +\
     '#window_start,window_end'
 
 # Datapools: window-slide
@@ -107,11 +105,11 @@ model_delta = True                          # True --> better predictions, first
 sequence_len = 12                           # p in <6, 24> for w01h-s10m
 steps_ahead = 1                             # k in <1, 12> for w01h-s10m; k < p
 model_types = ['MLP', 'Conv1D', 'autoencoderMLP', 'LSTM', 'GRU', 'bidirectLSTM', 'seq2seqLSTM', 'stackedLSTM', 'attentionLSTM', 'TCN', 'stackedTCN']
-model_type = model_types[0]
+model_type = 'attentionLSTM'
 
 # Training defaults - rarely changed
 blocks = 12                                 # number of RNN blocks
-num_epochs = 50                             # number of training epochs
+num_epochs = 20                             # number of training epochs
 epochs_patience = 10                        # early stopping
 batch_size = 1                              # faster training --> to be tested later
 batch_size_test = 1                         # don't change
@@ -120,7 +118,12 @@ stacked_blocks = 3                          # 1 = no stack
 batch_normalization = False                 # no significant effect when used with ADAM
 dropout_rate = 1.0                          # range <0.5, 0.8>, 0.0=no outputs, 1.0=no dropout
 
-train_time_range = '2018-04-14 -- 2019-04-13'
+train_time_range = '2019-04-15 -- 2019-04-30'   # 2 weeks
+# train_time_range = '2019-04-01 -- 2019-04-30'   # 1 month
+# train_time_range = '2019-02-01 -- 2019-04-30'   # 3 months
+# train_time_range = '2018-11-01 -- 2019-04-30'   # 6 months - K20 experiments with k, p
+# train_time_range = '2018-08-01 -- 2019-04-30'   # 9 months
+# train_time_range = '2018-05-01 -- 2019-04-30'   # 1 year
 train_time_range_excluded = ''                  # example: '2019-01 -- 2019-02-15, 2018-12-24, 2018-10'
 train_ws_choices = ws_choices
 train_ws = ws_choice
@@ -129,9 +132,12 @@ train_ws = ws_choice
 data_predict = 'sample-w1h-s10m.tsv'        # can be removed later?
 
 # test defaults
-test_data = 'data_test.tsv'                         # can be removed later? TODO: we first need to support datapool in the DEEPaaS web interface (@stevo)
-test_data_select_query = data_select_query          # same as for train - differs only in the time range
-test_time_range = '2019-04-14 -- 2019-05-14'
+test_data = 'data_test.tsv'                     # can be removed later? TODO: we first need to support datapool in the DEEPaaS web interface (@stevo)
+test_data_select_query = data_select_query      # same as for train - differs only in the time range
+test_time_range = '2019-05-01 -- 2019-05-05'    # paper plot - 5 days
+# test_time_range = '2019-05-01 -- 2019-05-31'    # 1 month
+# test_time_range = '2019-05-01 -- 2019-06-30'    # 2 months for test
+# test_time_range = '2019-05-01 -- 2019-07-31'    # 3 months
 test_time_range_excluded = ''
 
 # Data transformation defaults
