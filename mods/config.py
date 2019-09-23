@@ -90,9 +90,9 @@ data_pool_caching = True
 # !!! column names must be distinct (use tilde (~) to rename column; e.g., orig_col_name~new_col_name !!!
 # TODO: NaN problem: 'sip|internal_count_uid~sip_in;' +\
 data_select_query = \
-    'conn|in_count_uid~in|out_count_uid~out;' +\
-    'dns|in_distinct_query~in_distinct;' +\
-    'ssh|in' +\
+    'conn|in_count_uid~conn_in|out_count_uid~conn_out;' +\
+    'dns|in_distinct_query~dns_in_distinct;' +\
+    'ssh|in~ssh_in' +\
     '#window_start,window_end'
 
 # Datapools: window-slide
