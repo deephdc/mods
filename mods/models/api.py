@@ -141,6 +141,8 @@ def predict_file(*args, **kwargs):
                 fill_missing_rows_in_timeseries=cfg.fill_missing_rows_in_timeseries
             )
 
+            df_data = utl.fix_missing_num_values(df_data)
+
             predictions = m.predict(df_data)
 
             message = {
@@ -233,6 +235,7 @@ def predict_data(*args, **kwargs):
                     header=header,
                     fill_missing_rows_in_timeseries=cfg.fill_missing_rows_in_timeseries
                 )
+                df_data = utl.fix_missing_num_values(df_data)
                 predictions = m.predict(df_data)
                 message['results'][file_storage.filename] = {
                     'evaluation': utl.compute_metrics(
