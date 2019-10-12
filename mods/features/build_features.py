@@ -10,5 +10,3 @@ but with different performance and scalability.
 @author: giangnguyen
 """
 
-# import project config.py
-import mods.config as cfg
