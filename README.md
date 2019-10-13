@@ -32,24 +32,25 @@ Project Organization
     │
     ├── data
     │   ├── features       <- datapools
-    │   ├── test           <- sample data for test (or prediction) 
+    │   ├── test           <- sample data for test or prediction 
     │   └── train          <- sample data for train
     │
-    ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
-    ├── docker             <- Directory for optional dockerfile(s)
-    ├── models             <- Trained models
+    ├── docs               <- Online documentation http://docs.deep-hybrid-datacloud.eu/en/latest/user/modules/mods.html 
+    ├── docker             <- Optional dockerfile(s)
+    ├── models             <- Trained models (e.g. defaull model)
     │
-    ├── mods    <- Source code for use in this project.
-    │   ├── __init__.py    <- Makes mods a Python module
+    ├── mods    <- Module source code for use in this project.
+    │   ├── __init__.py    <- Makes the module a Python module
     │   │
     │   ├── config.py      <- Module configuration file e.g. for hyper-parameter tuning
     │   ├── utils.py       <- Module utilization functions   
     │   │
     │   ├── dataset        <- Data Preprocessing module
-    │   │   └── make_dataset.py    <- (work-in-progress, documentation later)   
+    │   │   └── make_dataset.py    <- sensitive data processing to produce ML/DL data    
     │   │
-    │   ├── features       <- Scripts to turn raw data into features for modeling
-    │   │   └── select_features.py <- various tests for feature testing and feature selection
+    │   ├── features       <- Data Preprocessing module
+    │   │   ├── build_features.py  <- sensitive data processing to produce ML/DL data 
+    │   │   └── select_features.py <- various tests for feature selection
     │   │
     │   ├── models         <- Scripts to train models and then use trained models to make prediction
     │   │   ├── api.py             <- module API to leverage the DEEPaaS API
@@ -66,12 +67,16 @@ Project Organization
     ├── notebooks          <- Jupyter notebooks
     ├── references         <- Explanatory materials such as articles, books, flyers, posters, presentations.
     ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-    │   └── figures        <- Generated graphics and figures to be used in reporting
+    │   └── figures                <- Generated graphics and figures to be used in reporting
+    │
+    ├── .rclone.conf       <- Default hybrid data storage setting
+    ├── Jenkinsfile        <- CI/CD configuration
     │
     ├── requirements.txt   <- The requirements file for reproducing environment, e.g. `pip freeze > requirements.txt`
     │
-    ├── setup.cfg          <- Metadata definition, DEEPaaS entry point definition
-    ├── setup.py           <- makes project pip installable (pip install -e .) so the module can be imported
+    ├── setup.cfg          <- Metadata and DEEPaaS entry point definition
+    ├── setup.py           <- Makes project pip installable (pip install -e .) so the module can be imported
+    │
     └── tox.ini            <- tox file with settings for running tox; see tox.testrun.org
 
 
@@ -85,13 +90,17 @@ Project Organization
 
 #### 1.1 Prepare the dataset 
 
-#### 1.2 Build features
+#### 1.2 Feature extraction
+
+#### 1.3 Feature selection
 
 ### 2. Train and test DL models
 
 #### 2.1 Set the configuration 
 
-#### 2.1 Training
+#### 2.2 Training
+
+#### 2.3 Model selection
 
 ### 3. Prediction throught DEEPaaS API
 
