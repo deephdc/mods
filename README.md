@@ -19,7 +19,6 @@ pip install -e .
 **Requirements:**
  
  - This project has been tested in Ubuntu 18.04 with Python 3.6. Further package requirements are described in the `requirements.txt` file.
-- (TBD later)
 
 
 Project Organization
@@ -31,10 +30,10 @@ Project Organization
     ├── checkpoints <- Directory for checkpoint storing during training process 
     │
     ├── data        <- Data directory
-    │   ├── features       <- datapools
+    │   ├── features       <- datapools for model training
     │   ├── test           <- test data 
     │   │   └── sample-test-w01h-s10m.tsv  <- sample data for prediction that works with the default model
-    │   └── train          <- train data
+    │   └── train          <- (optional) train data in the same format as test data
     │
     ├── docs        <- Online documentation http://docs.deep-hybrid-datacloud.eu/en/latest/user/modules/mods.html 
     │
