@@ -6,7 +6,8 @@ DEEP Open Catalogue: Massive Online Data Streams (MODS)
 
 DEEP Open Catalog entry: [DEEP Open Catalog](https://marketplace.deep-hybrid-datacloud.eu/modules/deep-oc-massive-online-data-streams.html)
 
-**Project:** This work is part of the [DEEP Hybrid-DataCloud](https://deep-hybrid-datacloud.eu/) project that has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 777435.
+**Project:** 
+This work is part of the [DEEP Hybrid-DataCloud](https://deep-hybrid-datacloud.eu/) project that has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 777435.
 
 To start using this framework run:
 
@@ -17,8 +18,8 @@ pip install -e .
 ```
 
 **Requirements:**
- 
- - This project has been tested in Ubuntu 18.04 with Python 3.6. Further package requirements are described in the `requirements.txt` file.
+ - This project has been tested in Ubuntu 18.04 with Python 3.6. 
+ - Further package requirements are described in the `requirements.txt` file.
 
 
 Project Organization
@@ -30,15 +31,16 @@ Project Organization
     ├── checkpoints <- Directory for checkpoint storing during training process 
     │
     ├── data        <- Data directory
-    │   ├── features       <- datapools for model training
+    │   ├── features       <- datapool directory for model training
+    │   │   └── datapools will be publicly available soon
     │   ├── test           <- test data 
     │   │   └── sample-test-w01h-s10m.tsv  <- sample data for prediction that works with the default model
-    │   └── train          <- (optional) train data in the same format as test data
+    │   └── train          <- (optional) train data
+    │       └── sample train data in the same format as test data
     │
     ├── docs        <- Online documentation http://docs.deep-hybrid-datacloud.eu/en/latest/user/modules/mods.html 
     │
     ├── docker      <- Official docker container https://github.com/deephdc/DEEP-OC-mods
-    │   └── (optional/testing) dockerfile(s)
     │
     ├── models      <- Trained models
     │   └── model_default.zip              <- default model
@@ -88,27 +90,20 @@ Project Organization
 <p><small>Project based on the <a target="_blank" href="https://github.com/indigo-dc/cookiecutter-data-science">DEEP DS template</a>. #cookiecutter #datascience</small></p>
 
 ## Workflow
+### Data Preprocessing module
+1. Prepare the dataset 
+2. Feature extraction
+3. Feature selection
 
-### 1. Data preprocessing
+### Deep Learning module (MODS)
+1. Set the configuration 
+2. Model training
+3. Model optimization
 
-#### 1.1 Prepare the dataset 
+### Prediction throught DEEPaaS API
 
-#### 1.2 Feature extraction
-
-#### 1.3 Feature selection
-
-### 2. Train and test DL models
-
-#### 2.1 Set the configuration 
-
-#### 2.2 Training
-
-#### 2.3 Model selection
-
-### 3. Prediction throught DEEPaaS API
-
-### 4. DEEP as a Service: [MODS container](https://github.com/deephdc/DEEP-OC-mods)
-
-### 5. Docker Hub: [MODS container image](https://hub.docker.com/r/deephdc/deep-oc-mods) in Docker Hub [`deephdc`](https://hub.docker.com/u/deephdc/) organization
+### DEEP as a Service
+1. [MODS container](https://github.com/deephdc/DEEP-OC-mods) in [Docker Hub: MODS container image](https://hub.docker.com/r/deephdc/deep-oc-mods) as a part of [`deephdc`](https://hub.docker.com/u/deephdc/) organization
+2. [MODS entry](https://marketplace.deep-hybrid-datacloud.eu/modules/deep-oc-massive-online-data-streams.html) in [DEEP Open Catalog](https://marketplace.deep-hybrid-datacloud.eu/) as an [Use Case of DEEP-HybridDataCloud project](https://deep-hybrid-datacloud.eu/use-cases/)
 
 <img src="https://deep-hybrid-datacloud.eu/wp-content/uploads/sites/2/2018/04/datastreams.jpeg" width="600">
