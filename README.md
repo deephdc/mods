@@ -32,7 +32,7 @@ Project Organization
     │
     ├── data        <- Data directory
     │   ├── features       <- datapool directory for model training
-    │   │   └── datapools will be publicly available soon
+    │   │   └── datapools
     │   ├── test           <- test data 
     │   │   └── sample-test-w01h-s10m.tsv  <- sample data for prediction that works with the default model
     │   └── train          <- (optional) train data
@@ -91,16 +91,16 @@ Project Organization
 
 ## Workflow
 ### Data Preprocessing module
-1. Prepare the dataset 
+1. Prepare datapools for ML/DL 
 2. Feature extraction
 3. Feature selection
 
 ### Deep Learning module (MODS)
 1. Set the configuration 
 2. Model training
-3. Model optimization
+3. Model testing
 
-### Prediction throught DEEPaaS API
+### Prediction and train throught DEEPaaS API
 
 ### DEEP as a Service
 1. [MODS container](https://github.com/deephdc/DEEP-OC-mods) in [Docker Hub: MODS container image](https://hub.docker.com/r/deephdc/deep-oc-mods) as a part of [`deephdc`](https://hub.docker.com/u/deephdc/) organization
