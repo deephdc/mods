@@ -27,47 +27,51 @@ Project Organization
 
     ├── LICENSE
     ├── README.md          <- The top-level README for developers using this project.
+    │
+    ├── checkpoints        <- Directory for checkpoint storing during train process 
+    │
     ├── data
-    │   └── raw            <- The original, immutable data dump.
+    │   ├── features       <- datapools
+    │   ├── test           <- sample data for test (or prediction) 
+    │   └── train          <- sample data for train
     │
     ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
+    ├── docker             <- Directory for optional dockerfile(s)
+    ├── models             <- Trained models
     │
-    ├── docker             <- Directory for Dockerfile(s)
-    │
-    ├── models             <- Trained and serialized models, model predictions, or model summaries
-    │
-    ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-    │                         the creator's initials (if many user development),
-    │                         and a short `_` delimited description, e.g.
-    │                         `1.0-jqp-initial_data_exploration.ipynb`.
-    │
-    ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
-    │
-    ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-    │   └── figures        <- Generated graphics and figures to be used in reporting
-    │
-    ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-    │                         generated with `pip freeze > requirements.txt`
-    │
-    ├── setup.py           <- makes project pip installable (pip install -e .) so mods can be imported
     ├── mods    <- Source code for use in this project.
     │   ├── __init__.py    <- Makes mods a Python module
     │   │
-    │   ├── dataset        <- Scripts to download or generate data
-    │   │   └── make_dataset.py
+    │   ├── config.py      <- Module configuration file e.g. for hyper-parameter tuning
+    │   ├── utils.py       <- Module utilization functions   
+    │   │
+    │   ├── dataset        <- Data Preprocessing module
+    │   │   └── make_dataset.py    <- (work-in-progress, documentation later)   
     │   │
     │   ├── features       <- Scripts to turn raw data into features for modeling
-    │   │   └── build_features.py
+    │   │   └── select_features.py <- various tests for feature testing and feature selection
     │   │
-    │   ├── models         <- Scripts to train models and then use trained models to make
-    │   │   │                 predictions
-    │   │   └── model.py
+    │   ├── models         <- Scripts to train models and then use trained models to make prediction
+    │   │   ├── api.py             <- module API to leverage the DEEPaaS API
+    │   │   ├── mods_model.py      <- deep learning models
+    │   │   ├── predict.py         <- stand alone script (under revision)
+    │   │   ├── test.py            <- stand alone script (under revision)
+    │   │   └── train.py           <- stand alone script (under revision)
     │   │
     │   └── tests          <- Scripts to perfrom code testing + pylint script
     │   │
     │   └── visualization  <- Scripts to create exploratory and results oriented visualizations
     │       └── visualize.py
     │
+    ├── notebooks          <- Jupyter notebooks
+    ├── references         <- Explanatory materials such as articles, books, flyers, posters, presentations.
+    ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
+    │   └── figures        <- Generated graphics and figures to be used in reporting
+    │
+    ├── requirements.txt   <- The requirements file for reproducing environment, e.g. `pip freeze > requirements.txt`
+    │
+    ├── setup.cfg          <- Metadata definition, DEEPaaS entry point definition
+    ├── setup.py           <- makes project pip installable (pip install -e .) so the module can be imported
     └── tox.ini            <- tox file with settings for running tox; see tox.testrun.org
 
 
@@ -83,7 +87,7 @@ Project Organization
 
 #### 1.2 Build features
 
-### 2. Train and test NNs
+### 2. Train and test DL models
 
 #### 2.1 Set the configuration 
 
