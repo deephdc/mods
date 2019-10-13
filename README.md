@@ -25,39 +25,43 @@ pip install -e .
 Project Organization
 ------------
 
-    ├── LICENSE
+    ├── LICENSE     
     ├── README.md   <- The top-level README for developers using this project.
     │
-    ├── checkpoints <- Directory for checkpoint storing during train process 
+    ├── checkpoints <- Directory for checkpoint storing during training process 
     │
     ├── data        <- Data directory
     │   ├── features       <- datapools
-    │   ├── test           <- sample data for test or prediction 
-    │   └── train          <- sample data for train
+    │   ├── test           <- test data 
+    │   │   └── sample-test-w01h-s10m.tsv  <- sample data for prediction that works with the default model
+    │   └── train          <- train data
     │
     ├── docs        <- Online documentation http://docs.deep-hybrid-datacloud.eu/en/latest/user/modules/mods.html 
-    ├── docker      <- Optional dockerfile(s)
-    ├── models      <- Trained models (e.g. defaull model)
     │
-    ├── mods        <- Module source code for use in this project.
+    ├── docker      <- Official docker container https://github.com/deephdc/DEEP-OC-mods
+    │   └── (optional/testing) dockerfile(s)
+    │
+    ├── models      <- Trained models
+    │   └── model_default.zip              <- default model
+    │
+    ├── mods        <- Deep learning module source code for use in this project.
     │   ├── __init__.py    <- Makes the module a Python module
     │   │
-    │   ├── config.py      <- Module configuration file e.g. for hyper-parameter tuning
-    │   ├── utils.py       <- Module utilization functions   
+    │   ├── config.py      <- Configuration file for model training as well as hyper-parameter tuning
+    │   ├── utils.py       <- Utilization functions   
     │   │
     │   ├── dataset        <- Scripts to process data at various levels
     │   │   ├── data_utils.py      <- Data utility functions with hybrid data storage (Nextcloud, rclone)
-    │   │   └── make_dataset.py    <- Data Preprocessing: sensitive data processing to produce ML/DL data    
+    │   │   └── make_dataset.py    <- Data Preprocessing (module) to produce ML/DL data    
     │   │
-    │   ├── features       <- Scripts to build ML/DL data
-    │   │   ├── build_features.py  <- Data Preprocessing: sensitive data processing to produce ML/DL data 
+    │   ├── features       <- Scripts to build and select ML/DL data
+    │   │   ├── build_features.py  <- Data Preprocessing (module) to produce ML/DL data 
     │   │   └── select_features.py <- Tests for feature selection
     │   │
     │   ├── models         <- Scripts to train models and then use trained models to make prediction
     │   │   ├── api.py             <- Module API to leverage the DEEPaaS API
     │   │   ├── mods_model.py      <- Deep Learning modeling
     │   │   ├── predict.py         <- stand alone script (under revision)
-    │   │   ├── test.py            <- stand alone script (under revision)
     │   │   └── train.py           <- stand alone script (under revision)
     │   │
     │   ├── tests          <- Code testing scripts + pylint script
@@ -66,20 +70,19 @@ Project Organization
     │       └── visualize.py
     │
     ├── notebooks    <- Jupyter notebooks
-    ├── references   <- Explanatory materials such as articles, books, flyers, posters, presentations.
-    ├── reports      <- Generated analysis as HTML, PDF, LaTeX, etc.
+    ├── references   <- Explanatory materials such as articles, flyers, posters, presentations.
+    ├── reports      <- Generated analysis
     │   └── figures       <- Generated graphics and figures to be used in reporting
     │
-    ├── .rclone.conf <- Default hybrid data storage setting
+    ├── .rclone.conf <- Configuration file for data transfer (rclone)
     ├── Jenkinsfile  <- CI/CD configuration
     │
-    ├── requirements.txt   <- The requirements file for reproducing environment, e.g. `pip freeze > requirements.txt`
+    ├── requirements.txt   <- Environment reproducing file, e.g. `pip freeze > requirements.txt`
     │
-    ├── setup.cfg    <- Metadata and DEEPaaS entry point definition
+    ├── setup.cfg    <- Module metadata + DEEPaaS entry point definition
     ├── setup.py     <- Makes project pip installable (pip install -e .) so the module can be imported
     │
     └── tox.ini      <- tox file with settings for running tox; see tox.testrun.org
-
 
 --------
 
@@ -109,3 +112,4 @@ Project Organization
 
 ### 5. Docker Hub: [MODS container image](https://hub.docker.com/r/deephdc/deep-oc-mods) in Docker Hub [`deephdc`](https://hub.docker.com/u/deephdc/) organization
 
+<img src="https://deep-hybrid-datacloud.eu/wp-content/uploads/sites/2/2018/04/datastreams.jpeg" width="600">
