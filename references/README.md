@@ -13,8 +13,6 @@ References
 ```
 @article{nguyen2019machine,
 	Author = {Nguyen, Giang and Dlugolinsky, Stefan and Bob{\'a}k, Martin and Tran, Viet and L{\'o}pez Garc{\'\i}a, {\'A}lvaro and Heredia, Ignacio and Mal{\'\i}k, Peter and Hluchy, Ladislav},
-	Date-Added = {2019-05-10 08:39:44 +0200},
-	Date-Modified = {2019-10-09 13:15:22 +0200},
 	Journal = {Artificial Intelligence Review},
 	Number = {1},
 	Pages = {77--124},
