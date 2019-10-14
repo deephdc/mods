@@ -57,7 +57,6 @@ Project Organization
     │   │   └── make_dataset.py    <- Data Preprocessing (module) to produce ML/DL data    
     │   │
     │   ├── features       <- Scripts to build and select ML/DL data
-    │   │   ├── build_features.py  <- Data Preprocessing (module) to produce ML/DL data 
     │   │   └── select_features.py <- Tests for feature selection
     │   │
     │   ├── models         <- Scripts to train models and then use trained models to make prediction
