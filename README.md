@@ -43,7 +43,8 @@ Project Organization
     ├── docker      <- Official docker container https://github.com/deephdc/DEEP-OC-mods
     │
     ├── models      <- Trained models
-    │   └── model_default.zip              <- default model
+    │   ├── model_default_cpu.zip          <- default model for CPU    
+    │   └── model_default_gpu.zip          <- default model for GPU
     │
     ├── mods        <- Deep learning module source code for use in this project.
     │   ├── __init__.py    <- Makes the module a Python module
