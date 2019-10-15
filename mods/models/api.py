@@ -40,13 +40,18 @@ import mods.dataset.make_dataset as mdata
 import mods.models.mods_model as MODS
 import mods.utils as utl
 
-import urllib
-
 
 def get_model(
         model_name=cfg.model_name,
         models_dir=cfg.app_models
 ):
+    """
+    Function loads existing MODS model
+
+    :param model_name: file name of the model ('zip' extension is optional)
+    :param models_dir:
+    :return:
+    """
     backend.clear_session()
     m = MODS.mods_model(model_name)
     m.load(os.path.join(models_dir, model_name))
@@ -58,18 +63,18 @@ def get_metadata():
 
     pkg = pkg_resources.get_distribution(module[0])
     meta = {
-        'Name': 'MODS - Massive Online Data Streams',
-        'Version': '0.1',
-        'Summary': 'Intelligent module using ML/DL techniques for underlying IDS and monitoring system',
+        'Name': None,
+        'Version': None,
+        'Summary': None,
         'Home-page': None,
-        'Author': 'Giang Nguyen, Stefan Dlugolinsky',
-        'Author-email': 'giang.nguyen@savba.sk, stefan.dlugolinsky@savba.sk',
-        'License': 'Apache-2',
+        'Author': None,
+        'Author-email': None,
+        'License': None
     }
 
     for l in pkg.get_metadata_lines("PKG-INFO"):
         for par in meta:
-            if l.startswith(par):
+            if l.startswith(par + ":"):
                 _, v = l.split(": ", 1)
                 meta[par] = v
 
@@ -544,12 +549,13 @@ def train(args, **kwargs):
     dir_remote = cfg.app_models_remote
 
     # upload model using rclone
-    out, err = dutils.rclone_call(
-        src_path=file,
-        dest_dir=dir_remote,
-        cmd='copy'
-    )
-    print('rclone_copy(%s, %s):\nout: %s\nerr: %s' % (file, dir_remote, out, err))
+    if cfg.app_models_remote:
+        out, err = dutils.rclone_call(
+            src_path=file,
+            dest_dir=dir_remote,
+            cmd='copy'
+        )
+        print('rclone_copy(%s, %s):\nout: %s\nerr: %s' % (file, dir_remote, out, err))
 
     message = {
         'status': 'ok',

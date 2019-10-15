@@ -411,11 +411,6 @@ def exclude(d, ranges):
             return True
 
 
-# @stevo
-# regex matching directory of a day
-REGEX_DIR_DAY = re.compile(r'^' + re.escape(cfg.app_data_features.rstrip('/')) + '/[^/]+' + r'/(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})')
-
-
 # @stevo datapool reading
 def datapool_read(
         data_specs_str,                 # protocol/column/merge specification
@@ -423,7 +418,12 @@ def datapool_read(
         ws,                             # window/slide specification; e.g., w01h-s10m
         excluded=[],                    # list of dates and ranges that will be omitted
         base_dir=cfg.app_data_features, # base dir with the protocol/YYYY/MM/DD/wXXd-sXXd.tsv structure
+        caching=cfg.data_pool_caching
 ):
+    # regex matching directory of a day
+    REGEX_DIR_DAY = re.compile(r'^' + re.escape(
+        base_dir.rstrip('/')) + '/[^/]+' + r'/(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})')
+
     keep_cols = []
     df_main = None
 
@@ -433,7 +433,7 @@ def datapool_read(
     cache_dir = None
     cache_key = None
     cache_file = None
-    if cfg.data_pool_caching:
+    if caching:
         cache_dir = os.path.dirname(cfg.app_data_pool_cache)
         cache_key = data_cache_key(protocols, merge_on_col, ws, time_range, excluded)
         cache_file = os.path.join(cache_dir, cache_key)
@@ -545,7 +545,7 @@ def datapool_read(
     df_main = df_main[keep_cols]
 
     # save dataset to cache
-    if cfg.data_pool_caching:
+    if caching:
         assert cache_dir is not None
         assert cache_key is not None
         assert cache_file is not None
