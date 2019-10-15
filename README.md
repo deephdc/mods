@@ -100,10 +100,10 @@ Project Organization
 2. Model training
 3. Model testing
 
-### Prediction and train throught DEEPaaS API
+### Prediction and train throught [DEEPaaS API](https://github.com/indigo-dc/DEEPaaS)
 
 ### DEEP as a Service
-1. [MODS container](https://github.com/deephdc/DEEP-OC-mods) in [Docker Hub: MODS container image](https://hub.docker.com/r/deephdc/deep-oc-mods) as a part of [`deephdc`](https://hub.docker.com/u/deephdc/) organization
+1. [MODS container](https://github.com/deephdc/DEEP-OC-mods) available in [Docker Hub](https://hub.docker.com/r/deephdc/deep-oc-mods) as a part of [`deephdc`](https://hub.docker.com/u/deephdc/) organization
 2. [MODS entry](https://marketplace.deep-hybrid-datacloud.eu/modules/deep-oc-massive-online-data-streams.html) in [DEEP Open Catalog](https://marketplace.deep-hybrid-datacloud.eu/) as an [Use Case of DEEP-HybridDataCloud project](https://deep-hybrid-datacloud.eu/use-cases/)
 
 <img src="https://deep-hybrid-datacloud.eu/wp-content/uploads/sites/2/2018/04/datastreams.jpeg" width="600">
