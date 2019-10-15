@@ -13,8 +13,7 @@ pipeline {
         author_name = "Stefan Dlugolinsky"
         author_email = "stefan.dlugolinsky@savba.sk"
         app_name = "mods"
-        job_location = "Pipeline-as-code/DEEP-OC-org/DEEP-OC-mods/master"
-        job_location_test = "Pipeline-as-code/DEEP-OC-org/DEEP-OC-mods/test"
+        job_location = "Pipeline-as-code/DEEP-OC-org/DEEP-OC-mods/${env.BRANCH_NAME}"
     }
 
     stages {
@@ -44,6 +43,34 @@ pipeline {
             }
         }
 
+        stage('Unit testing coverage') {
+            steps {
+                ToxEnvRun('cover')
+                ToxEnvRun('cobertura')
+            }
+            post {
+                success {
+                    HTMLReport('cover', 'index.html', 'coverage.py report')
+                    CoberturaReport('**/coverage.xml')
+                }
+            }
+        }
+
+        stage('Metrics gathering') {
+            agent {
+                label 'sloc'
+            }
+            steps {
+                checkout scm
+                SLOCRun()
+            }
+            post {
+                success {
+                    SLOCPublish()
+                }
+            }
+        }
+
         stage('Security scanner') {
             steps {
                 ToxEnvRun('bandit-report')
@@ -60,7 +87,7 @@ pipeline {
             }
         }
 
-        stage("Re-build DEEP-OC-mods Docker images") {
+        stage("Re-build Docker images") {
             when {
                 anyOf {
                    branch 'master'
@@ -70,15 +97,12 @@ pipeline {
             }
             steps {
                 script {
-                    job_to_build = "${env.job_location}"
-                    if (env.BRANCH_NAME == 'test') {
-                       job_to_build = "${env.job_location_test}"
-                    }
-                    def job_result = JenkinsBuildJob(job_to_build)
+                    def job_result = JenkinsBuildJob("${env.job_location}")
                     job_result_url = job_result.absoluteUrl
                 }
             }
         }
+
     }
 
     post {
@@ -104,7 +128,7 @@ A new build of '${app_name} DEEP application is available in Jenkins at:\n\n
 terminated with '${build_status}' status.\n\n
 Check console output at:\n\n
 *  ${env.BUILD_URL}/console\n\n
-and resultant Docker image rebuilding job at (may be empty in case of FAILURE):\n\n
+and resultant Docker images rebuilding jobs at (may be empty in case of FAILURE):\n\n
 *  ${job_result_url}\n\n
 
 DEEP Jenkins CI service"""
