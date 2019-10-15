@@ -53,63 +53,42 @@ import mods.config as cfg
 #    return
 
 
-# @giang: read .tsv file -> pandas dataframe -> numpy array
-def read_data(data_filename):
-    df = pd.read_csv(data_filename,
+# @giang: read .tsv file -> pandas dataframe
+def create_df(filename):
+    df = pd.read_csv(filename,
                      sep=cfg.pd_sep,
                      skiprows=0,
                      skipfooter=0,
-                     engine='python',
-                     usecols=lambda col: col in cfg.pd_usecols
+                     engine='python'
+                     # usecols=lambda col: col in cfg.pd_usecols
                      )
-    print(len(df.columns), list(df))
-
+    # data cleaning + missing values
     df = df.apply(pd.to_numeric, errors='coerce')
-    df.replace('NaN', 0, inplace=True)
-    df.interpolate(inplace=True)
+    df.replace(r'^\s*$', np.nan, regex=True, inplace=True)
+    df.replace([np.inf, -np.inf], np.nan, inplace=True)
+    df.replace(['NaN', np.nan], 0, inplace=True)
 
-    if 'sum_orig_kbytes' in list(df):
-        df['sum_orig_kbytes'] = df['sum_orig_kbytes'].div(1024 * 1024).astype(int)
-        # print(df)
+    # Intermittent Demand Analysis (IDA) or Sparse Data Analysis (SDA)
+    # df.interpolate(inplace=True)
+
+    # in_sum_orig_bytes, in_sum_resp_bytes, out_sum_orig_bytes, out_sum_resp_bytes in MB or GB
+    for feature in list(df):
+        if '_bytes' in feature:
+            df[feature] = df[feature].div(1024*1024).astype(int)
+
+    print('create_df', filename, '\t', len(df.columns), df.shape, '\n', list(df))
+    return df
+
+
+# @giang: read .tsv file -> pandas dataframe -> numpy array
+def read_data(filename):
+    df = create_df(filename)
 
     # Data: pandas dataframe to numpy array
     data = df.values.astype('float32')
-    print('read_data: ', data_filename, data.dtype)
+
+    print('read_data: ', filename, '\t', data.shape[1], data.dtype, '\n', list(df))
     return data
-
-
-# TODO: delete, dead code
-# @giang: get X from TimeseriesGenerator data
-def getX(tsg_data):
-    X = list()
-    for x, y in tsg_data:
-        X.append(x)
-    return np.array(X)
-
-
-# TODO: delete, dead code
-# @giang: get Y from TimeseriesGenerator data
-def getY(tsg_data):
-    Y = list()
-    for x, y in tsg_data:
-        Y.append(y)
-    return np.array(Y)
-
-
-# TODO: delete, dead code
-# @giang: get XY from TimeseriesGenerator data
-def getXY(tsg_data):
-    X, Y = list(), list()
-    for x, y in tsg_data:
-        X.append(x)
-        Y.append(y)
-    return np.array(X), np.array(Y)
-
-
-# TODO: delete, dead code
-# @giang: first order differential d(y)/d(t)=f(y,t)=y' for numpy array
-def delta_timeseries(arr):
-    return arr[1:] - arr[:-1]
 
 
 # @giang: RMSE for numpy array
@@ -170,46 +149,6 @@ def smape(y_true, y_pred):
     return score
 
 
-##### @giang auxiliary - BEGIN - code in this block can be removed later #####
-
-# TODO: delete, dead code
-# @giang
-def create_data_from_datapool(data_filename,
-                              data_begin,
-                              data_end,
-                              data_excluded,
-                              app_data_pool=cfg.app_data_pool,
-                              app_data=cfg.app_data
-                              ):
-    flist = []
-    for filename in sorted(os.listdir(app_data_pool)):
-        if filename.endswith('.tsv'):
-            fn = os.path.basename(filename).split('.')[0]
-            if (data_begin <= fn <= data_end) and (fn not in data_excluded):
-                flist.append(app_data_pool + filename)
-    print(flist)
-
-    filename = app_data + data_filename
-    if not filename.endswith(('.tsv')):
-        filename = filename + '.tsv'
-
-    write_header = True
-    with open(filename, 'w') as fout:
-        for fn in flist:
-            with open(fn) as fin:
-                if write_header:
-                    header = fin.readline()
-                    fout.write(header)
-                    write_header = False
-                else:
-                    next(fin)
-                for line in fin:
-                    fout.write(line)
-
-    print('created data=', filename + '\n')
-    return filename
-
-##### @giang auxiliary - END - code in the above block can be removed later #####
 
 ##### @stevo @stevo @stevo#####
 
@@ -472,11 +411,6 @@ def exclude(d, ranges):
             return True
 
 
-# @stevo
-# regex matching directory of a day
-REGEX_DIR_DAY = re.compile(r'^' + re.escape(cfg.app_data_features.rstrip('/')) + '/[^/]+' + r'/(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})')
-
-
 # @stevo datapool reading
 def datapool_read(
         data_specs_str,                 # protocol/column/merge specification
@@ -484,7 +418,12 @@ def datapool_read(
         ws,                             # window/slide specification; e.g., w01h-s10m
         excluded=[],                    # list of dates and ranges that will be omitted
         base_dir=cfg.app_data_features, # base dir with the protocol/YYYY/MM/DD/wXXd-sXXd.tsv structure
+        caching=cfg.data_pool_caching
 ):
+    # regex matching directory of a day
+    REGEX_DIR_DAY = re.compile(r'^' + re.escape(
+        base_dir.rstrip('/')) + '/[^/]+' + r'/(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})')
+
     keep_cols = []
     df_main = None
 
@@ -494,7 +433,7 @@ def datapool_read(
     cache_dir = None
     cache_key = None
     cache_file = None
-    if cfg.data_pool_caching:
+    if caching:
         cache_dir = os.path.dirname(cfg.app_data_pool_cache)
         cache_key = data_cache_key(protocols, merge_on_col, ws, time_range, excluded)
         cache_file = os.path.join(cache_dir, cache_key)
@@ -606,7 +545,7 @@ def datapool_read(
     df_main = df_main[keep_cols]
 
     # save dataset to cache
-    if cfg.data_pool_caching:
+    if caching:
         assert cache_dir is not None
         assert cache_key is not None
         assert cache_file is not None
