@@ -25,6 +25,7 @@ DEBUG = False
 import io
 import json
 import os
+import sys
 import tempfile
 import time
 from zipfile import ZipFile
@@ -116,6 +117,22 @@ class mods_model:
         return result
 
 
+    def __save_bytes_in_zip_as_file(self, zip, filename, binary_data):
+        if sys.version_info >= (3,6,0):
+            with zip.open(filename, mode='w') as f:
+                f.write(binary_data)
+        else:
+            # create temp file
+            _, fname = tempfile.mkstemp()
+            # write data into the temp file
+            with open(fname, 'wb') as tf:
+                tf.write(binary_data)
+            # put the temp file into the zip
+            zip.write(fname, filename)
+            # remove the temp file
+            os.remove(fname)
+
+
     def __get_sample_data_cfg(self):
         if mods_model.__SAMPLE_DATA in self.config:
             return self.config[mods_model.__SAMPLE_DATA]
@@ -131,7 +148,7 @@ class mods_model:
             self.__save_config(zip, 'config.json')
             self.__save_model(zip, self.config[mods_model.__MODEL])
             self.__save_scaler(zip, self.config[mods_model.__SCALER])
-            self.__save_sample_data(zip, self.__get_sample_data_cfg())
+            #self.__save_sample_data(zip, self.__get_sample_data_cfg())
             self.__save_metrics(zip, 'metrics.json')
             zip.close()
 
@@ -148,7 +165,7 @@ class mods_model:
             self.__load_config(zip, 'config.json')
             self.__load_model(zip, self.config[mods_model.__MODEL])
             self.__load_scaler(zip, self.config[mods_model.__SCALER])
-            self.__load_sample_data(zip, self.__get_sample_data_cfg())
+            #self.__load_sample_data(zip, self.__get_sample_data_cfg())
             self.__load_metrics(zip, 'metrics.json')
             zip.close()
 
@@ -157,9 +174,9 @@ class mods_model:
 
 
     def __save_config(self, zip, file):
-        with zip.open(file, mode='w') as f:
-            data = json.dumps(self.config)
-            f.write(bytes(data, 'utf-8'))
+        data = json.dumps(self.config)
+        binary_data = bytes(data, 'utf-8')
+        self.__save_bytes_in_zip_as_file(zip, file, binary_data)
 
 
     def __load_config(self, zip, file):
@@ -171,10 +188,9 @@ class mods_model:
 
 
     def __save_metrics(self, zip, file):
-        with zip.open(file, mode='w') as f:
-            data = json.dumps(self.__metrics)
-            f.write(bytes(data, 'utf-8'))
-
+        data = json.dumps(self.__metrics)
+        binary_data = bytes(data, 'utf-8')
+        self.__save_bytes_in_zip_as_file(zip, file, binary_data)
 
     def __load_metrics(self, zip, file):
         print('Loading model metrics')
