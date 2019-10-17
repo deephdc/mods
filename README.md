@@ -62,8 +62,7 @@ Project Organization
     │   ├── models         <- Scripts to train models and then use trained models to make prediction
     │   │   ├── api.py             <- Module API to leverage the DEEPaaS API
     │   │   ├── mods_model.py      <- Deep Learning modeling
-    │   │   ├── predict.py         <- stand alone script (under revision)
-    │   │   └── train.py           <- stand alone script (under revision)
+    │   │   └── auxiliary scripts
     │   │
     │   ├── tests          <- Code testing scripts + pylint script
     │   │
@@ -91,12 +90,12 @@ Project Organization
 
 ## Workflow
 ### Data Preprocessing module
-1. Prepare datapools for ML/DL 
-2. Feature extraction
+1. Data cleaning and filtering, feature extraction
+2. Data transformation, ML/DL datapool creation 
 3. Feature selection
 
 ### Deep Learning module (MODS)
-1. Set the configuration 
+1. Configuration setting 
 2. Model training
 3. Model testing
 
