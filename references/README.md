@@ -19,7 +19,7 @@ References
 	Year = {2019}}
 ```
 
-- S. Dlugolinsky, G. Nguyen: Massive Online Data Streams (MODS); 2019; DIGITAL.CSIC; http:://doi.org/; https://digital.csic.es/handle/10261/192884
+- S. Dlugolinsky, G. Nguyen: Massive Online Data Streams (MODS); 2019; DIGITAL.CSIC; http:://doi.org/; https://digital.csic.es/handle/10261/192888
 ```
 @misc{mods,
 	Author = {Dlugolinsky, Stefan and Nguyen, Giang},
