@@ -104,5 +104,6 @@ Project Organization
 ### DEEP as a Service
 1. [MODS container](https://github.com/deephdc/DEEP-OC-mods) available in [Docker Hub](https://hub.docker.com/r/deephdc/deep-oc-mods) as a part of [`deephdc`](https://hub.docker.com/u/deephdc/) organization
 2. [MODS entry](https://marketplace.deep-hybrid-datacloud.eu/modules/deep-oc-massive-online-data-streams.html) in [DEEP Open Catalog](https://marketplace.deep-hybrid-datacloud.eu/) as an [Use Case of DEEP-HybridDataCloud project](https://deep-hybrid-datacloud.eu/use-cases/)
+3. [MODS online documentation](http://docs.deep-hybrid-datacloud.eu/en/latest/user/modules/mods.html)
 
 <img src="https://deep-hybrid-datacloud.eu/wp-content/uploads/sites/2/2018/04/datastreams.jpeg" width="600">
