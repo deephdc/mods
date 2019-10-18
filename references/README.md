@@ -7,9 +7,30 @@ This work is part of the [DEEP Hybrid-DataCloud](https://deep-hybrid-datacloud.e
 
 References
 ------------
+- S. Dlugolinsky, V. Tran, G. Nguyen: Aggregated network monitoring data; 2019, DIGITAL.CSIC; http://doi.org/; https://digital.csic.es/handle/10261/192884
+```
+@misc{mods-dataset,
+	Author = {Dlugolinsky, Stefan and Tran, Viet and Nguyen, Giang},
+	Howpublished = {CSIC-UC - Instituto de F{\'\i}sica de Cantabria (IFCA), DIGITAL.CSIC; http://doi.org/},
+	Keywords = {network monitoring, aggregated logs},
+	Title = {Aggregated network monitoring data},
+	Url = {https://digital.csic.es/handle/10261/192884},
+	Uri ={http://hdl.handle.net/10261/192884},
+	Year = {2019}}
+```
+
+- S. Dlugolinsky, G. Nguyen: Massive Online Data Streams (MODS); 2019; DIGITAL.CSIC; http:://doi.org/; https://digital.csic.es/handle/10261/192884
+```
+@misc{mods,
+	Author = {Dlugolinsky, Stefan and Nguyen, Giang},
+	Howpublished = {CSIC-UC - Instituto de F{\'\i}sica de Cantabria (IFCA), DIGITAL.CSIC, http:://doi.org/},
+	Title = {Massive Online Data Streams (MODS)},
+	Url = {https://digital.csic.es/handle/10261/192888},
+	Uri = {http://hdl.handle.net/10261/192888},
+	Year = {2019}}
+```
 
 - G. Nguyen, S. Dlugolinsky, M. Bobak, V. Tran, A. López García, I. Heredia, P. Malik, L. Hluchy: [Machine Learning and Deep Learning frameworks and libraries for large-scale data mining: a survey](https://doi.org/10.1007/s10462-018-09679-z). Artificial Intelligence Review, Springer Nature, 2019, ISSN 0269-2821, DOI 10.1007/s10462-018-09679-z, SCI, Open Access, CC BY 4.0. [PDF](2019_AIRE_Nguyen2019_Article_MachineLearningAndDeepLearning).
-
 ```
 @article{nguyen2019machine,
 	Author = {Nguyen, Giang and Dlugolinsky, Stefan and Bob{\'a}k, Martin and Tran, Viet and L{\'o}pez Garc{\'\i}a, {\'A}lvaro and Heredia, Ignacio and Mal{\'\i}k, Peter and Hluchy, Ladislav},
