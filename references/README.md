@@ -11,11 +11,10 @@ References
 ```
 @misc{mods-dataset,
 	Author = {Dlugolinsky, Stefan and Tran, Viet and Nguyen, Giang},
-	Howpublished = {CSIC-UC - Instituto de F{\'\i}sica de Cantabria (IFCA), DIGITAL.CSIC; http://doi.org/},
+	Publisher = {CSIC-UC - Instituto de F{\'\i}sica de Cantabria (IFCA), DIGITAL.CSIC; http://doi.org/},
 	Keywords = {network monitoring, aggregated logs},
 	Title = {Aggregated network monitoring data},
 	Url = {https://digital.csic.es/handle/10261/192884},
-	Uri ={http://hdl.handle.net/10261/192884},
 	Year = {2019}}
 ```
 
@@ -23,10 +22,9 @@ References
 ```
 @misc{mods,
 	Author = {Dlugolinsky, Stefan and Nguyen, Giang},
-	Howpublished = {CSIC-UC - Instituto de F{\'\i}sica de Cantabria (IFCA), DIGITAL.CSIC, http:://doi.org/},
+	Publisher = {CSIC-UC - Instituto de F{\'\i}sica de Cantabria (IFCA), DIGITAL.CSIC, http:://doi.org/},
 	Title = {Massive Online Data Streams (MODS)},
 	Url = {https://digital.csic.es/handle/10261/192888},
-	Uri = {http://hdl.handle.net/10261/192888},
 	Year = {2019}}
 ```
 
