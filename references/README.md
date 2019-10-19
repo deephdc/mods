@@ -7,6 +7,16 @@ This work is part of the [DEEP Hybrid-DataCloud](https://deep-hybrid-datacloud.e
 
 References
 ------------
+- S. Dlugolinsky, G. Nguyen: Massive Online Data Streams (MODS); 2019; DIGITAL.CSIC; DOI 10.20350/digitalCSIC/8975.
+```
+@misc{mods,
+	Author = {Dlugolinsky, Stefan and Nguyen, Giang},
+	Title = {Massive Online Data Streams (MODS)},
+	Url = {http://dx.doi.org/10.20350/digitalCSIC/8975},
+	Publisher = {CSIC-UC - Instituto de F{\'\i}sica de Cantabria (IFCA), DIGITAL.CSIC},
+	Year = {2019}}
+```
+
 - S. Dlugolinsky, V. Tran, G. Nguyen: Aggregated network monitoring data; 2019, DIGITAL.CSIC; DOI 10.20350/digitalCSIC/8974.
 ```
 @misc{mods-dataset,
@@ -14,16 +24,6 @@ References
 	Title = {Aggregated network monitoring data},	
 	Keywords = {network monitoring, aggregated logs},
 	Url = {http://dx.doi.org/10.20350/digitalCSIC/8974},
-	Publisher = {CSIC-UC - Instituto de F{\'\i}sica de Cantabria (IFCA), DIGITAL.CSIC},
-	Year = {2019}}
-```
-
-- S. Dlugolinsky, G. Nguyen: Massive Online Data Streams (MODS); 2019; DIGITAL.CSIC; DOI 10.20350/digitalCSIC/8975.
-```
-@misc{mods,
-	Author = {Dlugolinsky, Stefan and Nguyen, Giang},
-	Title = {Massive Online Data Streams (MODS)},
-	Url = {http://dx.doi.org/10.20350/digitalCSIC/8975},
 	Publisher = {CSIC-UC - Instituto de F{\'\i}sica de Cantabria (IFCA), DIGITAL.CSIC},
 	Year = {2019}}
 ```
