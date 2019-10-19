@@ -7,24 +7,24 @@ This work is part of the [DEEP Hybrid-DataCloud](https://deep-hybrid-datacloud.e
 
 References
 ------------
-- S. Dlugolinsky, V. Tran, G. Nguyen: Aggregated network monitoring data; 2019, DIGITAL.CSIC; http://doi.org/; https://digital.csic.es/handle/10261/192884
+- S. Dlugolinsky, V. Tran, G. Nguyen: Aggregated network monitoring data; 2019, DIGITAL.CSIC; https://digital.csic.es/handle/10261/192884
 ```
 @misc{mods-dataset,
 	Author = {Dlugolinsky, Stefan and Tran, Viet and Nguyen, Giang},
-	Publisher = {CSIC-UC - Instituto de F{\'\i}sica de Cantabria (IFCA), DIGITAL.CSIC; http://doi.org/},
+	Title = {Aggregated network monitoring data},	
 	Keywords = {network monitoring, aggregated logs},
-	Title = {Aggregated network monitoring data},
 	Url = {https://digital.csic.es/handle/10261/192884},
+	Publisher = {CSIC-UC - Instituto de F{\'\i}sica de Cantabria (IFCA), DIGITAL.CSIC, http://dx.doi.org/10.20350/digitalCSIC/8974},
 	Year = {2019}}
 ```
 
-- S. Dlugolinsky, G. Nguyen: Massive Online Data Streams (MODS); 2019; DIGITAL.CSIC; http:://doi.org/; https://digital.csic.es/handle/10261/192888
+- S. Dlugolinsky, G. Nguyen: Massive Online Data Streams (MODS); 2019; DIGITAL.CSIC; https://digital.csic.es/handle/10261/192888
 ```
 @misc{mods,
 	Author = {Dlugolinsky, Stefan and Nguyen, Giang},
-	Publisher = {CSIC-UC - Instituto de F{\'\i}sica de Cantabria (IFCA), DIGITAL.CSIC, http:://doi.org/},
 	Title = {Massive Online Data Streams (MODS)},
 	Url = {https://digital.csic.es/handle/10261/192888},
+	Publisher = {CSIC-UC - Instituto de F{\'\i}sica de Cantabria (IFCA), DIGITAL.CSIC, http://dx.doi.org/10.20350/digitalCSIC/8975},
 	Year = {2019}}
 ```
 
