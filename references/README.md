@@ -41,16 +41,4 @@ References
 	Year = {2019}}
 ```
 
-- G. Nguyen, B.M. Nguyen, D. Tran, L. Hluchý: [A heuristics approach to mine behavioural data logs in mobile malware detection system](https://doi.org/10.1016/j.datak.2018.03.002). Data & Knowledge Engineering, Elsevier, 2018, Volume 115, pp. 129-151, ISSN 0169-023X, DOI 10.1016/j.datak.2018.03.002, SCIE, [Preprint](http://digital.csic.es/handle/10261/178018).
-```
-@article{nguyen2018heuristics,
-	Author = {Nguyen, Giang and Nguyen, Binh Minh and Tran, Dang and Hluchy, Ladislav},
-	Journal = {Data \& Knowledge Engineering},
-	Pages = {129--151},
-	Publisher = {Elsevier},
-	Title = {A heuristics approach to mine behavioural data logs in mobile malware detection system},
-	Volume = {115},
-	Year = {2018}}
-```
-
 <img src="https://deep-hybrid-datacloud.eu/wp-content/uploads/sites/2/2018/04/datastreams.jpeg" width="600">
