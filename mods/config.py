@@ -29,15 +29,15 @@ from os.path import expanduser
 
 
 def list_dir(dir, pattern='*.tsv'):
+    tsv_files = []
     try:
         listOfFiles = os.listdir(dir)
-        tsv_files = []
         for entry in listOfFiles:
             if fnmatch.fnmatch(entry, pattern):
                 tsv_files.append(entry)
-        return tsv_files
     except OSError as e:
-        return e
+        print(e)
+    return tsv_files
 
 
 # identify basedir for the package
