@@ -26,8 +26,8 @@ Train models with first order differential to monitor changes
 import argparse
 import time
 
-# import project config.py
-import mods.models.api as api
+import mods.models.api_v2 as api
+from mods.models.api_v2 import TrainArgsSchema
 
 
 # during development it might be practical
@@ -37,27 +37,18 @@ def main():
        Runs above-described functions depending on input parameters
        (see below an example)
     """
-
     start = time.time()
-    api.train(args, full_paths=True)
-    print("Elapsed time:  ", time.time() - start)
+    kwargs = vars(args)
+    kwargs['full_paths'] = str(True)
+    api.train(**kwargs)
+    end = time.time()
+    print("Elapsed time:  ", end - start)
 
 
 if __name__ == '__main__':
-
     parser = argparse.ArgumentParser(description='Model parameters')
-
-    train_args = api.get_train_args()
-
-    for key, val in train_args.items():
-        parser.add_argument('--%s' % key,
-                            default=val['default'],
-                            type=type(val['default']),  # may just put str
-                            help=val['help'])
-        print(key, val)
-        print(type(val['default']))
-
+    for field_name, field in TrainArgsSchema().fields.items():
+        parser.add_argument('--%s' % field_name, default=str(field.missing), required=field.required)
+        print(field_name, field)
     args = parser.parse_args()
-    print("Vars:", vars(args))
-
     main()

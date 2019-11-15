@@ -79,7 +79,7 @@ class mods_model:
     __BATCH_SIZE = 'batch_size'
     __BATCH_NORMALIZATION = 'batch_normalization'
     __DROPOUT_RATE = 'dropout_rate'
-    __TRAINING_TIME = 'training_time'   # moved to metrics.json
+    __TRAINING_TIME = 'training_time'  # moved to metrics.json
     # scaler
     __SCALER = 'scaler'
     # sample data
@@ -99,7 +99,6 @@ class mods_model:
         self.__metrics = {}
         self.config = self.__default_config()
 
-
     # saves the contents of the original file (e.g. file in a zip) into a temp file and runs func over it
     def __func_over_tempfile(self, orig_file, func, mode='wb', *args, **kwargs):
         # create temp file
@@ -116,9 +115,8 @@ class mods_model:
         os.remove(fname)
         return result
 
-
     def __save_bytes_in_zip_as_file(self, zip, filename, binary_data):
-        if sys.version_info >= (3,6,0):
+        if sys.version_info >= (3, 6, 0):
             with zip.open(filename, mode='w') as f:
                 f.write(binary_data)
         else:
@@ -132,12 +130,10 @@ class mods_model:
             # remove the temp file
             os.remove(fname)
 
-
     def __get_sample_data_cfg(self):
         if mods_model.__SAMPLE_DATA in self.config:
             return self.config[mods_model.__SAMPLE_DATA]
         return None
-
 
     def save(self, file):
         if not file.lower().endswith('.zip'):
@@ -148,13 +144,12 @@ class mods_model:
             self.__save_config(zip, 'config.json')
             self.__save_model(zip, self.config[mods_model.__MODEL])
             self.__save_scaler(zip, self.config[mods_model.__SCALER])
-            #self.__save_sample_data(zip, self.__get_sample_data_cfg())
+            # self.__save_sample_data(zip, self.__get_sample_data_cfg())
             self.__save_metrics(zip, 'metrics.json')
             zip.close()
 
         print('Model saved')
         return file
-
 
     def load(self, file):
         if not file.lower().endswith('.zip'):
@@ -165,19 +160,17 @@ class mods_model:
             self.__load_config(zip, 'config.json')
             self.__load_model(zip, self.config[mods_model.__MODEL])
             self.__load_scaler(zip, self.config[mods_model.__SCALER])
-            #self.__load_sample_data(zip, self.__get_sample_data_cfg())
+            # self.__load_sample_data(zip, self.__get_sample_data_cfg())
             self.__load_metrics(zip, 'metrics.json')
             zip.close()
 
         print('Model loaded')
         self.__init()
 
-
     def __save_config(self, zip, file):
         data = json.dumps(self.config)
         binary_data = bytes(data, 'utf-8')
         self.__save_bytes_in_zip_as_file(zip, file, binary_data)
-
 
     def __load_config(self, zip, file):
         print('Loading model config')
@@ -185,7 +178,6 @@ class mods_model:
             data = f.read()
             self.config = json.loads(data.decode('utf-8'))
         print('Model config:\n%s' % json.dumps(self.config, indent=True))
-
 
     def __save_metrics(self, zip, file):
         data = json.dumps(self.__metrics)
@@ -210,13 +202,11 @@ class mods_model:
         os.remove(fname)
         print('Keras model saved')
 
-
     def __load_model(self, zip, model_config):
         print('Loading keras model')
         with zip.open(model_config[mods_model.__FILE]) as f:
             self.model = self.__func_over_tempfile(f, keras.models.load_model)
         print('Keras model loaded')
-
 
     def __save_scaler(self, zip, scaler_config):
         print('Saving scaler')
@@ -226,13 +216,11 @@ class mods_model:
         os.remove(fname)
         print('Scaler saved')
 
-
     def __load_scaler(self, zip, scaler_config):
         print('Loading scaler')
         with zip.open(scaler_config[mods_model.__FILE]) as f:
             self.__scaler = joblib.load(f)
         print('Scaler loaded')
-
 
     def __save_sample_data(self, zip, sample_data_config):
         if sample_data_config is None:
@@ -254,7 +242,6 @@ class mods_model:
             )
         print('Sample data saved:\n%s' % self.sample_data)
 
-
     def __load_sample_data(self, zip, sample_data_config):
         if sample_data_config is None:
             return
@@ -273,7 +260,6 @@ class mods_model:
             print('Sample data loaded:\n%s' % self.sample_data)
         except Exception as e:
             print('Sample data not loaded: %s' % e)
-
 
     def load_data(
             self,
@@ -297,7 +283,6 @@ class mods_model:
         )
         return df
 
-
     def __default_config(self):
         return {
             mods_model.__MODEL: {
@@ -319,7 +304,6 @@ class mods_model:
                 mods_model.__FILE: 'scaler.pkl'
             }
         }
-
 
     def cfg_model(self):
         return self.config[mods_model.__MODEL]
@@ -610,8 +594,8 @@ class mods_model:
         # Compile model
         self.model.compile(
             loss='mean_squared_error',  # Adam
-            optimizer=opt,              # 'adam', 'adagrad', 'rmsprop', opt
-            metrics=['mse', 'mae'])     # 'cosine', 'mape'
+            optimizer=opt,  # 'adam', 'adagrad', 'rmsprop', opt
+            metrics=['mse', 'mae'])  # 'cosine', 'mape'
 
         # Checkpointing and earlystopping
         filepath = cfg.app_checkpoints + self.name + '-{epoch:02d}.hdf5'
@@ -705,7 +689,6 @@ class mods_model:
         utl.dbg_scaler(scaler, 'inverse_normalize', debug=DEBUG)
         return scaler.inverse_transform(df)
 
-
     def get_tsg(self, df,
                 steps_ahead=cfg.steps_ahead,
                 batch_size=cfg.batch_size
@@ -725,7 +708,6 @@ class mods_model:
             stride=1,
             batch_size=batch_size
         )
-
 
     def predict(self, df):
 
@@ -795,15 +777,6 @@ class mods_model:
         if fill_missing_rows_in_timeseries is True:
             df = utl.fill_missing_rows(df)
         return df
-
-    # TODO: delete
-    # not used:
-    # def predict_file_or_buffer(self, *args, **kwargs):
-    #     df = self.read_file_or_buffer(*args, **kwargs)
-    #     return self.predict(df)
-
-    def predict_url(self, url):
-        pass
 
     def eval(self, df):
         interpol = df
