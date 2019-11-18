@@ -71,42 +71,63 @@ class TrainArgsSchema(Schema):
     model_name = fields.Str(
         required=False,
         missing=cfg.model_name,
-        description="Name of the model"
+        description="Name of the model. The model will be saved as a zip file; e.g., <model_name>.zip"
     )
     data_select_query = fields.Str(
         required=False,
         missing=cfg.train_data_select_query,
         description= \
             """
-            format: p1;p2|c1|c2~renamed|...;...#c5,c6,...
-                p1, p2, ... - protocols; e.g., conn, http, ssh
-                c1, c2, ... - columns
-                #           - columns to merge data over
+            Query for data selection from the datapool.
+            
+            format: p1;p2|p2c1|col~p2c2_renamed|...;...#c5,c6,...
+                p1, p2, ...     - protocols; e.g., conn, http, ssh
+                p2c1, p2c2, ... - columns of the protocol
+                ~p2c2_renamed   - rename column
+                #c5, c6, ...    - columns to merge data over
             """
     )
     train_time_range = TimeRangeField(
         required=False,
-        missing=cfg.train_time_range
+        missing=cfg.train_time_range,
+        description= \
+            """
+            Specify the time range for training; e.g., <2018-01-01,2019-01-01)
+            format: LBRACKET YYYY-MM-DD,YYYY-MM-DD RBRACKET
+                LBRACKET: left side bracket, closed: < or open: (
+                RBRACKET: right side bracket closed: > or open: )
+            """
     )
     train_time_ranges_excluded = fields.List(
         TimeRangeField,
         required=False,
-        missing=[cfg.train_time_range, cfg.test_time_range]
+        missing=cfg.train_time_range_excluded,
+        description= \
+            """
+            A list of time ranges to skip. See the format for train or test time range.
+            If executing training from the command line, use ';' as time range delimiter.
+            """
     )
     test_time_range = TimeRangeField(
         required=False,
         missing=cfg.test_time_range,
         description= \
             """
-            format: ${LBRACKET}YYYY-MM-DD,YYYY-MM-DD${RBRACKET}
-                ${LBRACKET}: closed: < or open: (
-                ${RBRACKET}: closed: > or open: )
+            Specify the time range for testing; e.g., <2019-01-01,2020-01-01)
+            format: LBRACKET YYYY-MM-DD,YYYY-MM-DD RBRACKET
+                LBRACKET: left side bracket, closed: < or open: (
+                RBRACKET: right side bracket closed: > or open: )
             """
     )
     test_time_ranges_excluded = fields.List(
         TimeRangeField,
         required=False,
-        missing=[cfg.train_time_range, cfg.test_time_range]
+        missing=cfg.test_time_range_excluded,
+        description= \
+            """
+            A list of time ranges to skip. See the format for train or test time range.
+            If executing training from the command line, use ';' as time range delimiter.
+            """
     )
     window_slide = fields.Str(
         required=False,
@@ -184,11 +205,11 @@ def get_metadata():
 
     pkg = pkg_resources.get_distribution(module[0])
     meta = {
-        "author": "Author name",
-        "description": "Model description",
-        "license": "Model's license",
+        "author": "",
+        "description": "",
+        "license": "",
         "url": "https://github.com/deephdc/mods",
-        "version": "Model version",
+        "version": "",
     }
 
     # override above values by values from PKG-INFO file (loads metadata from setup.cfg)
@@ -245,8 +266,8 @@ def train(**kwargs):
         models_dir = os.path.dirname(model_name)
         model_name = os.path.basename(model_name)
 
-    train_time_range_excluded = utl.parse_datetime_ranges(train_args['train_time_ranges_excluded'])
-    test_time_range_excluded = utl.parse_datetime_ranges(train_args['test_time_ranges_excluded'])
+    train_time_range_excluded = train_args['train_time_ranges_excluded']
+    test_time_range_excluded = train_args['test_time_ranges_excluded']
 
     # read train data from the datapool
     df_train, cached_file_train = utl.datapool_read(

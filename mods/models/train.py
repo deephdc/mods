@@ -40,6 +40,11 @@ def main():
     start = time.time()
     kwargs = vars(args)
     kwargs['full_paths'] = str(True)
+    print(kwargs['train_time_ranges_excluded'])
+    if 'train_time_ranges_excluded' in kwargs.keys() and isinstance(kwargs['train_time_ranges_excluded'], str):
+        kwargs['train_time_ranges_excluded'] = kwargs['train_time_ranges_excluded'].split(';')
+    if 'test_time_ranges_excluded' in kwargs.keys() and isinstance(kwargs['test_time_ranges_excluded'], str):
+        kwargs['test_time_ranges_excluded'] = kwargs['test_time_ranges_excluded'].split(';')
     api.train(**kwargs)
     end = time.time()
     print("Elapsed time:  ", end - start)
@@ -48,7 +53,7 @@ def main():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Model parameters')
     for field_name, field in TrainArgsSchema().fields.items():
-        parser.add_argument('--%s' % field_name, default=str(field.missing), required=field.required)
+        parser.add_argument('--%s' % field_name, default=field.missing, required=field.required)
         print(field_name, field)
     args = parser.parse_args()
     main()

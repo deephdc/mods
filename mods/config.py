@@ -108,9 +108,9 @@ ws_choice = ws_choices[0]
 
 # Training parameters defaults
 train_data_select_query = data_select_query
-model_delta = True  # True --> better predictions, first order differential
-sequence_len = 12  # p in <6, 24> for w01h-s10m
-steps_ahead = 1  # k in <1, 12> for w01h-s10m; k < p
+model_delta = True                          # True --> better predictions, first order differential
+sequence_len = 12                           # p in <6, 24> for w01h-s10m
+steps_ahead = 1                             # k in <1, 12> for w01h-s10m; k < p
 model_types = [
     'MLP',
     'Conv1D',
@@ -127,39 +127,41 @@ model_types = [
 model_type = 'LSTM'
 
 # Training defaults - rarely changed
-blocks = 12  # number of RNN blocks
-num_epochs = 50  # number of training epochs
-epochs_patience = 10  # early stopping
-batch_size = 1  # faster training --> to be tested later
-batch_size_test = 1  # don't change
-stacked_blocks = 3  # 1 = no stack
-batch_normalization = False  # no significant effect when used with ADAM
-dropout_rate = 1.0  # range <0.5, 0.8>, 0.0=no outputs, 1.0=no dropout
+blocks = 12                                 # number of RNN blocks
+num_epochs = 50                             # number of training epochs
+epochs_patience = 10                        # early stopping
+batch_size = 1                              # faster training --> to be tested later
+batch_size_test = 1                         # don't change
 
-# train_time_range = TimeRange.from_str('<2019-04-15,2019-05-01)')  # 2 weeks
-# train_time_range = TimeRange.from_str('<2019-04-01,2019-05-01)')  # 1 month
-# train_time_range = TimeRange.from_str('<2019-02-01,2019-05-01)')  # 3 months
-train_time_range = TimeRange.from_str('<2018-11-01,2019-05-01)')  # 6 months - K20 experiments with k, p
-# train_time_range = TimeRange.from_str('<2018-08-01,2019-05-01)')  # 9 months
-# train_time_range = TimeRange.from_str('<2018-05-01,2019-05-01)')  # 1 year
+stacked_blocks = 3                          # 1 = no stack
+batch_normalization = False                 # no significant effect when used with ADAM
+dropout_rate = 1.0                          # range <0.5, 0.8>, 0.0=no outputs, 1.0=no dropout
 
-train_time_range_excluded = ''  # example: '<2019-01,2019-02-15), 2018-12-24, 2018-10'
+# train_time_range = '<2019-04-15,2019-05-01)'   # 2 weeks
+# train_time_range = '<2019-04-01,2019-05-01)'   # 1 month
+# train_time_range = '<2019-02-01,2019-05-01)'   # 3 months
+train_time_range = '<2018-11-01,2019-05-01)'     # 6 months - K20 experiments with k, p
+# train_time_range = '<2018-08-01,2019-05-01)'   # 9 months
+# train_time_range = '<2018-05-01,2019-05-01)'   # 1 year
+train_time_range_excluded = [
+    '<2018-12-01,2019-01-01)',
+    '<2019-01-01,2019-02-01)'
+]
 train_ws_choices = ws_choices
 train_ws = ws_choice
 
 # prediction defaults
-data_predict = 'sample-w1h-s10m.tsv'  # can be removed later?
+data_predict = 'sample-w1h-s10m.tsv'        # can be removed later?
 
 # test defaults
-test_data = 'data_test.tsv'  # can be removed later? TODO: we first need to support datapool in the DEEPaaS web interface (@stevo)
-test_data_select_query = data_select_query  # same as for train - differs only in the time range
+test_data = 'data_test.tsv'                     # can be removed later? TODO: we first need to support datapool in the DEEPaaS web interface (@stevo)
+test_data_select_query = data_select_query      # same as for train - differs only in the time range
+# test_time_range = '<2019-05-01,2019-05-06)'   # paper plot - 5 days
+test_time_range = '<2019-05-01,2019-06-01)'     # 1 month
+# test_time_range = '<2019-05-01,2019-07-01)'   # 2 months for test
+# test_time_range = <2019-05-01,2019-08-01)'    # 3 months
 
-# test_time_range = TimeRange.from_str('<2019-05-01,2019-05-06)')    # paper plot - 5 days
-test_time_range = TimeRange.from_str('<2019-05-01,2019-06-01)')  # 1 month
-# test_time_range = TimeRange.from_str('<2019-05-01,2019-07-01)')   # 2 months for test
-# test_time_range = TimeRange.from_str('<2019-05-01,2019-08-01)')   # 3 months
-
-test_time_range_excluded = ''
+test_time_range_excluded = []
 
 # Data transformation defaults
 interpolate = False
@@ -167,22 +169,22 @@ interpolate = False
 # common defaults
 model_name_all = list_dir(app_models, '*.zip')
 model_name = 'model-default'
-fill_missing_rows_in_timeseries = True  # fills missing rows in time series data
+fill_missing_rows_in_timeseries = True                        # fills missing rows in time series data
 
 # Evaluation metrics on real values
-eval_metrics = ['SMAPE', 'R2', 'COSINE']  # 'MAPE', 'RMSE'
+eval_metrics = ['SMAPE', 'R2', 'COSINE']    # 'MAPE', 'RMSE'
 eval_filename = 'eval.tsv'
 
 # Plotting
 plot = False
 plot_dir = app_data_plot
 plot_filename = 'plot_data.png'
-fig_size_x = 25  # max 2^16 pixels = 650 inch
+fig_size_x = 25                             # max 2^16 pixels = 650 inch
 fig_size_y = 4
 
 # Auxiliary: DayTime format
 format_string = '%Y-%m-%d %H:%M:%S'
-format_string_parquet = '%Y-%m-%d %H_%M_%S'  # parquet format without ":"
+format_string_parquet = '%Y-%m-%d %H_%M_%S'     # parquet format without ":"
 timezone = 3600
 
 
@@ -196,136 +198,6 @@ def set_common_args():
         }
     }
     return common_args
-
-
-# def set_train_args():
-#     train_args = {
-#         'model_name': {
-#             'default': model_name,
-#             'help': 'Name of the model to train',
-#             'type': str,
-#             'required': False
-#         },
-#         'data_select_query': {
-#             'default': train_data_select_query,
-#             'help': """\
-# Select protocols and columns for training and testing and specify columns for merging the data.
-# Multiple protocols and columns can be specified for data selection.
-# Multiple columns can be specified for data merging.
-# Columns can be renamed prior to merging.
-#
-# Use the following format:
-# <font color="blue">protocol1</font>&nbsp;<b>;</b>&nbsp;<font color="blue">protocol2</font>&nbsp;<b>|</b>&nbsp;<font color="green">col1</font>&nbsp;<b>|</b>&nbsp;<font color="green">col2</font>&nbsp;<b>|</b>&nbsp;...&nbsp;<b>;</b>&nbsp;...&nbsp;<b>#</b>&nbsp;<font color="purple">merge_col1</font>&nbsp;<b>,</b>&nbsp;<font color="purple">merge_col2</font>&nbsp;<b>,</b>&nbsp;...
-#
-# To rename a column, use a tilde (<b>~</b>) followed by a new name after the column name; e.g., col1<b>~A</b>
-# """,
-#             'required': False
-#         },
-#         'train_time_range': {
-#             'default': train_time_range,
-#             'help': '<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]&nbsp;<b>--</b>&nbsp;<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]',
-#             'type': str,
-#             'required': False
-#         },
-#         'train_time_ranges_excluded': {
-#             'default': train_time_range_excluded,
-#             'help': """\
-# A comma-separated list of time and time ranges to be excluded.
-#
-# Use following formats in the list:
-# <ul>
-#     <li><font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]</li>
-#     <li><font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]&nbsp;<b>--</b>&nbsp;<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]</li>
-# </ul>""",
-#             'type': str,
-#             'required': False
-#         },
-#         'test_time_range': {
-#             'default': test_time_range,
-#             'help': '<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]&nbsp;<b>--</b>&nbsp;<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]',
-#             'type': str,
-#             'required': False
-#         },
-#         'test_time_ranges_excluded': {
-#             'default': test_time_range_excluded,
-#             'help': """\
-# A comma-separated list of time and time ranges to be excluded.
-#
-# Use following formats in the list:
-# <ul>
-#     <li><font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]</li>
-#     <li><font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]&nbsp;<b>--</b>&nbsp;<font color="blue">YYYY</font>[[<b>-</b><font color="green">MM</font>]<b>-</b><font color="purple">DD</font>]</li>
-# </ul>""",
-#             'type': str,
-#             'required': False
-#         },
-#         'window_slide': {
-#             'default': train_ws,
-#             'choices': train_ws_choices,
-#             'help': 'window and window slide',
-#             'type': str,
-#             'required': False
-#         },
-#         'sequence_len': {
-#             'default': sequence_len,
-#             'help': '',
-#             'required': False
-#         },
-#         'model_delta': {
-#             'default': model_delta,
-#             'choices': [True, False],
-#             'help': '',
-#             'required': False
-#         },
-#         'steps_ahead': {
-#             'default': steps_ahead,
-#             'help': 'Number of steps to predict ahead of current time',
-#             'required': False
-#         },
-#         'model_type': {
-#             'default': model_type,
-#             'choices': model_types,
-#             'help': '',
-#             'required': False
-#         },
-#         'num_epochs': {
-#             'default': num_epochs,
-#             'help': 'Number of epochs to train on',
-#             'required': False
-#         },
-#         'epochs_patience': {
-#             'default': epochs_patience,
-#             'help': '',
-#             'required': False
-#         },
-#         'blocks': {
-#             'default': blocks,
-#             'help': '',
-#             'required': False
-#         },
-#         'stacked_blocks': {
-#             'default': stacked_blocks,
-#             'help': '',
-#             'required': False
-#         },
-#         'batch_size': {
-#             'default': batch_size,
-#             'help': '',
-#             'required': False
-#         },
-#         'batch_normalization': {
-#             'default': batch_normalization,
-#             'help': 'seq2seqLSTM models only',
-#             'required': False
-#         },
-#         'dropout_rate': {
-#             'default': dropout_rate,
-#             'help': 'seq2seqLSTM models only',
-#             'required': False
-#         }
-#     }
-#     train_args.update(set_common_args())
-#     return train_args
 
 
 def set_predict_args():

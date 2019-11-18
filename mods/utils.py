@@ -28,6 +28,7 @@ from math import sqrt
 
 import numpy as np
 import pandas as pd
+import pytz
 from dateutil.relativedelta import *
 from numpy import dot
 from numpy.linalg import norm
@@ -35,6 +36,7 @@ from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
 
 import mods.config as cfg
+from mods.mods_types import TimeRange
 
 
 # matplotlib.style.use('ggplot')
@@ -402,11 +404,17 @@ def parse_datetime_ranges(time_ranges):
 
 
 # @stevo
-def is_within_range(d, range, inclusive_end=cfg.time_range_inclusive):
-    if inclusive_end:
-        return range[0] <= d and d <= range[1]
+def is_within_range(d, range: TimeRange):
+    if range.is_lclosed():
+        if range.is_rclosed():
+            return range.beg <= d and d <= range.end
+        else:
+            return range.beg <= d and d < range.end
     else:
-        return range[0] <= d and d < range[1]
+        if range.is_rclosed():
+            return range.beg < d and d <= range.end
+        else:
+            return range.beg < d and d < range.end
 
 
 # @stevo
@@ -490,7 +498,7 @@ def datapool_read(
                 day = int(rematch.group('day'))
 
                 # exclusion filter
-                dpt = datetime.datetime(year, month, day)
+                dpt = datetime.datetime(year, month, day, tzinfo=pytz.UTC)
 
                 data_file = os.path.join(root, f)
                 if exclude(dpt, excluded) or not is_within_range(dpt, time_range):
@@ -682,6 +690,5 @@ def fill_missing_rows(df, range_beg=None, range_end=None):
     if newnumrows > numrows:
         print('filled %d missing rows (was %d)' % (newnumrows - numrows, numrows))
     return df
-
 
 # @stevo
