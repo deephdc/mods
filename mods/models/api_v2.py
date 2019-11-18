@@ -71,6 +71,7 @@ class PredictArgs:
     data_select_query: str
     time_range: TimeRange
     time_ranges_excluded: list
+    batch_size: int
 
 
 class TrainArgsSchema(Schema):
@@ -233,7 +234,12 @@ class PredictArgsSchema(Schema):
             If executing prediction from the command line, use ';' as time range delimiter.
             """
     )
-    
+    batch_size = fields.Integer(
+        required=False,
+        missing=cfg.batch_size,
+        description="Batch size"
+    )
+
 
 def load_model(
         model_name=cfg.model_name,
