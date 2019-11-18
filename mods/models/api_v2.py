@@ -475,7 +475,7 @@ def predict(**kwargs):
         'model_name': model_name,
         'data_select_query': predict_args['data_select_query'],
         'time_range': str(predict_args['time_range']),
-        'time_range_excluded': str(predict_args['time_range_excluded']),
+        'time_ranges_excluded': str(predict_args['time_ranges_excluded']),
         'cached_df': cached_file_train,
         'steps_ahead': model.get_steps_ahead(),
         'batch_size': model.get_batch_size(),
