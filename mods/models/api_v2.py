@@ -27,7 +27,8 @@ import os
 import pkg_resources
 from dataclasses import dataclass
 from keras import backend
-from marshmallow import Schema, fields, INCLUDE
+from marshmallow import Schema, INCLUDE
+from webargs import fields
 
 import mods.config as cfg
 import mods.dataset.data_utils as dutils
@@ -64,9 +65,17 @@ class TrainArgs:
     batch_size: int
 
 
+@dataclass
+class PredictArgs:
+    model_name: str
+    data_select_query: str
+    time_range: TimeRange
+    time_ranges_excluded: list
+
+
 class TrainArgsSchema(Schema):
     class Meta:
-        unknown = INCLUDE
+        unknown = INCLUDE  # support 'full_paths' parameter
 
     model_name = fields.Str(
         required=False,
@@ -133,29 +142,29 @@ class TrainArgsSchema(Schema):
         required=False,
         missing=cfg.train_ws,
         enum=cfg.train_ws_choices,
-        description="window length and slide duration"
+        description="Window length and slide duration"
     )
     sequence_len = fields.Integer(
         required=False,
         missing=cfg.sequence_len,
-        description="length of the training sequence; e.g., 6, 9, 12"
+        description="length of the training sequence; e.g., 3, 4, 5, 6, 9, 12"
     )
     model_delta = fields.Boolean(
         required=False,
         missing=cfg.model_delta,
         enum=[True, False],
-        description=""
+        description="Differential approach to model training"
     )
     model_type = fields.Str(
         required=False,
         missing=cfg.model_type,
         enum=cfg.model_types,
-        description=""
+        description="Choose a type of the model"
     )
     num_epochs = fields.Integer(
         required=False,
         missing=cfg.num_epochs,
-        description=""
+        description="Number of training epochs"
     )
     epochs_patience = fields.Integer(
         required=False,
@@ -165,19 +174,66 @@ class TrainArgsSchema(Schema):
     blocks = fields.Integer(
         required=False,
         missing=cfg.blocks,
-        description=""
+        description="Dimensionality of the model's output space"
     )
     steps_ahead = fields.Integer(
         required=False,
         missing=cfg.steps_ahead,
-        description=""
+        description="Number of steps ahead to predict"
     )
     batch_size = fields.Integer(
         required=False,
         missing=cfg.batch_size,
-        description=""
+        description="Training batch size"
     )
 
+
+class PredictArgsSchema(Schema):
+    class Meta:
+        unknown = INCLUDE  # support 'full_paths' parameter
+
+    model_name = fields.Str(
+        required=False,
+        missing=cfg.model_name,
+        enum=cfg.model_name_all,
+        description="Choose model for prediction"
+    )
+    data_select_query = fields.Str(
+        required=False,
+        missing=cfg.train_data_select_query,
+        description= \
+            """
+            Query for data selection from the datapool.
+
+            format: p1;p2|p2c1|col~p2c2_renamed|...;...#c5,c6,...
+                p1, p2, ...     - protocols; e.g., conn, http, ssh
+                p2c1, p2c2, ... - columns of the protocol
+                ~p2c2_renamed   - rename column
+                #c5, c6, ...    - columns to merge data over
+            """
+    )
+    time_range = TimeRangeField(
+        required=False,
+        missing=cfg.test_time_range,
+        description= \
+            """
+            Specify the time range for training; e.g., <2018-01-01,2019-01-01)
+            format: LBRACKET YYYY-MM-DD,YYYY-MM-DD RBRACKET
+                LBRACKET: left side bracket, closed: < or open: (
+                RBRACKET: right side bracket closed: > or open: )
+            """
+    )
+    time_ranges_excluded = fields.List(
+        TimeRangeField,
+        required=False,
+        missing=cfg.test_time_range_excluded,
+        description= \
+            """
+            A list of time ranges to skip. See the format for prediction time range.
+            If executing prediction from the command line, use ';' as time range delimiter.
+            """
+    )
+    
 
 def load_model(
         model_name=cfg.model_name,
@@ -354,19 +410,7 @@ def get_predict_args():
     https://docs.deep-hybrid-datacloud.eu/projects/deepaas/en/wip-api_v2/user/v2-api.html#deepaas.model.v2.base.BaseModel.get_predict_args
     :return:
     """
-    return {
-        "model_name": fields.Str(
-            required=False,  # force the user to define the value
-            missing=cfg.model_name,  # default value to use
-            description="Name of the model to train"  # help string
-        ),
-        "data": fields.Field(
-            description="Data file to perform inference on.",
-            required=True,
-            type="file",
-            location="form"
-        )
-    }
+    return PredictArgsSchema().fields
 
 
 def predict(**kwargs):
@@ -375,110 +419,67 @@ def predict(**kwargs):
     :param kwargs:
     :return:
     """
-    print('predict_file - kwargs: %s' % kwargs)
+    print("predict(**kwargs) - kwargs: %s" % (kwargs))
 
-    # data_prepared = False
-    #
-    # message = 'Error reading input data'
-    #
-    # if args:
-    #     for arg in args:
-    #         message = {'status': 'ok', 'predictions': []}
-    #
-    #         # prepare data
-    #         if not data_prepared:
-    #             bootstrap_data = yaml.safe_load(arg.bootstrap_data)
-    #             if bootstrap_data or not (
-    #                     os.path.exists(cfg.app_data_features) and os.path.isdir(cfg.app_data_features)):
-    #                 mdata.prepare_data()
-    #                 data_prepared = True
-    #
-    #         model_name = yaml.safe_load(arg.model_name)
-    #         data_file = yaml.safe_load(arg.file)
-    #
-    #         sep = cfg.pd_sep
-    #         skiprows = cfg.pd_skiprows
-    #         skipfooter = cfg.pd_skipfooter
-    #         header = cfg.pd_header
-    #
-    #         # support full paths for command line calls
-    #         models_dir = cfg.app_models
-    #         full_paths = kwargs['full_paths'] if 'full_paths' in kwargs else False
-    #
-    #         if full_paths:
-    #             if model_name == cfg.model_name:
-    #                 models_dir = cfg.app_models
-    #             else:
-    #                 models_dir = os.path.dirname(model_name)
-    #                 model_name = os.path.basename(model_name)
-    #             if data_file == cfg.data_predict:
-    #                 data_file = os.path.join(cfg.app_data_predict, data_file)
-    #         else:
-    #             data_file = os.path.join(cfg.app_data_predict, data_file)
-    #
-    #         m = load_model(
-    #             models_dir=models_dir,
-    #             model_name=model_name
-    #         )
-    #
-    #         # override batch_size
-    #         batch_size = yaml.safe_load(arg.batch_size)
-    #         m.set_batch_size(batch_size)
-    #
-    #         df_data = m.read_file_or_buffer(
-    #             data_file,
-    #             sep=sep,
-    #             skiprows=skiprows,
-    #             skipfooter=skipfooter,
-    #             engine='python',
-    #             header=header,
-    #             fill_missing_rows_in_timeseries=cfg.fill_missing_rows_in_timeseries
-    #         )
-    #
-    #         df_data = utl.fix_missing_num_values(df_data)
-    #
-    #         predictions = m.predict(df_data)
-    #
-    #         message = {
-    #             'status': 'ok',
-    #             'dir_models': models_dir,
-    #             'model_name': model_name,
-    #             'data': data_file,
-    #             'steps_ahead': m.get_steps_ahead(),
-    #             'batch_size': m.get_batch_size(),
-    #             'evaluation': utl.compute_metrics(
-    #                 df_data[m.get_sequence_len():-m.get_steps_ahead()],
-    #                 predictions[:-m.get_steps_ahead()],
-    #                 m,
-    #             )
-    #         }
-    #
-    #         message['predictions'] = predictions.tolist()
-    #
-    # return message
+    # use this schema
+    schema = TrainArgsSchema()
+    # deserialize key-word arguments
+    predict_args = schema.load(kwargs)
 
-# def get_train_args():
-#     train_args = cfg.set_train_args()
-#
-#     # convert default values and possible 'choices' into strings
-#     for key, val in train_args.items():
-#         val['default'] = str(val['default'])  # yaml.safe_dump(val['default']) #json.dumps(val['default'])
-#         if 'choices' in val:
-#             val['choices'] = [str(item) for item in val['choices']]
-#         print(val['default'], type(val['default']))
-#
-#     return train_args
-#
-#
-# # !!! deepaas calls get_test_args() to get args for 'predict'
-# def get_test_args():
-#     predict_args = cfg.set_predict_args()
-#
-#     # convert default values and possible 'choices' into strings
-#     for key, val in predict_args.items():
-#         val['default'] = str(val['default'])  # yaml.safe_dump(val['default']) #json.dumps(val['default'])
-#         if 'choices' in val:
-#             val['choices'] = [str(item) for item in val['choices']]
-#         print(val['default'], type(val['default']))
-#
-#     return predict_args
+    print('predict_args:', predict_args)
+
+    model_name = predict_args['model_name']
+
+    # support full paths for command line calls
+    models_dir = cfg.app_models
+    full_paths = predict_args['full_paths'] if 'full_paths' in predict_args else False
+    if full_paths:
+        print('full_paths:', full_paths)
+        models_dir = os.path.dirname(model_name)
+        model_name = os.path.basename(model_name)
+
+    time_range_excluded = predict_args['time_ranges_excluded']
+
+    # read data from the datapool
+    df_data, cached_file_train = utl.datapool_read(
+        predict_args['data_select_query'],
+        predict_args['train_time_range'],
+        predict_args['window_slide'],
+        time_range_excluded,
+        cfg.app_data_features
+    )
+    # repair the data
+    df_data = utl.fix_missing_num_values(df_data)
+
+    backend.clear_session()
+    model = load_model(
+        models_dir=models_dir,
+        model_name=model_name
+    )
+
+    # override batch_size
+    batch_size = kwargs['batch_size']
+    model.set_batch_size(batch_size)
+
+    predictions = model.predict(df_data)
+
+    message = {
+        'status': 'ok',
+        'dir_models': models_dir,
+        'model_name': model_name,
+        'data_select_query': predict_args['data_select_query'],
+        'time_range': str(predict_args['time_range']),
+        'time_range_excluded': str(predict_args['time_range_excluded']),
+        'cached_df': cached_file_train,
+        'steps_ahead': model.get_steps_ahead(),
+        'batch_size': model.get_batch_size(),
+        'evaluation': utl.compute_metrics(
+            df_data[model.get_sequence_len():-model.get_steps_ahead()],
+            predictions[:-model.get_steps_ahead()],
+            model,
+        )
+    }
+
+    message['predictions'] = predictions.tolist()
+
+    return message

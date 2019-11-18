@@ -323,7 +323,7 @@ class mods_model:
     def set_model_delta(self, model_delta):
         self.cfg_model()[mods_model.__MODEL_DELTA] = model_delta
 
-    def isdelta(self):
+    def is_delta(self):
         return self.cfg_model()[mods_model.__MODEL_DELTA]
 
     def set_interpolate(self, interpolate):
@@ -440,7 +440,7 @@ class mods_model:
             self.set_sequence_len(sequence_len)
 
         if model_delta is None:
-            model_delta = self.isdelta()
+            model_delta = self.is_delta()
         else:
             self.set_model_delta(model_delta)
 
@@ -659,14 +659,14 @@ class mods_model:
         return df[1:] - df[:-1]
 
     def transform(self, df):
-        if self.isdelta():
+        if self.is_delta():
             return self.delta(df)
         else:
             # bucketing, taxo, fuzzy
             return df
 
     def inverse_transform(self, original, pred_denorm):
-        if self.isdelta():
+        if self.is_delta():
             beg = self.get_sequence_len() - self.get_steps_ahead() + 1
             y = original[beg:]
             utl.dbg_df(y, self.name, 'y.tsv', print=DEBUG, save=DEBUG)

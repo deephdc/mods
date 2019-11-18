@@ -168,7 +168,7 @@ interpolate = False
 
 # common defaults
 model_name_all = list_dir(app_models, '*.zip')
-model_name = 'model-default'
+model_name = 'model-default.zip'
 fill_missing_rows_in_timeseries = True                        # fills missing rows in time series data
 
 # Evaluation metrics on real values
