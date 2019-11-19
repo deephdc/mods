@@ -10,13 +10,11 @@ Created on Sat Oct 15 10:27:15 2019
 @author: Stefan Dlugolinsky
 """
 import unittest
-from argparse import Namespace
 
 import mods.models.api_v2 as mods_model
-from mods.models.api_v2 import TrainArgs, TrainArgsSchema
-from mods.mods_types import TimeRange
 from mods import config as cfg
 from mods import utils as utl
+from mods.models.api_v2 import TrainArgsSchema
 
 debug = True
 
