@@ -25,7 +25,6 @@ Train models with first order differential to monitor changes
 import os
 
 import pkg_resources
-from dataclasses import dataclass
 from keras import backend
 from marshmallow import Schema, INCLUDE
 from webargs import fields

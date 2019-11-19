@@ -20,5 +20,4 @@ deepaas>=0.5.1
 pyyaml
 joblib
 webargs
-dataclasses
 arrow
