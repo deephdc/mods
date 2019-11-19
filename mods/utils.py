@@ -507,8 +507,9 @@ def datapool_read(
 
                 # load one of the data files
                 print('loading: %s' % data_file)
+                fp = open(data_file)
                 df = pd.read_csv(
-                    open(data_file),
+                    fp,
                     usecols=cols_orig,
                     header=0,
                     sep='\t',
@@ -516,6 +517,7 @@ def datapool_read(
                     skipfooter=0,
                     engine='python',
                 )
+                fp.close()
 
                 if cfg.fill_missing_rows_in_timeseries:
                     # fill missing rows for the loaded day
