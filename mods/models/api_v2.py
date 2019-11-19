@@ -46,32 +46,32 @@ class TimeRangeField(fields.Field):
         return TimeRange.from_str(value)
 
 
-@dataclass
-class TrainArgs:
-    model_name: str
-    data_select_query: str
-    train_time_range: TimeRange
-    train_time_ranges_excluded: list
-    test_time_range: TimeRange
-    test_time_ranges_excluded: list
-    window_slide: str
-    sequence_len: int
-    model_delta: bool
-    model_type: str
-    num_epochs: int
-    epochs_patience: int
-    blocks: int
-    steps_ahead: int
-    batch_size: int
-
-
-@dataclass
-class PredictArgs:
-    model_name: str
-    data_select_query: str
-    time_range: TimeRange
-    time_ranges_excluded: list
-    batch_size: int
+# @dataclass
+# class TrainArgs:
+#     model_name: str
+#     data_select_query: str
+#     train_time_range: TimeRange
+#     train_time_ranges_excluded: list
+#     test_time_range: TimeRange
+#     test_time_ranges_excluded: list
+#     window_slide: str
+#     sequence_len: int
+#     model_delta: bool
+#     model_type: str
+#     num_epochs: int
+#     epochs_patience: int
+#     blocks: int
+#     steps_ahead: int
+#     batch_size: int
+#
+#
+# @dataclass
+# class PredictArgs:
+#     model_name: str
+#     data_select_query: str
+#     time_range: TimeRange
+#     time_ranges_excluded: list
+#     batch_size: int
 
 
 class TrainArgsSchema(Schema):
