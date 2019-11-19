@@ -268,6 +268,7 @@ def get_metadata():
     pkg = pkg_resources.get_distribution(module[0])
     meta = {
         "author": "",
+        "author-email": "giang.nguyen@savba.sk, stefan.dlugolinsky@savba.sk",
         "description": "",
         "license": "",
         "url": "https://github.com/deephdc/mods",
@@ -400,10 +401,10 @@ def train(**kwargs):
         'window_slide': train_args['window_slide'],
         'data_select_query': train_args['data_select_query'],
         'train_time_range': str(train_args['train_time_range']),
-        'train_time_range_excluded': str(train_args['train_time_range_excluded']),
+        'train_time_ranges_excluded': str(train_args['train_time_ranges_excluded']),
         'train_cached_df': cached_file_train,
         'test_time_range': str(train_args['test_time_range']),
-        'test_time_range_excluded': str(train_args['test_time_range_excluded']),
+        'test_time_ranges_excluded': str(train_args['test_time_ranges_excluded']),
         'test_cached_df': cached_file_test,
         'evaluation': model.get_metrics(),
     }
