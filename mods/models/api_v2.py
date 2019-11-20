@@ -328,15 +328,12 @@ def train(**kwargs):
         models_dir = os.path.dirname(model_name)
         model_name = os.path.basename(model_name)
 
-    train_time_range_excluded = train_args['train_time_ranges_excluded']
-    test_time_range_excluded = train_args['test_time_ranges_excluded']
-
     # read train data from the datapool
     df_train, cached_file_train = utl.datapool_read(
         train_args['data_select_query'],
         train_args['train_time_range'],
         train_args['window_slide'],
-        train_time_range_excluded,
+        train_args['train_time_ranges_excluded'],
         cfg.app_data_features
     )
     # repair the data
@@ -347,7 +344,7 @@ def train(**kwargs):
         train_args['data_select_query'],
         train_args['train_time_range'],
         train_args['window_slide'],
-        test_time_range_excluded,
+        train_args['test_time_ranges_excluded'],
         cfg.app_data_features
     )
     # repair the data
@@ -428,7 +425,7 @@ def predict(**kwargs):
     print("predict(**kwargs) - kwargs: %s" % (kwargs))
 
     # use this schema
-    schema = TrainArgsSchema()
+    schema = PredictArgsSchema()
     # deserialize key-word arguments
     predict_args = schema.load(kwargs)
 
@@ -444,14 +441,12 @@ def predict(**kwargs):
         models_dir = os.path.dirname(model_name)
         model_name = os.path.basename(model_name)
 
-    time_range_excluded = predict_args['time_ranges_excluded']
-
     # read data from the datapool
     df_data, cached_file_train = utl.datapool_read(
         predict_args['data_select_query'],
         predict_args['train_time_range'],
         predict_args['window_slide'],
-        time_range_excluded,
+        predict_args['time_ranges_excluded'],
         cfg.app_data_features
     )
     # repair the data
