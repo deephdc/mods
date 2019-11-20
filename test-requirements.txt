@@ -13,6 +13,6 @@ pytest
 pytest-cov
 
 tensorflow==2.0.0
-tf-nightly==2.1.0
+tf-nightly
 pydot-ng
 flaat
