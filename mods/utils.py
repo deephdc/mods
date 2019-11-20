@@ -28,6 +28,7 @@ from math import sqrt
 
 import numpy as np
 import pandas as pd
+import pytz
 from dateutil.relativedelta import *
 from numpy import dot
 from numpy.linalg import norm
@@ -35,6 +36,7 @@ from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
 
 import mods.config as cfg
+from mods.mods_types import TimeRange
 
 
 # matplotlib.style.use('ggplot')
@@ -74,7 +76,7 @@ def create_df(filename):
     # in_sum_orig_bytes, in_sum_resp_bytes, out_sum_orig_bytes, out_sum_resp_bytes in MB or GB
     for feature in list(df):
         if '_bytes' in feature:
-            df[feature] = df[feature].div(1024*1024).astype(int)
+            df[feature] = df[feature].div(1024 * 1024).astype(int)
 
     print('create_df', filename, '\t', len(df.columns), df.shape, '\n', list(df))
     return df
@@ -147,7 +149,6 @@ def smape(y_true, y_pred):
         except ZeroDivisionError:
             score.append(str(np.nan))
     return score
-
 
 
 ##### @stevo @stevo @stevo#####
@@ -267,8 +268,9 @@ REGEX_SPLIT_COMMA = re.compile(r'\s*,\s*')
 REGEX_SPLIT_HASH = re.compile(r'\s*#\s*')
 REGEX_SPLIT_PIPE = re.compile(r'\s*\|\s*')
 REGEX_SPLIT_TILDE = re.compile(r'\s*~\s*')
-def parse_data_specs(specs):
 
+
+def parse_data_specs(specs):
     protocols = []
     merge_on_col = []
 
@@ -296,6 +298,8 @@ def parse_data_specs(specs):
 
 # @stevo
 REGEX_DATAPOOLTIME = re.compile(r'^\s*(?P<year>\d{4})([^0-9]{0,1}(?P<month>\d{2})([^0-9]{0,1}(?P<day>\d{2}))?)?\s*$')
+
+
 def parse_datetime(s):
     match = REGEX_DATAPOOLTIME.match(s)
     if match:
@@ -357,7 +361,10 @@ def expand_to_datetime_range(y, m, d, inclusive_end=cfg.time_range_inclusive):
 
 
 # @stevo
-REGEX_DATAPOOLTIMERANGE = re.compile(r'^\s*(?P<beg_year>\d{4})([^0-9]{0,1}(?P<beg_month>\d{2})([^0-9]{0,1}(?P<beg_day>\d{2}))?)?\s*--\s*(?P<end_year>\d{4})([^0-9]{0,1}(?P<end_month>\d{2})([^0-9]{0,1}(?P<end_day>\d{2}))?)?\s*$')
+REGEX_DATAPOOLTIMERANGE = re.compile(
+    r'^\s*(?P<beg_year>\d{4})([^0-9]{0,1}(?P<beg_month>\d{2})([^0-9]{0,1}(?P<beg_day>\d{2}))?)?\s*--\s*(?P<end_year>\d{4})([^0-9]{0,1}(?P<end_month>\d{2})([^0-9]{0,1}(?P<end_day>\d{2}))?)?\s*$')
+
+
 def parse_datetime_ranges(time_ranges):
     parsed = []
     if isinstance(time_ranges, str):
@@ -389,7 +396,7 @@ def parse_datetime_ranges(time_ranges):
                 m.group('end_year'),
                 m.group('end_month'),
                 m.group('end_day'),
-                is_end = True
+                is_end=True
             )
             parsed.append((beg, end))
             continue
@@ -397,11 +404,17 @@ def parse_datetime_ranges(time_ranges):
 
 
 # @stevo
-def is_within_range(d, range, inclusive_end=cfg.time_range_inclusive):
-    if inclusive_end:
-        return range[0] <= d and d <= range[1]
+def is_within_range(d, range: TimeRange):
+    if range.is_lclosed():
+        if range.is_rclosed():
+            return range.beg <= d and d <= range.end
+        else:
+            return range.beg <= d and d < range.end
     else:
-        return range[0] <= d and d < range[1]
+        if range.is_rclosed():
+            return range.beg < d and d <= range.end
+        else:
+            return range.beg < d and d < range.end
 
 
 # @stevo
@@ -413,11 +426,11 @@ def exclude(d, ranges):
 
 # @stevo datapool reading
 def datapool_read(
-        data_specs_str,                 # protocol/column/merge specification
-        time_range,                     # (beg datetime.datetime, end datetime.datetime)
-        ws,                             # window/slide specification; e.g., w01h-s10m
-        excluded=[],                    # list of dates and ranges that will be omitted
-        base_dir=cfg.app_data_features, # base dir with the protocol/YYYY/MM/DD/wXXd-sXXd.tsv structure
+        data_specs_str,  # protocol/column/merge specification
+        time_range,  # (beg datetime.datetime, end datetime.datetime)
+        ws,  # window/slide specification; e.g., w01h-s10m
+        excluded=[],  # list of dates and ranges that will be omitted
+        base_dir=cfg.app_data_features,  # base dir with the protocol/YYYY/MM/DD/wXXd-sXXd.tsv structure
         caching=cfg.data_pool_caching
 ):
     # regex matching directory of a day
@@ -485,7 +498,7 @@ def datapool_read(
                 day = int(rematch.group('day'))
 
                 # exclusion filter
-                dpt = datetime.datetime(year, month, day)
+                dpt = datetime.datetime(year, month, day, tzinfo=pytz.UTC)
 
                 data_file = os.path.join(root, f)
                 if exclude(dpt, excluded) or not is_within_range(dpt, time_range):
@@ -494,8 +507,9 @@ def datapool_read(
 
                 # load one of the data files
                 print('loading: %s' % data_file)
+                fp = open(data_file)
                 df = pd.read_csv(
-                    open(data_file),
+                    fp,
                     usecols=cols_orig,
                     header=0,
                     sep='\t',
@@ -503,6 +517,7 @@ def datapool_read(
                     skipfooter=0,
                     engine='python',
                 )
+                fp.close()
 
                 if cfg.fill_missing_rows_in_timeseries:
                     # fill missing rows for the loaded day
@@ -677,3 +692,5 @@ def fill_missing_rows(df, range_beg=None, range_end=None):
     if newnumrows > numrows:
         print('filled %d missing rows (was %d)' % (newnumrows - numrows, numrows))
     return df
+
+# @stevo
