@@ -39,8 +39,7 @@ def main():
     """
     start = time.time()
     kwargs = vars(args)
-    kwargs['full_paths'] = str(True)
-    print(kwargs['train_time_ranges_excluded'])
+    # kwargs['full_paths'] = str(True)
     if 'train_time_ranges_excluded' in kwargs.keys() and isinstance(kwargs['train_time_ranges_excluded'], str):
         kwargs['train_time_ranges_excluded'] = kwargs['train_time_ranges_excluded'].split(';')
     if 'test_time_ranges_excluded' in kwargs.keys() and isinstance(kwargs['test_time_ranges_excluded'], str):
