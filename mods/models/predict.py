@@ -26,8 +26,8 @@ Train models with first order differential to monitor changes
 import argparse
 import time
 
-import mods.config as cfg
-import mods.models.api as api
+import mods.models.api_v2 as api
+from mods.models.api_v2 import PredictArgsSchema
 
 
 # during development it might be practical
@@ -37,50 +37,21 @@ def main():
        Runs above-described functions depending on input parameters
        (see below an example)
     """
-
     start = time.time()
-    ret = ''
-    if args.file is not None:
-        ret = api.predict_file(args, full_paths=True)
-    elif args.url is not None:
-        ret = api.predict_url(args, full_paths=True)
-    # elif args.data is not None:
-    #     ret = api.predict_data(args)
-    else:
-        ret = api.get_metadata()
+    kwargs = vars(args)
+    # kwargs['full_paths'] = str(True)
+    if 'time_ranges_excluded' in kwargs.keys() and isinstance(kwargs['time_ranges_excluded'], str):
+        kwargs['time_ranges_excluded'] = kwargs['time_ranges_excluded'].split(';')
+    ret = api.predict(**kwargs)
+    end = time.time()
+    print("Elapsed time:  ", end - start)
     print(ret)
-    print("Elapsed time:  ", time.time() - start)
 
-
-__data_help = """
-String with data to predict on.
-
-An, example on how to read data 
-from a file into a command line
-argument:
-
---data "`data=''; while read line; do data=$data$line$'\n'; done; echo \"$data\"`"
-"""
 
 if __name__ == '__main__':
-
     parser = argparse.ArgumentParser(description='Model parameters')
-
-    predict_args = api.get_test_args()
-
-    for key, val in predict_args.items():
-        parser.add_argument('--%s' % key,
-                            default=val['default'],
-                            type=type(val['default']),  # may just put str
-                            help=val['help'])
-        print(key, val)
-        print(type(val['default']))
-
-    parser.add_argument('--file', type=str, default=cfg.data_predict, help='File to do prediction on, full path')
-    parser.add_argument('--url', type=str, help='URL with the data to do prediction on')
-    # parser.add_argument('--data', type=str, help='String with data to do prediction on')
-
+    for field_name, field in PredictArgsSchema().fields.items():
+        parser.add_argument('--%s' % field_name, default=field.missing, required=field.required)
+        print(field_name, field)
     args = parser.parse_args()
-    print("Vars:", vars(args))
-
     main()
