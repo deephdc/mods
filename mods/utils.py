@@ -177,13 +177,13 @@ def compute_metrics(y_true, y_pred, model):
         if isinstance(y_pred, pd.DataFrame):
             y_pred = y_pred.values
 
-        err_mape = mape(y_true, y_pred)
+        # err_mape = mape(y_true, y_pred)
         err_smape = smape(y_true, y_pred)
         err_r2 = r2(y_true, y_pred)
         err_rmse = rmse(y_true, y_pred)
         err_cosine = cosine(y_true, y_pred)
 
-        result['mods_mape'] = err_mape
+        # result['mods_mape'] = err_mape
         result['mods_smape'] = err_smape
         result['mods_r2'] = err_r2
         result['mods_rmse'] = err_rmse
