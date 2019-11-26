@@ -39,9 +39,11 @@ def main():
     """
     start = time.time()
     kwargs = vars(args)
-    # kwargs['full_paths'] = str(True)
+    kwargs['full_paths'] = str(True)
     if 'time_ranges_excluded' in kwargs.keys() and isinstance(kwargs['time_ranges_excluded'], str):
         kwargs['time_ranges_excluded'] = kwargs['time_ranges_excluded'].split(';')
+    if 'model_file' in kwargs.keys():
+        kwargs['model_name'] = kwargs['model_file']
     ret = api.predict(**kwargs)
     end = time.time()
     print("Elapsed time:  ", end - start)
@@ -51,6 +53,8 @@ def main():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Model parameters')
     for field_name, field in PredictArgsSchema().fields.items():
+        if field_name.lower() == 'model_name':
+            field_name = 'model_file'
         parser.add_argument('--%s' % field_name, default=field.missing, required=field.required)
         print(field_name, field)
     args = parser.parse_args()
