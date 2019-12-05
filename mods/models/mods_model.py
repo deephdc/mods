@@ -30,18 +30,14 @@ import tempfile
 import time
 from zipfile import ZipFile
 
+import joblib
 import keras
 import numpy as np
 import pandas as pd
-from keras import backend as K
 from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
-from keras.layers import BatchNormalization
 from keras.layers import Bidirectional
-from keras.layers import CuDNNGRU
-from keras.layers import CuDNNLSTM
 from keras.layers import Dense
-from keras.layers import Dropout
 from keras.layers import Flatten
 from keras.layers import Input
 from keras.layers import RepeatVector
@@ -53,7 +49,6 @@ from keras.models import Model
 from keras.optimizers import Adam
 from keras.preprocessing.sequence import TimeseriesGenerator
 from keras_self_attention import SeqSelfAttention
-import joblib
 from sklearn.preprocessing import MinMaxScaler
 from tcn import TCN
 
@@ -519,64 +514,26 @@ class mods_model:
                 for i in range(stacked_blocks - 2):
                     h = TCN(return_sequences=True)(h)
             h = TCN(return_sequences=False)(h)
-        else:
-            if len(K.tensorflow_backend._get_available_gpus()) == 0:  # CPU running
-                print('Running on CPU')
-                if model_type == 'GRU':  # GRU
-                    h = GRU(cfg.blocks)(x)
-                elif model_type == 'LSTM':  # LSTM
-                    h = LSTM(cfg.blocks)(x)
-                elif model_type == 'bidirectLSTM':  # bidirectional LSTM
-                    h = Bidirectional(LSTM(cfg.blocks))(x)
-                elif model_type == 'attentionLSTM':  # https://pypi.org/project/keras-self-attention/
-                    h = Bidirectional(LSTM(cfg.blocks, return_sequences=True))(x)
-                    h = SeqSelfAttention(attention_activation='sigmoid')(h)
-                    h = Flatten()(h)
-                elif model_type == 'seq2seqLSTM':
-                    h = LSTM(cfg.blocks)(x)
-                    h = RepeatVector(sequence_len)(h)
-                    h = LSTM(cfg.blocks)(h)
-                elif model_type == 'stackedLSTM' and stacked_blocks > 1:  # stacked LSTM
-                    h = LSTM(cfg.blocks, return_sequences=True)(x)
-                    if stacked_blocks > 2:
-                        for i in range(stacked_blocks - 2):
-                            h = LSTM(cfg.blocks, return_sequences=True)(h)
-                    h = LSTM(cfg.blocks)(x)
-            else:  # GPU running
-                print('Running on GPU')
-                if model_type == 'GRU':  # GRU
-                    h = CuDNNGRU(cfg.blocks)(x)
-                elif model_type == 'LSTM':  # LSTM
-                    h = CuDNNLSTM(cfg.blocks)(x)
-                elif model_type == 'bidirectLSTM':  # bidirectional LSTM
-                    h = Bidirectional(CuDNNLSTM(cfg.blocks))(x)
-                elif model_type == 'attentionLSTM':  # https://pypi.org/project/keras-self-attention/
-                    h = Bidirectional(CuDNNLSTM(cfg.blocks, return_sequences=True))(x)
-                    h = SeqSelfAttention(attention_activation='sigmoid')(h)
-                    h = Flatten()(h)
-                elif model_type == 'seq2seqLSTM':
-                    if batch_normalization:  # https://leimao.github.io/blog/Batch-Normalization/
-                        h = CuDNNLSTM(cfg.blocks)(x)
-                        BatchNormalization()(h)
-                        h = RepeatVector(sequence_len)(h)
-                        h = CuDNNLSTM(cfg.blocks)(h)
-                        BatchNormalization()(h)
-                    elif 0.0 < dropout_rate < 1.0:  # dropout
-                        h = CuDNNLSTM(cfg.blocks)(x)
-                        h = Dropout(dropout_rate)(h)
-                        h = RepeatVector(sequence_len)(h)
-                        h = CuDNNLSTM(cfg.blocks)(h)
-                        h = Dropout(dropout_rate)(h)
-                    else:  # seq2seq LSTM
-                        h = CuDNNLSTM(cfg.blocks)(x)
-                        h = RepeatVector(sequence_len)(h)
-                        h = CuDNNLSTM(cfg.blocks)(h)
-                elif model_type == 'stackedLSTM' and stacked_blocks > 1:  # stacked LSTM
-                    h = CuDNNLSTM(cfg.blocks, return_sequences=True)(x)
-                    if stacked_blocks > 2:
-                        for i in range(stacked_blocks - 2):
-                            h = CuDNNLSTM(cfg.blocks, return_sequences=True)(h)
-                    h = CuDNNLSTM(cfg.blocks)(x)
+        elif model_type == 'GRU':  # GRU
+            h = GRU(cfg.blocks)(x)
+        elif model_type == 'LSTM':  # LSTM
+            h = LSTM(cfg.blocks)(x)
+        elif model_type == 'bidirectLSTM':  # bidirectional LSTM
+            h = Bidirectional(LSTM(cfg.blocks))(x)
+        elif model_type == 'attentionLSTM':  # https://pypi.org/project/keras-self-attention/
+            h = Bidirectional(LSTM(cfg.blocks, return_sequences=True))(x)
+            h = SeqSelfAttention(attention_activation='sigmoid')(h)
+            h = Flatten()(h)
+        elif model_type == 'seq2seqLSTM':
+            h = LSTM(cfg.blocks)(x)
+            h = RepeatVector(sequence_len)(h)
+            h = LSTM(cfg.blocks)(h)
+        elif model_type == 'stackedLSTM' and stacked_blocks > 1:  # stacked LSTM
+            h = LSTM(cfg.blocks, return_sequences=True)(x)
+            if stacked_blocks > 2:
+                for i in range(stacked_blocks - 2):
+                    h = LSTM(cfg.blocks, return_sequences=True)(h)
+            h = LSTM(cfg.blocks)(x)
 
         if h is None:
             raise Exception('model not specified (h is None)')
