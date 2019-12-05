@@ -70,6 +70,7 @@ class TimeRangeField(fields.Field):
 #     data_select_query: str
 #     time_range: TimeRange
 #     time_ranges_excluded: list
+#     window_slide: str
 #     batch_size: int
 
 
@@ -232,6 +233,12 @@ class PredictArgsSchema(Schema):
             A list of time ranges to skip. See the format for prediction time range.
             If executing prediction from the command line, use ';' as time range delimiter.
             """
+    )
+    window_slide = fields.Str(
+        required=False,
+        missing=cfg.test_ws,
+        enum=cfg.test_ws_choices,
+        description="Window length and slide duration"
     )
     batch_size = fields.Integer(
         required=False,
@@ -441,10 +448,10 @@ def predict(**kwargs):
         models_dir = os.path.dirname(model_name)
         model_name = os.path.basename(model_name)
 
-    # read data from the datapool
+   # read data from the datapool
     df_data, cached_file_train = utl.datapool_read(
         predict_args['data_select_query'],
-        predict_args['train_time_range'],
+        predict_args['time_range'],
         predict_args['window_slide'],
         predict_args['time_ranges_excluded'],
         cfg.app_data_features

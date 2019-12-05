@@ -55,7 +55,8 @@ from tcn import TCN
 import mods.config as cfg
 import mods.utils as utl
 
-
+# TODO: TF2 problem: https://github.com/keras-team/keras/issues/13353
+# TODO: store data select query, select time range, exclusion filters and window+slide into the models zip
 class mods_model:
     # generic
     __FILE = 'file'
@@ -151,7 +152,10 @@ class mods_model:
         if not file.lower().endswith('.zip'):
             file += '.zip'
         print('Loading model: %s' % file)
-
+        # TODO: workaround for https://github.com/keras-team/keras/issues/13353
+        import keras.backend.tensorflow_backend as tb
+        tb._SYMBOLIC_SCOPE.value = True
+        # <--
         with ZipFile(file) as zip:
             self.__load_config(zip, 'config.json')
             self.__load_model(zip, self.config[mods_model.__MODEL])

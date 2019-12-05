@@ -163,6 +163,8 @@ test_time_range = '<2019-05-01,2019-06-01)'     # 1 month
 # test_time_range = <2019-05-01,2019-08-01)'    # 3 months
 
 test_time_range_excluded = []
+test_ws_choices = ws_choices
+test_ws = ws_choice
 
 # Data transformation defaults
 interpolate = False
@@ -187,57 +189,3 @@ fig_size_y = 4
 format_string = '%Y-%m-%d %H:%M:%S'
 format_string_parquet = '%Y-%m-%d %H_%M_%S'     # parquet format without ":"
 timezone = 3600
-
-
-def set_common_args():
-    common_args = {
-        'bootstrap_data': {
-            'default': True,
-            'choices': [True, False],
-            'help': 'Download data from remote datastore',
-            'required': False
-        }
-    }
-    return common_args
-
-
-def set_predict_args():
-    predict_args = {
-        'model_name': {
-            'default': model_name,
-            'choices': model_name_all,
-            'help': 'Name of the model used for prediction',
-            'type': str,
-            'required': False
-        },
-        'batch_size': {
-            'default': batch_size_test,
-            'help': '',
-            'required': False
-        }
-    }
-    predict_args.update(set_common_args())
-    return predict_args
-
-
-def set_test_args():
-    test_args = {
-        'model_name': {
-            'default': model_name,
-            'help': 'Name of the model used for a test',
-            'type': str,
-            'required': False
-        },
-        'data': {
-            'default': test_data,
-            'help': 'Data to test on',
-            'required': False
-        },
-        'batch_size': {
-            'default': batch_size_test,
-            'help': '',
-            'required': False
-        }
-    }
-    test_args.update(set_common_args())
-    return test_args
