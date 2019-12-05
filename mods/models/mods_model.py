@@ -30,18 +30,14 @@ import tempfile
 import time
 from zipfile import ZipFile
 
+import joblib
 import keras
 import numpy as np
 import pandas as pd
-from keras import backend as K
 from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
-from keras.layers import BatchNormalization
 from keras.layers import Bidirectional
-from keras.layers import CuDNNGRU
-from keras.layers import CuDNNLSTM
 from keras.layers import Dense
-from keras.layers import Dropout
 from keras.layers import Flatten
 from keras.layers import Input
 from keras.layers import RepeatVector
@@ -53,14 +49,14 @@ from keras.models import Model
 from keras.optimizers import Adam
 from keras.preprocessing.sequence import TimeseriesGenerator
 from keras_self_attention import SeqSelfAttention
-import joblib
 from sklearn.preprocessing import MinMaxScaler
 from tcn import TCN
 
 import mods.config as cfg
 import mods.utils as utl
 
-
+# TODO: TF2 problem: https://github.com/keras-team/keras/issues/13353
+# TODO: store data select query, select time range, exclusion filters and window+slide into the models zip
 class mods_model:
     # generic
     __FILE = 'file'
@@ -79,7 +75,8 @@ class mods_model:
     __BATCH_SIZE = 'batch_size'
     __BATCH_NORMALIZATION = 'batch_normalization'
     __DROPOUT_RATE = 'dropout_rate'
-    __TRAINING_TIME = 'training_time'   # moved to metrics.json
+    # metrics
+    __TRAINING_TIME = 'training_time'
     # scaler
     __SCALER = 'scaler'
     # sample data
@@ -99,7 +96,6 @@ class mods_model:
         self.__metrics = {}
         self.config = self.__default_config()
 
-
     # saves the contents of the original file (e.g. file in a zip) into a temp file and runs func over it
     def __func_over_tempfile(self, orig_file, func, mode='wb', *args, **kwargs):
         # create temp file
@@ -116,9 +112,8 @@ class mods_model:
         os.remove(fname)
         return result
 
-
     def __save_bytes_in_zip_as_file(self, zip, filename, binary_data):
-        if sys.version_info >= (3,6,0):
+        if sys.version_info >= (3, 6, 0):
             with zip.open(filename, mode='w') as f:
                 f.write(binary_data)
         else:
@@ -132,12 +127,10 @@ class mods_model:
             # remove the temp file
             os.remove(fname)
 
-
     def __get_sample_data_cfg(self):
         if mods_model.__SAMPLE_DATA in self.config:
             return self.config[mods_model.__SAMPLE_DATA]
         return None
-
 
     def save(self, file):
         if not file.lower().endswith('.zip'):
@@ -148,36 +141,36 @@ class mods_model:
             self.__save_config(zip, 'config.json')
             self.__save_model(zip, self.config[mods_model.__MODEL])
             self.__save_scaler(zip, self.config[mods_model.__SCALER])
-            #self.__save_sample_data(zip, self.__get_sample_data_cfg())
+            # self.__save_sample_data(zip, self.__get_sample_data_cfg())
             self.__save_metrics(zip, 'metrics.json')
             zip.close()
 
         print('Model saved')
         return file
 
-
     def load(self, file):
         if not file.lower().endswith('.zip'):
             file += '.zip'
         print('Loading model: %s' % file)
-
+        # TODO: workaround for https://github.com/keras-team/keras/issues/13353
+        import keras.backend.tensorflow_backend as tb
+        tb._SYMBOLIC_SCOPE.value = True
+        # <--
         with ZipFile(file) as zip:
             self.__load_config(zip, 'config.json')
             self.__load_model(zip, self.config[mods_model.__MODEL])
             self.__load_scaler(zip, self.config[mods_model.__SCALER])
-            #self.__load_sample_data(zip, self.__get_sample_data_cfg())
+            # self.__load_sample_data(zip, self.__get_sample_data_cfg())
             self.__load_metrics(zip, 'metrics.json')
             zip.close()
 
         print('Model loaded')
         self.__init()
 
-
     def __save_config(self, zip, file):
         data = json.dumps(self.config)
         binary_data = bytes(data, 'utf-8')
         self.__save_bytes_in_zip_as_file(zip, file, binary_data)
-
 
     def __load_config(self, zip, file):
         print('Loading model config')
@@ -185,7 +178,6 @@ class mods_model:
             data = f.read()
             self.config = json.loads(data.decode('utf-8'))
         print('Model config:\n%s' % json.dumps(self.config, indent=True))
-
 
     def __save_metrics(self, zip, file):
         data = json.dumps(self.__metrics)
@@ -210,13 +202,11 @@ class mods_model:
         os.remove(fname)
         print('Keras model saved')
 
-
     def __load_model(self, zip, model_config):
         print('Loading keras model')
         with zip.open(model_config[mods_model.__FILE]) as f:
             self.model = self.__func_over_tempfile(f, keras.models.load_model)
         print('Keras model loaded')
-
 
     def __save_scaler(self, zip, scaler_config):
         print('Saving scaler')
@@ -226,13 +216,11 @@ class mods_model:
         os.remove(fname)
         print('Scaler saved')
 
-
     def __load_scaler(self, zip, scaler_config):
         print('Loading scaler')
         with zip.open(scaler_config[mods_model.__FILE]) as f:
             self.__scaler = joblib.load(f)
         print('Scaler loaded')
-
 
     def __save_sample_data(self, zip, sample_data_config):
         if sample_data_config is None:
@@ -254,7 +242,6 @@ class mods_model:
             )
         print('Sample data saved:\n%s' % self.sample_data)
 
-
     def __load_sample_data(self, zip, sample_data_config):
         if sample_data_config is None:
             return
@@ -273,7 +260,6 @@ class mods_model:
             print('Sample data loaded:\n%s' % self.sample_data)
         except Exception as e:
             print('Sample data not loaded: %s' % e)
-
 
     def load_data(
             self,
@@ -297,7 +283,6 @@ class mods_model:
         )
         return df
 
-
     def __default_config(self):
         return {
             mods_model.__MODEL: {
@@ -320,7 +305,6 @@ class mods_model:
             }
         }
 
-
     def cfg_model(self):
         return self.config[mods_model.__MODEL]
 
@@ -339,7 +323,7 @@ class mods_model:
     def set_model_delta(self, model_delta):
         self.cfg_model()[mods_model.__MODEL_DELTA] = model_delta
 
-    def isdelta(self):
+    def is_delta(self):
         return self.cfg_model()[mods_model.__MODEL_DELTA]
 
     def set_interpolate(self, interpolate):
@@ -456,7 +440,7 @@ class mods_model:
             self.set_sequence_len(sequence_len)
 
         if model_delta is None:
-            model_delta = self.isdelta()
+            model_delta = self.is_delta()
         else:
             self.set_model_delta(model_delta)
 
@@ -535,64 +519,26 @@ class mods_model:
                 for i in range(stacked_blocks - 2):
                     h = TCN(return_sequences=True)(h)
             h = TCN(return_sequences=False)(h)
-        else:
-            if len(K.tensorflow_backend._get_available_gpus()) == 0:  # CPU running
-                print('Running on CPU')
-                if model_type == 'GRU':  # GRU
-                    h = GRU(cfg.blocks)(x)
-                elif model_type == 'LSTM':  # LSTM
-                    h = LSTM(cfg.blocks)(x)
-                elif model_type == 'bidirectLSTM':  # bidirectional LSTM
-                    h = Bidirectional(LSTM(cfg.blocks))(x)
-                elif model_type == 'attentionLSTM':  # https://pypi.org/project/keras-self-attention/
-                    h = Bidirectional(LSTM(cfg.blocks, return_sequences=True))(x)
-                    h = SeqSelfAttention(attention_activation='sigmoid')(h)
-                    h = Flatten()(h)
-                elif model_type == 'seq2seqLSTM':
-                    h = LSTM(cfg.blocks)(x)
-                    h = RepeatVector(sequence_len)(h)
-                    h = LSTM(cfg.blocks)(h)
-                elif model_type == 'stackedLSTM' and stacked_blocks > 1:  # stacked LSTM
-                    h = LSTM(cfg.blocks, return_sequences=True)(x)
-                    if stacked_blocks > 2:
-                        for i in range(stacked_blocks - 2):
-                            h = LSTM(cfg.blocks, return_sequences=True)(h)
-                    h = LSTM(cfg.blocks)(x)
-            else:  # GPU running
-                print('Running on GPU')
-                if model_type == 'GRU':  # GRU
-                    h = CuDNNGRU(cfg.blocks)(x)
-                elif model_type == 'LSTM':  # LSTM
-                    h = CuDNNLSTM(cfg.blocks)(x)
-                elif model_type == 'bidirectLSTM':  # bidirectional LSTM
-                    h = Bidirectional(CuDNNLSTM(cfg.blocks))(x)
-                elif model_type == 'attentionLSTM':  # https://pypi.org/project/keras-self-attention/
-                    h = Bidirectional(CuDNNLSTM(cfg.blocks, return_sequences=True))(x)
-                    h = SeqSelfAttention(attention_activation='sigmoid')(h)
-                    h = Flatten()(h)
-                elif model_type == 'seq2seqLSTM':
-                    if batch_normalization:  # https://leimao.github.io/blog/Batch-Normalization/
-                        h = CuDNNLSTM(cfg.blocks)(x)
-                        BatchNormalization()(h)
-                        h = RepeatVector(sequence_len)(h)
-                        h = CuDNNLSTM(cfg.blocks)(h)
-                        BatchNormalization()(h)
-                    elif 0.0 < dropout_rate < 1.0:  # dropout
-                        h = CuDNNLSTM(cfg.blocks)(x)
-                        h = Dropout(dropout_rate)(h)
-                        h = RepeatVector(sequence_len)(h)
-                        h = CuDNNLSTM(cfg.blocks)(h)
-                        h = Dropout(dropout_rate)(h)
-                    else:  # seq2seq LSTM
-                        h = CuDNNLSTM(cfg.blocks)(x)
-                        h = RepeatVector(sequence_len)(h)
-                        h = CuDNNLSTM(cfg.blocks)(h)
-                elif model_type == 'stackedLSTM' and stacked_blocks > 1:  # stacked LSTM
-                    h = CuDNNLSTM(cfg.blocks, return_sequences=True)(x)
-                    if stacked_blocks > 2:
-                        for i in range(stacked_blocks - 2):
-                            h = CuDNNLSTM(cfg.blocks, return_sequences=True)(h)
-                    h = CuDNNLSTM(cfg.blocks)(x)
+        elif model_type == 'GRU':  # GRU
+            h = GRU(cfg.blocks)(x)
+        elif model_type == 'LSTM':  # LSTM
+            h = LSTM(cfg.blocks)(x)
+        elif model_type == 'bidirectLSTM':  # bidirectional LSTM
+            h = Bidirectional(LSTM(cfg.blocks))(x)
+        elif model_type == 'attentionLSTM':  # https://pypi.org/project/keras-self-attention/
+            h = Bidirectional(LSTM(cfg.blocks, return_sequences=True))(x)
+            h = SeqSelfAttention(attention_activation='sigmoid')(h)
+            h = Flatten()(h)
+        elif model_type == 'seq2seqLSTM':
+            h = LSTM(cfg.blocks)(x)
+            h = RepeatVector(sequence_len)(h)
+            h = LSTM(cfg.blocks)(h)
+        elif model_type == 'stackedLSTM' and stacked_blocks > 1:  # stacked LSTM
+            h = LSTM(cfg.blocks, return_sequences=True)(x)
+            if stacked_blocks > 2:
+                for i in range(stacked_blocks - 2):
+                    h = LSTM(cfg.blocks, return_sequences=True)(h)
+            h = LSTM(cfg.blocks)(x)
 
         if h is None:
             raise Exception('model not specified (h is None)')
@@ -675,14 +621,14 @@ class mods_model:
         return df[1:] - df[:-1]
 
     def transform(self, df):
-        if self.isdelta():
+        if self.is_delta():
             return self.delta(df)
         else:
             # bucketing, taxo, fuzzy
             return df
 
     def inverse_transform(self, original, pred_denorm):
-        if self.isdelta():
+        if self.is_delta():
             beg = self.get_sequence_len() - self.get_steps_ahead() + 1
             y = original[beg:]
             utl.dbg_df(y, self.name, 'y.tsv', print=DEBUG, save=DEBUG)
@@ -705,7 +651,6 @@ class mods_model:
         utl.dbg_scaler(scaler, 'inverse_normalize', debug=DEBUG)
         return scaler.inverse_transform(df)
 
-
     def get_tsg(self, df,
                 steps_ahead=cfg.steps_ahead,
                 batch_size=cfg.batch_size
@@ -725,7 +670,6 @@ class mods_model:
             stride=1,
             batch_size=batch_size
         )
-
 
     def predict(self, df):
 
@@ -795,15 +739,6 @@ class mods_model:
         if fill_missing_rows_in_timeseries is True:
             df = utl.fill_missing_rows(df)
         return df
-
-    # TODO: delete
-    # not used:
-    # def predict_file_or_buffer(self, *args, **kwargs):
-    #     df = self.read_file_or_buffer(*args, **kwargs)
-    #     return self.predict(df)
-
-    def predict_url(self, url):
-        pass
 
     def eval(self, df):
         interpol = df
