@@ -56,25 +56,26 @@ log_header_lines = 8
 
 # Application dirs
 app_data = BASE_DIR + '/data/'
-app_data_remote = 'deepnc:/mods/data/'
-app_data_raw = BASE_DIR + '/data/raw/'
-app_data_features = BASE_DIR + '/data/features/tsv/'
-app_data_test = BASE_DIR + '/data/test/'
-app_data_predict = BASE_DIR + '/data/predict/'
-app_data_plot = BASE_DIR + '/data/plot/'
-app_data_results = BASE_DIR + '/data/results/'
-app_models = BASE_DIR + '/models/'
-app_models_remote = 'deepnc:/mods/models/'
-app_checkpoints = BASE_DIR + '/checkpoints/'
-app_visualization = BASE_DIR + '/visualization/'
+app_data_remote     = 'deepnc:/mods/data/'
+app_data_raw        = BASE_DIR + '/data/raw/'
+app_data_features   = BASE_DIR + '/data/features/tsv/'
+app_data_test       = BASE_DIR + '/data/test/'
+app_data_predict    = BASE_DIR + '/data/predict/'
+app_data_plot       = BASE_DIR + '/data/plot/'
+app_data_results    = BASE_DIR + '/data/results/'
+app_models          = BASE_DIR + '/models/'
+app_models_remote   = 'deepnc:/mods/models/'
+app_checkpoints     = BASE_DIR + '/checkpoints/'
+app_visualization   = BASE_DIR + '/visualization/'
 app_data_pool_cache = BASE_DIR + '/data/cache/datapool/'
 
 # Generic settings
-time_range_inclusive = True  # True: <beg, end>; False: <beg, end)
+time_range_inclusive     = True  # TODO: review and delete
 time_range_inclusive_beg = True  # True: <beg; False: (beg
 time_range_inclusive_end = True  # True: end>; False: end)
 
 # pandas defaults
+# TODO: review and delete
 pd_sep = '\t'  # ',' for csv
 pd_skiprows = 0
 pd_skipfooter = 0
@@ -82,7 +83,7 @@ pd_engine = 'python'
 pd_header = 0
 
 # Datapool defaults
-app_data_pool = app_data_features + 'w01h-s10m/'  # 'w10m-s01m/'
+app_data_pool = app_data_features + 'w01h-s10m/'        # 'w10m-s01m/'
 data_pool_caching = True
 # TODO: missing 'dns|internal_count_uid' in datapool, check it (@stevo)
 # data_select_query = \
@@ -162,6 +163,8 @@ test_time_range = '<2019-05-01,2019-06-01)'     # 1 month
 # test_time_range = <2019-05-01,2019-08-01)'    # 3 months
 
 test_time_range_excluded = []
+test_ws_choices = ws_choices
+test_ws = ws_choice
 
 # Data transformation defaults
 interpolate = False
@@ -186,57 +189,3 @@ fig_size_y = 4
 format_string = '%Y-%m-%d %H:%M:%S'
 format_string_parquet = '%Y-%m-%d %H_%M_%S'     # parquet format without ":"
 timezone = 3600
-
-
-def set_common_args():
-    common_args = {
-        'bootstrap_data': {
-            'default': True,
-            'choices': [True, False],
-            'help': 'Download data from remote datastore',
-            'required': False
-        }
-    }
-    return common_args
-
-
-def set_predict_args():
-    predict_args = {
-        'model_name': {
-            'default': model_name,
-            'choices': model_name_all,
-            'help': 'Name of the model used for prediction',
-            'type': str,
-            'required': False
-        },
-        'batch_size': {
-            'default': batch_size_test,
-            'help': '',
-            'required': False
-        }
-    }
-    predict_args.update(set_common_args())
-    return predict_args
-
-
-def set_test_args():
-    test_args = {
-        'model_name': {
-            'default': model_name,
-            'help': 'Name of the model used for a test',
-            'type': str,
-            'required': False
-        },
-        'data': {
-            'default': test_data,
-            'help': 'Data to test on',
-            'required': False
-        },
-        'batch_size': {
-            'default': batch_size_test,
-            'help': '',
-            'required': False
-        }
-    }
-    test_args.update(set_common_args())
-    return test_args

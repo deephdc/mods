@@ -70,6 +70,7 @@ class TimeRangeField(fields.Field):
 #     data_select_query: str
 #     time_range: TimeRange
 #     time_ranges_excluded: list
+#     window_slide: str
 #     batch_size: int
 
 
@@ -198,20 +199,6 @@ class PredictArgsSchema(Schema):
         enum=cfg.model_name_all,
         description="Choose model for prediction"
     )
-    data_select_query = fields.Str(
-        required=False,
-        missing=cfg.train_data_select_query,
-        description= \
-            """
-            Query for data selection from the datapool.
-
-            format: p1;p2|p2c1|col~p2c2_renamed|...;...#c5,c6,...
-                p1, p2, ...     - protocols; e.g., conn, http, ssh
-                p2c1, p2c2, ... - columns of the protocol
-                ~p2c2_renamed   - rename column
-                #c5, c6, ...    - columns to merge data over
-            """
-    )
     time_range = TimeRangeField(
         required=False,
         missing=cfg.test_time_range,
@@ -319,6 +306,8 @@ def train(**kwargs):
     print('train_args:', train_args)
 
     model_name = train_args['model_name']
+    data_select_query = train_args['data_select_query']
+    window_slide = train_args['window_slide']
 
     # support full paths for command line calls
     models_dir = cfg.app_models
@@ -330,9 +319,9 @@ def train(**kwargs):
 
     # read train data from the datapool
     df_train, cached_file_train = utl.datapool_read(
-        train_args['data_select_query'],
+        data_select_query,
         train_args['train_time_range'],
-        train_args['window_slide'],
+        window_slide,
         train_args['train_time_ranges_excluded'],
         cfg.app_data_features
     )
@@ -374,6 +363,10 @@ def train(**kwargs):
 
     # put computed metrics into the model to be saved in model's zip
     model.update_metrics(metrics)
+    # store data select query into the model
+    model.set_data_select_query(data_select_query)
+    # store window_slide into the model
+    model.set_window_slide(window_slide)
 
     # save model locally
     file = model.save(os.path.join(models_dir, model_name))
@@ -394,8 +387,8 @@ def train(**kwargs):
         'model_name': model_name,
         'steps_ahead': model.get_steps_ahead(),
         'batch_size': model.get_batch_size(),
-        'window_slide': train_args['window_slide'],
-        'data_select_query': train_args['data_select_query'],
+        'window_slide': window_slide,
+        'data_select_query': data_select_query,
         'train_time_range': str(train_args['train_time_range']),
         'train_time_ranges_excluded': str(train_args['train_time_ranges_excluded']),
         'train_cached_df': cached_file_train,
@@ -441,22 +434,25 @@ def predict(**kwargs):
         models_dir = os.path.dirname(model_name)
         model_name = os.path.basename(model_name)
 
-    # read data from the datapool
-    df_data, cached_file_train = utl.datapool_read(
-        predict_args['data_select_query'],
-        predict_args['train_time_range'],
-        predict_args['window_slide'],
-        predict_args['time_ranges_excluded'],
-        cfg.app_data_features
-    )
-    # repair the data
-    df_data = utl.fix_missing_num_values(df_data)
-
     backend.clear_session()
     model = load_model(
         models_dir=models_dir,
         model_name=model_name
     )
+
+    data_select_query = model.get_data_select_query()
+    window_slide = model.get_window_slide()
+
+    # read data from the datapool
+    df_data, cached_file_train = utl.datapool_read(
+        data_select_query,
+        predict_args['time_range'],
+        window_slide,
+        predict_args['time_ranges_excluded'],
+        cfg.app_data_features
+    )
+    # repair the data
+    df_data = utl.fix_missing_num_values(df_data)
 
     # override batch_size
     batch_size = kwargs['batch_size']
@@ -468,7 +464,8 @@ def predict(**kwargs):
         'status': 'ok',
         'dir_models': models_dir,
         'model_name': model_name,
-        'data_select_query': predict_args['data_select_query'],
+        'data_select_query': data_select_query,
+        'window_slide': window_slide,
         'time_range': str(predict_args['time_range']),
         'time_ranges_excluded': str(predict_args['time_ranges_excluded']),
         'cached_df': cached_file_train,

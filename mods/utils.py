@@ -426,12 +426,12 @@ def exclude(d, ranges):
 
 # @stevo datapool reading
 def datapool_read(
-        data_specs_str,  # protocol/column/merge specification
-        time_range,  # (beg datetime.datetime, end datetime.datetime)
-        ws,  # window/slide specification; e.g., w01h-s10m
-        excluded=[],  # list of dates and ranges that will be omitted
-        base_dir=cfg.app_data_features,  # base dir with the protocol/YYYY/MM/DD/wXXd-sXXd.tsv structure
-        caching=cfg.data_pool_caching
+        data_specs_str,                 # protocol/column/merge specification
+        time_range,                     # (beg datetime.datetime, end datetime.datetime)
+        ws,                             # window/slide specification; e.g., w01h-s10m
+        excluded=[],                    # list of dates and ranges that will be omitted
+        base_dir=cfg.app_data_features, # base dir with the protocol/YYYY/MM/DD/wXXd-sXXd.tsv structure
+        caching=cfg.data_pool_caching   # caching flag
 ):
     # regex matching directory of a day
     REGEX_DIR_DAY = re.compile(r'^' + re.escape(

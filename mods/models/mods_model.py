@@ -56,6 +56,8 @@ import mods.config as cfg
 import mods.utils as utl
 
 
+# TODO: TF2 problem: https://github.com/keras-team/keras/issues/13353
+# TODO: store data select query, select time range, exclusion filters and window+slide into the models zip
 class mods_model:
     # generic
     __FILE = 'file'
@@ -74,7 +76,10 @@ class mods_model:
     __BATCH_SIZE = 'batch_size'
     __BATCH_NORMALIZATION = 'batch_normalization'
     __DROPOUT_RATE = 'dropout_rate'
-    __TRAINING_TIME = 'training_time'  # moved to metrics.json
+    __DATA_SELECT_QUERY = 'data_select_query'
+    __WINDOW_SLIDE = 'window_slide'
+    # metrics
+    __TRAINING_TIME = 'training_time'
     # scaler
     __SCALER = 'scaler'
     # sample data
@@ -150,7 +155,11 @@ class mods_model:
         if not file.lower().endswith('.zip'):
             file += '.zip'
         print('Loading model: %s' % file)
-
+        # -->
+        # TODO: workaround for https://github.com/keras-team/keras/issues/13353
+        import keras.backend.tensorflow_backend as tb
+        tb._SYMBOLIC_SCOPE.value = True
+        # <--
         with ZipFile(file) as zip:
             self.__load_config(zip, 'config.json')
             self.__load_model(zip, self.config[mods_model.__MODEL])
@@ -380,6 +389,18 @@ class mods_model:
 
     def get_dropout_rate(self):
         return self.cfg_model()[mods_model.__DROPOUT_RATE]
+
+    def set_data_select_query(self, data_select_query):
+        self.cfg_model()[mods_model.__DATA_SELECT_QUERY] = data_select_query
+
+    def get_data_select_query(self):
+        return self.cfg_model()[mods_model.__DATA_SELECT_QUERY]
+
+    def set_window_slide(self, window_slide):
+        self.cfg_model()[mods_model.__WINDOW_SLIDE] = window_slide
+
+    def get_window_slide(self):
+        return self.cfg_model()[mods_model.__WINDOW_SLIDE]
 
     def set_training_time(self, training_time):
         self.__metrics[self.__TRAINING_TIME] = training_time
