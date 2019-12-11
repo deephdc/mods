@@ -572,8 +572,8 @@ class mods_model:
         # Compile model
         self.model.compile(
             loss='mean_squared_error',  # Adam
-            optimizer=opt,  # 'adam', 'adagrad', 'rmsprop', opt
-            metrics=['mse', 'mae'])  # 'cosine', 'mape'
+            optimizer=opt,              # 'adam', 'adagrad', 'rmsprop', opt
+            metrics=['mse', 'mae'])     # 'cosine', 'mape'
 
         # Checkpointing and earlystopping
         filepath = cfg.app_checkpoints + self.name + '-{epoch:02d}.hdf5'
