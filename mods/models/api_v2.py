@@ -196,7 +196,7 @@ class PredictArgsSchema(Schema):
     model_name = fields.Str(
         required=False,
         missing=cfg.model_name,
-        enum=cfg.model_name_all,
+        enum=cfg.list_models(),
         description="Choose model for prediction"
     )
     time_range = TimeRangeField(
@@ -259,6 +259,7 @@ def get_metadata():
         "license": "",
         "url": "https://github.com/deephdc/mods",
         "version": "",
+        "models": cfg.list_models()
     }
 
     # override above values by values from PKG-INFO file (loads metadata from setup.cfg)
