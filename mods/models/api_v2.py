@@ -196,8 +196,8 @@ class PredictArgsSchema(Schema):
     model_name = fields.Str(
         required=False,
         missing=cfg.model_name,
-        enum=cfg.list_models(),
-        description="Choose model for prediction"
+        #enum=cfg.list_models(),
+        description="Choose model for prediction. See available models in metadata."
     )
     time_range = TimeRangeField(
         required=False,
@@ -225,6 +225,11 @@ class PredictArgsSchema(Schema):
         missing=cfg.batch_size,
         description="Batch size"
     )
+    #help = fields.Boolean(
+    #    required=False,
+    #    missing=False,
+    #    enum=[True, False]
+    #)
 
 
 def load_model(
@@ -383,7 +388,6 @@ def train(**kwargs):
         print('rclone_copy(%s, %s):\nout: %s\nerr: %s' % (file, dir_remote, out, err))
 
     message = {
-        'status': 'ok',
         'dir_models': models_dir,
         'model_name': model_name,
         'steps_ahead': model.get_steps_ahead(),
@@ -425,6 +429,11 @@ def predict(**kwargs):
 
     print('predict_args:', predict_args)
 
+    #if 'help' in predict_args and predict_args['help']:
+    #    return {
+    #        'models': cfg.list_models(),
+    #    }
+
     model_name = predict_args['model_name']
 
     # support full paths for command line calls
@@ -462,7 +471,6 @@ def predict(**kwargs):
     predictions = model.predict(df_data)
 
     message = {
-        'status': 'ok',
         'dir_models': models_dir,
         'model_name': model_name,
         'data_select_query': data_select_query,
@@ -476,9 +484,8 @@ def predict(**kwargs):
             df_data[model.get_sequence_len():-model.get_steps_ahead()],
             predictions[:-model.get_steps_ahead()],
             model,
-        )
+        ),
+        'predictions': predictions.tolist()
     }
-
-    message['predictions'] = predictions.tolist()
 
     return message
