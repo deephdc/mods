@@ -107,4 +107,3 @@ Project Organization
 3. [MODS online documentation](http://docs.deep-hybrid-datacloud.eu/en/latest/user/modules/mods.html)
 
 <img src="https://deep-hybrid-datacloud.eu/wp-content/uploads/sites/2/2018/04/datastreams.jpeg" width="600">
-
