@@ -24,6 +24,7 @@ DEBUG = False
 
 import io
 import json
+import logging
 import os
 import sys
 import tempfile
@@ -138,7 +139,7 @@ class mods_model:
     def save(self, file):
         if not file.lower().endswith('.zip'):
             file += '.zip'
-        print('Saving model: %s' % file)
+        logging.info('Saving model: %s' % file)
 
         with ZipFile(file, mode='w') as zip:
             self.__save_config(zip, 'config.json')
@@ -148,13 +149,13 @@ class mods_model:
             self.__save_metrics(zip, 'metrics.json')
             zip.close()
 
-        print('Model saved')
+        logging.info('Model saved')
         return file
 
     def load(self, file):
         if not file.lower().endswith('.zip'):
             file += '.zip'
-        print('Loading model: %s' % file)
+        logging.info('Loading model: %s' % file)
         # -->
         # TODO: workaround for https://github.com/keras-team/keras/issues/13353
         import keras.backend.tensorflow_backend as tb
@@ -168,7 +169,7 @@ class mods_model:
             self.__load_metrics(zip, 'metrics.json')
             zip.close()
 
-        print('Model loaded')
+        logging.info('Model loaded')
         self.__init()
 
     def __save_config(self, zip, file):
@@ -177,11 +178,11 @@ class mods_model:
         self.__save_bytes_in_zip_as_file(zip, file, binary_data)
 
     def __load_config(self, zip, file):
-        print('Loading model config')
+        logging.info('Loading model config')
         with zip.open(file) as f:
             data = f.read()
             self.config = json.loads(data.decode('utf-8'))
-        print('Model config:\n%s' % json.dumps(self.config, indent=True))
+        logging.info('Model config:\n%s' % json.dumps(self.config, indent=True))
 
     def __save_metrics(self, zip, file):
         data = json.dumps(self.__metrics)
@@ -189,51 +190,51 @@ class mods_model:
         self.__save_bytes_in_zip_as_file(zip, file, binary_data)
 
     def __load_metrics(self, zip, file):
-        print('Loading model metrics')
+        logging.info('Loading model metrics')
         try:
             with zip.open(file) as f:
                 data = f.read()
                 self.__metrics = json.loads(data.decode('utf-8'))
-            print('Model metrics:\n%s' % json.dumps(self.__metrics, indent=True))
+            logging.info('Model metrics:\n%s' % json.dumps(self.__metrics, indent=True))
         except Exception as e:
-            print('Error: Could not load model metrics [%s]' % str(e))
+            logging.info('Error: Could not load model metrics [%s]' % str(e))
 
     def __save_model(self, zip, model_config):
-        print('Saving keras model')
+        logging.info('Saving keras model')
         _, fname = tempfile.mkstemp()
         self.model.save(fname)
         zip.write(fname, model_config[mods_model.__FILE])
         os.remove(fname)
-        print('Keras model saved')
+        logging.info('Keras model saved')
 
     def __load_model(self, zip, model_config):
-        print('Loading keras model')
+        logging.info('Loading keras model')
         with zip.open(model_config[mods_model.__FILE]) as f:
             self.model = self.__func_over_tempfile(f, keras.models.load_model)
-        print('Keras model loaded')
+        logging.info('Keras model loaded')
 
     def __save_scaler(self, zip, scaler_config):
-        print('Saving scaler')
+        logging.info('Saving scaler')
         _, fname = tempfile.mkstemp()
         joblib.dump(self.__scaler, fname)
         zip.write(fname, scaler_config[mods_model.__FILE])
         os.remove(fname)
-        print('Scaler saved')
+        logging.info('Scaler saved')
 
     def __load_scaler(self, zip, scaler_config):
-        print('Loading scaler')
+        logging.info('Loading scaler')
         with zip.open(scaler_config[mods_model.__FILE]) as f:
             self.__scaler = joblib.load(f)
-        print('Scaler loaded')
+        logging.info('Scaler loaded')
 
     def __save_sample_data(self, zip, sample_data_config):
         if sample_data_config is None:
             return
 
         if self.sample_data is None:
-            print('No sample data was set')
+            logging.info('No sample data was set')
             return
-        print('Saving sample data')
+        logging.info('Saving sample data')
 
         with zip.open(sample_data_config[mods_model.__FILE], mode='w') as f:
             self.sample_data.to_csv(
@@ -244,12 +245,12 @@ class mods_model:
                 engine=sample_data_config[mods_model.__ENGINE],
                 usecols=lambda col: col in sample_data_config[mods_model.__USECOLS]
             )
-        print('Sample data saved:\n%s' % self.sample_data)
+        logging.info('Sample data saved:\n%s' % self.sample_data)
 
     def __load_sample_data(self, zip, sample_data_config):
         if sample_data_config is None:
             return
-        print('Loading sample data')
+        logging.info('Loading sample data')
 
         try:
             with zip.open(sample_data_config[mods_model.__FILE]) as f:
@@ -261,9 +262,9 @@ class mods_model:
                     engine=sample_data_config[mods_model.__ENGINE],
                     usecols=lambda col: col in sample_data_config[mods_model.__USECOLS]
                 )
-            print('Sample data loaded:\n%s' % self.sample_data)
+            logging.info('Sample data loaded:\n%s' % self.sample_data)
         except Exception as e:
-            print('Sample data not loaded: %s' % e)
+            logging.info('Sample data not loaded: %s' % e)
 
     def load_data(
             self,
@@ -275,7 +276,7 @@ class mods_model:
             usecols=lambda col: [col for col in ['number_of_conn', 'sum_orig_kbytes']],
             header=0
     ):
-        print(path)
+        logging.info(path)
         df = pd.read_csv(
             open(path),
             sep=sep,
@@ -564,7 +565,7 @@ class mods_model:
         self.model = Model(inputs=x, outputs=y)
 
         # Drawing model
-        print(self.model.summary())
+        logging.info(self.model.summary())
 
         # Optimizer
         opt = Adam(clipnorm=1.0, clipvalue=0.5)
@@ -576,7 +577,7 @@ class mods_model:
             metrics=['mse', 'mae'])     # 'cosine', 'mape'
 
         # Checkpointing and earlystopping
-        filepath = cfg.app_checkpoints + self.name + '-{epoch:02d}.hdf5'
+        filepath = os.path.join(cfg.app_checkpoints, self.name + '-{epoch:02d}.hdf5')
         checkpoints = ModelCheckpoint(
             filepath,
             monitor='loss',
@@ -607,7 +608,8 @@ class mods_model:
         tsg_train = self.get_tsg(df_train, steps_ahead=steps_ahead, batch_size=batch_size)
 
         if DEBUG:
-            print(self.config)
+            # TODO:
+            logging.info(self.config)
 
         start_time = time.time()
         self.model.fit_generator(
@@ -618,13 +620,13 @@ class mods_model:
         self.set_training_time(time.time() - start_time)
 
     def plot(self, *args):
-        print('this method is not yet implemented')
+        logging.info('this method is not yet implemented')
 
     def __init(self):
-        print('Initializing model')
+        logging.info('Initializing model')
         if self.sample_data is not None:
             self.predict(self.sample_data)
-        print('Model initialized')
+        logging.info('Model initialized')
 
     # First order differential for numpy array      y' = d(y)/d(t) = f(y,t)
     # be carefull                                   len(dt) == len(data)-1
@@ -750,7 +752,7 @@ class mods_model:
                     ]
                     if len(kwargs['header']) == 1:
                         kwargs['header'] = kwargs['header'][0]
-            # print('HEADER: %s' % kwargs['pd_header'])
+            # logging.info('HEADER: %s' % kwargs['pd_header'])
         df = pd.read_csv(*args, **kwargs)
         if fill_missing_rows_in_timeseries is True:
             df = utl.fill_missing_rows(df)
@@ -761,13 +763,13 @@ class mods_model:
         if self.get_interpolate():
             interpol = df.interpolate()
             interpol = interpol.values.astype('float32')
-            # print('interpolated:\n%s' % interpol)
+            # logging.info('interpolated:\n%s' % interpol)
 
         trans = self.transform(interpol)
-        # print('transformed:\n%s' % transf)
+        # logging.info('transformed:\n%s' % transf)
 
         norm = self.normalize(trans, self.get_scaler())
-        # print('normalized:\n%s' % norm)
+        # logging.info('normalized:\n%s' % norm)
 
         tsg = self.get_tsg(norm, self.get_steps_ahead(), cfg.batch_size_test)
 

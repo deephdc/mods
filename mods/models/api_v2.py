@@ -24,13 +24,14 @@ Train models with first order differential to monitor changes
 
 import os
 
+import logging
 import pkg_resources
+from distutils.file_util import copy_file
 from keras import backend
 from marshmallow import Schema, INCLUDE
 from webargs import fields
 
 import mods.config as cfg
-import mods.dataset.data_utils as dutils
 import mods.dataset.make_dataset as mdata
 import mods.models.mods_model as MODS
 import mods.utils as utl
@@ -302,14 +303,14 @@ def train(**kwargs):
     """
     https://docs.deep-hybrid-datacloud.eu/projects/deepaas/en/wip-api_v2/user/v2-api.html#deepaas.model.v2.base.BaseModel.train
     """
-    print("train(**kwargs) - kwargs: %s" % (kwargs))
+    logging.info("train(**kwargs) - kwargs: %s" % (kwargs))
 
     # use this schema
     schema = TrainArgsSchema()
     # deserialize key-word arguments
     train_args = schema.load(kwargs)
 
-    print('train_args:', train_args)
+    logging.info('train_args:', train_args)
 
     model_name = train_args['model_name']
     data_select_query = train_args['data_select_query']
@@ -319,7 +320,7 @@ def train(**kwargs):
     models_dir = cfg.app_models
     full_paths = train_args['full_paths'] if 'full_paths' in train_args else False
     if full_paths:
-        print('full_paths:', full_paths)
+        logging.info('full_paths:', full_paths)
         models_dir = os.path.dirname(model_name)
         model_name = os.path.basename(model_name)
 
@@ -377,16 +378,12 @@ def train(**kwargs):
     # save model locally
     file = model.save(os.path.join(models_dir, model_name))
     dir_remote = cfg.app_models_remote
-
-    # upload model using rclone
-    if cfg.app_models_remote:
-        out, err = dutils.rclone_call(
-            src_path=file,
-            dest_dir=dir_remote,
-            cmd='copy'
-        )
-        print('rclone_copy(%s, %s):\nout: %s\nerr: %s' % (file, dir_remote, out, err))
-
+    
+    # copy model to a remote dir
+    logging.info('copy_file(%s, %s): start' % (file, dir_remote))
+    copy_file(file, dir_remote)
+    logging.info('copy_file(%s, %s): done' % (file, dir_remote))
+    
     message = {
         'dir_models': models_dir,
         'model_name': model_name,
@@ -420,14 +417,14 @@ def predict(**kwargs):
     :param kwargs:
     :return:
     """
-    print("predict(**kwargs) - kwargs: %s" % (kwargs))
+    logging.info("predict(**kwargs) - kwargs: %s" % (kwargs))
 
     # use this schema
     schema = PredictArgsSchema()
     # deserialize key-word arguments
     predict_args = schema.load(kwargs)
 
-    print('predict_args:', predict_args)
+    logging.info('predict_args:', predict_args)
 
     #if 'help' in predict_args and predict_args['help']:
     #    return {
@@ -440,7 +437,7 @@ def predict(**kwargs):
     models_dir = cfg.app_models
     full_paths = predict_args['full_paths'] if 'full_paths' in predict_args else False
     if full_paths:
-        print('full_paths:', full_paths)
+        logging.info('full_paths:', full_paths)
         models_dir = os.path.dirname(model_name)
         model_name = os.path.basename(model_name)
 

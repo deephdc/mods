@@ -24,10 +24,17 @@ MODS configuration file
 
 import datetime
 import fnmatch
+import logging
 import os
 from os import path
 from os.path import expanduser
 from mods.mods_types import TimeRange
+
+
+logging.basicConfig(
+    format='%(asctime)s %(levelname)-8s %(message)s',
+    level=logging.INFO,
+    datefmt='%Y-%m-%d %H:%M:%S')
 
 
 def list_dir(dir, pattern='*.tsv'):
@@ -45,29 +52,33 @@ def list_dir(dir, pattern='*.tsv'):
 # identify basedir for the package
 BASE_DIR = path.dirname(path.normpath(path.dirname(__file__)))
 
-# Data repository
-DATA_DIR = expanduser("~") + '/data/deep-dm/'  # app_data_raw
+# default location for input and output data, e.g. directories 'data' and 'models',
+# is either set relative to the application path or via environment setting
+IN_OUT_BASE_DIR = BASE_DIR
+if 'APP_INPUT_OUTPUT_BASE_DIR' in os.environ:
+    env_in_out_base_dir = os.environ['APP_INPUT_OUTPUT_BASE_DIR']
+    if os.path.isdir(env_in_out_base_dir):
+        IN_OUT_BASE_DIR = env_in_out_base_dir
+    else:
+        msg = "[WARNING] \"APP_INPUT_OUTPUT_BASE_DIR=" + \
+        "{}\" is not a valid directory! ".format(env_in_out_base_dir) + \
+        "Using \"BASE_DIR={}\" instead.".format(BASE_DIR)
+        print(msg)
 
-# Data dirs
-dir_logs = DATA_DIR + 'logs/'
-dir_parquet = DATA_DIR + 'logs_parquet/'
-dir_cleaned = DATA_DIR + 'logs_cleaned/'
-log_header_lines = 8
+# directories for input data and output models
+REMOTE_DATA_DIR = os.path.join(IN_OUT_BASE_DIR, 'data')
+REMOTE_MODELS_DIR = os.path.join(IN_OUT_BASE_DIR, 'models')
 
 # Application dirs
-app_data = BASE_DIR + '/data/'
-app_data_remote     = 'deepnc:/mods/data/'
-app_data_raw        = BASE_DIR + '/data/raw/'
-app_data_features   = BASE_DIR + '/data/features/tsv/'
-app_data_test       = BASE_DIR + '/data/test/'
-app_data_predict    = BASE_DIR + '/data/predict/'
-app_data_plot       = BASE_DIR + '/data/plot/'
-app_data_results    = BASE_DIR + '/data/results/'
-app_models          = BASE_DIR + '/models/'
-app_models_remote   = 'deepnc:/mods/models/'
-app_checkpoints     = BASE_DIR + '/checkpoints/'
-app_visualization   = BASE_DIR + '/visualization/'
-app_data_pool_cache = BASE_DIR + '/data/cache/datapool/'
+app_data_remote     = REMOTE_DATA_DIR
+app_models_remote   = REMOTE_MODELS_DIR
+app_data            = os.path.join(BASE_DIR, 'data')
+app_data_features   = os.path.join(app_data, 'tsv')
+app_data_test       = os.path.join(app_data, 'test')
+app_models          = os.path.join(BASE_DIR, 'models')
+app_checkpoints     = os.path.join(BASE_DIR, 'checkpoints')
+app_cache           = os.path.join(BASE_DIR, 'cache')
+app_data_pool_cache = os.path.join(app_cache, 'datapool')
 
 # Generic settings
 time_range_inclusive     = True  # TODO: review and delete
@@ -183,7 +194,7 @@ eval_filename = 'eval.tsv'
 
 # Plotting
 plot = False
-plot_dir = app_data_plot
+plot_dir = os.path.join(BASE_DIR, 'plots')
 plot_filename = 'plot_data.png'
 fig_size_x = 25                             # max 2^16 pixels = 650 inch
 fig_size_y = 4
