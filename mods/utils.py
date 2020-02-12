@@ -22,6 +22,7 @@ Created on Mon Apr 23 12:48:52 2018
 
 import datetime
 import hashlib
+import logging
 import os
 import re
 from math import sqrt
@@ -78,7 +79,7 @@ def create_df(filename):
         if '_bytes' in feature:
             df[feature] = df[feature].div(1024 * 1024).astype(int)
 
-    print('create_df', filename, '\t', len(df.columns), df.shape, '\n', list(df))
+    logging.info('create_df', filename, '\t', len(df.columns), df.shape, '\n', list(df))
     return df
 
 
@@ -89,7 +90,7 @@ def read_data(filename):
     # Data: pandas dataframe to numpy array
     data = df.values.astype('float32')
 
-    print('read_data: ', filename, '\t', data.shape[1], data.dtype, '\n', list(df))
+    logging.info('read_data: ', filename, '\t', data.shape[1], data.dtype, '\n', list(df))
     return data
 
 
@@ -374,7 +375,7 @@ def parse_datetime_ranges(time_ranges):
     for x in time_ranges:
         m = REGEX_DATAPOOLTIME.match(x)
         if m:
-            print('matched datetime: %s' % x)
+            logging.info('matched datetime: %s' % x)
             # single date specified; e.g. 2019, 2019-01, 2019-01-01
             r = expand_to_datetime_range(
                 m.group('year'),
@@ -384,9 +385,9 @@ def parse_datetime_ranges(time_ranges):
             parsed.append(r)
             continue
         m = REGEX_DATAPOOLTIMERANGE.match(x)
-        print(m)
+        logging.info(m)
         if m:
-            print('matched datetime_range: %s' % x)
+            logging.info('matched datetime_range: %s' % x)
             beg = expand_to_datetime(
                 m.group('beg_year'),
                 m.group('beg_month'),
@@ -502,11 +503,11 @@ def datapool_read(
 
                 data_file = os.path.join(root, f)
                 if exclude(dpt, excluded) or not is_within_range(dpt, time_range):
-                    print('skipping: %s' % data_file)
+                    logging.info('skipping: %s' % data_file)
                     continue
 
                 # load one of the data files
-                print('loading: %s' % data_file)
+                logging.info('loading: %s' % data_file)
                 fp = open(data_file)
                 df = pd.read_csv(
                     fp,
@@ -690,7 +691,7 @@ def fill_missing_rows(df, range_beg=None, range_end=None):
     df['window_end'] = df['window_start'] + window_duration
     newnumrows = len(df.index)
     if newnumrows > numrows:
-        print('filled %d missing rows (was %d)' % (newnumrows - numrows, numrows))
+        logging.info('filled %d missing rows (was %d)' % (newnumrows - numrows, numrows))
     return df
 
 # @stevo
