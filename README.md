@@ -2,9 +2,12 @@ DEEP Open Catalogue: Massive Online Data Streams (MODS)
 ==============================
 ![DEEP-Hybrid-DataCloud logo](https://deep-hybrid-datacloud.eu/wp-content/uploads/sites/2/2018/01/logo.png)
 
-[![Build Status](https://jenkins.indigo-datacloud.eu/buildStatus/icon?job=Pipeline-as-code/DEEP-OC-org/mods/test)](https://jenkins.indigo-datacloud.eu/job/Pipeline-as-code/job/DEEP-OC-org/job/mods/job/test/)
+[![Build Status](https://jenkins.indigo-datacloud.eu/buildStatus/icon?job=Pipeline-as-code/DEEP-OC-org/mods/master)](https://jenkins.indigo-datacloud.eu/job/Pipeline-as-code/job/DEEP-OC-org/job/mods/job/master/)
 
-**Project:** This work is part of the [DEEP Hybrid-DataCloud](https://deep-hybrid-datacloud.eu/) project that has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 777435.
+DEEP Open Catalog entry: [DEEP Open Catalog](https://marketplace.deep-hybrid-datacloud.eu/modules/deep-oc-massive-online-data-streams.html)
+
+**Project:** 
+This work is part of the [DEEP Hybrid-DataCloud](https://deep-hybrid-datacloud.eu/) project that has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 777435.
 
 To start using this framework run:
 
@@ -15,81 +18,93 @@ pip install -e .
 ```
 
 **Requirements:**
- 
- - This project has been tested in Ubuntu 18.04 with Python 3.6. Further package requirements are described in the `requirements.txt` file.
-- (TBD later)
+ - This project has been tested in Ubuntu 18.04 with Python 3.6. 
+ - Further package requirements are described in the `requirements.txt` file.
 
 
 Project Organization
 ------------
 
-    ├── LICENSE
-    ├── README.md          <- The top-level README for developers using this project.
-    ├── data
-    │   └── raw            <- The original, immutable data dump.
+    ├── LICENSE     
+    ├── README.md   <- The top-level README for developers using this project.
     │
-    ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
+    ├── checkpoints <- Directory for checkpoint storing during training process 
     │
-    ├── docker             <- Directory for Dockerfile(s)
+    ├── data        <- Data directory
+    │   ├── features       <- datapool directory for model training
+    │   │   └── datapools
+    │   ├── test           <- test data 
+    │   │   └── sample-test-w01h-s10m.tsv  <- sample data for prediction that works with the default model
+    │   └── train          <- (optional) train data
+    │       └── sample train data in the same format as test data
     │
-    ├── models             <- Trained and serialized models, model predictions, or model summaries
+    ├── docs        <- Online documentation http://docs.deep-hybrid-datacloud.eu/en/latest/user/modules/mods.html 
     │
-    ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-    │                         the creator's initials (if many user development),
-    │                         and a short `_` delimited description, e.g.
-    │                         `1.0-jqp-initial_data_exploration.ipynb`.
+    ├── docker      <- Official docker container https://github.com/deephdc/DEEP-OC-mods
     │
-    ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
+    ├── models      <- Trained models
+    │   ├── model_default_cpu.zip          <- default model for CPU    
+    │   └── model_default_gpu.zip          <- default model for GPU
     │
-    ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-    │   └── figures        <- Generated graphics and figures to be used in reporting
-    │
-    ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-    │                         generated with `pip freeze > requirements.txt`
-    │
-    ├── setup.py           <- makes project pip installable (pip install -e .) so mods can be imported
-    ├── mods    <- Source code for use in this project.
-    │   ├── __init__.py    <- Makes mods a Python module
+    ├── mods        <- Deep learning module source code for use in this project.
+    │   ├── __init__.py    <- Makes the module a Python module
     │   │
-    │   ├── dataset        <- Scripts to download or generate data
-    │   │   └── make_dataset.py
+    │   ├── config.py      <- Configuration file for model training as well as hyper-parameter tuning
+    │   ├── utils.py       <- Utilization functions   
     │   │
-    │   ├── features       <- Scripts to turn raw data into features for modeling
-    │   │   └── build_features.py
+    │   ├── dataset        <- Scripts to process data at various levels
+    │   │   ├── data_utils.py      <- Data utility functions with hybrid data storage (Nextcloud, rclone)
+    │   │   └── make_dataset.py    <- Data Preprocessing (module) to produce ML/DL data    
     │   │
-    │   ├── models         <- Scripts to train models and then use trained models to make
-    │   │   │                 predictions
-    │   │   └── model.py
+    │   ├── features       <- Scripts to build and select ML/DL data
+    │   │   └── select_features.py <- Tests for feature selection
     │   │
-    │   └── tests          <- Scripts to perfrom code testing + pylint script
+    │   ├── models         <- Scripts to train models and then use trained models to make prediction
+    │   │   ├── api.py             <- Module API to leverage the DEEPaaS API
+    │   │   ├── mods_model.py      <- Deep Learning modeling
+    │   │   └── auxiliary scripts
     │   │
-    │   └── visualization  <- Scripts to create exploratory and results oriented visualizations
+    │   ├── tests          <- Code testing scripts + pylint script
+    │   │
+    │   └── visualization  <- Visualization oriented scripts
     │       └── visualize.py
     │
-    └── tox.ini            <- tox file with settings for running tox; see tox.testrun.org
-
+    ├── notebooks    <- Jupyter notebooks
+    ├── references   <- Explanatory materials such as articles, flyers, posters, presentations.
+    ├── reports      <- Generated analysis
+    │   └── figures       <- Generated graphics and figures to be used in reporting
+    │
+    ├── .rclone.conf <- Configuration file for data transfer (rclone)
+    ├── Jenkinsfile  <- CI/CD configuration
+    │
+    ├── requirements.txt   <- Environment reproducing file, e.g. `pip freeze > requirements.txt`
+    │
+    ├── setup.cfg    <- Module metadata + DEEPaaS entry point definition
+    ├── setup.py     <- Makes project pip installable (pip install -e .) so the module can be imported
+    │
+    └── tox.ini      <- tox file with settings for running tox; see tox.testrun.org
 
 --------
 
 <p><small>Project based on the <a target="_blank" href="https://github.com/indigo-dc/cookiecutter-data-science">DEEP DS template</a>. #cookiecutter #datascience</small></p>
 
 ## Workflow
+### Data Preprocessing module
+1. Data cleaning and filtering, feature extraction
+2. Data transformation, ML/DL datapool creation 
+3. Feature selection
 
-### 1. Data preprocessing
+### Deep Learning module (MODS)
+1. Configuration setting 
+2. Model training
+3. Model testing
 
-#### 1.1 Prepare the dataset 
+### Prediction and train throught [DEEPaaS API](https://github.com/indigo-dc/DEEPaaS)
 
-#### 1.2 Build features
+### DEEP as a Service
+1. [MODS container](https://github.com/deephdc/DEEP-OC-mods) available in [Docker Hub](https://hub.docker.com/r/deephdc/deep-oc-mods) as a part of [`deephdc`](https://hub.docker.com/u/deephdc/) organization
+2. [MODS entry](https://marketplace.deep-hybrid-datacloud.eu/modules/deep-oc-massive-online-data-streams.html) in [DEEP Open Catalog](https://marketplace.deep-hybrid-datacloud.eu/) as an [Use Case of DEEP-HybridDataCloud project](https://deep-hybrid-datacloud.eu/use-cases/)
+3. [MODS online documentation](http://docs.deep-hybrid-datacloud.eu/en/latest/user/modules/mods.html)
 
-### 2. Train and test NNs
-
-#### 2.1 Set the configuration 
-
-#### 2.1 Training
-
-### 3. Prediction throught DEEPaaS API
-
-### 4. DEEP as a Service: [MODS container](https://github.com/deephdc/DEEP-OC-mods)
-
-### 5. Docker Hub: [MODS container image](https://hub.docker.com/r/deephdc/deep-oc-mods) in Docker Hub [`deephdc`](https://hub.docker.com/u/deephdc/) organization
+<img src="https://deep-hybrid-datacloud.eu/wp-content/uploads/sites/2/2018/04/datastreams.jpeg" width="600">
 
