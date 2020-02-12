@@ -144,10 +144,11 @@ dropout_rate = 1.0                          # range <0.5, 0.8>, 0.0=no outputs, 
 train_time_range = '<2018-11-01,2019-05-01)'     # 6 months - K20 experiments with k, p
 # train_time_range = '<2018-08-01,2019-05-01)'   # 9 months
 # train_time_range = '<2018-05-01,2019-05-01)'   # 1 year
-train_time_range_excluded = [
-    '<2018-12-01,2019-01-01)',
-    '<2019-01-01,2019-02-01)'
-]
+#train_time_range_excluded = [
+#    '<2018-12-01,2019-01-01)',
+#    '<2019-01-01,2019-02-01)'
+#]
+train_time_range_excluded = []
 train_ws_choices = ws_choices
 train_ws = ws_choice
 
