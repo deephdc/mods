@@ -53,7 +53,6 @@ Project Organization
     │   ├── utils.py       <- Utilization functions   
     │   │
     │   ├── dataset        <- Scripts to process data at various levels
-    │   │   ├── data_utils.py      <- Data utility functions with hybrid data storage (Nextcloud, rclone)
     │   │   └── make_dataset.py    <- Data Preprocessing (module) to produce ML/DL data    
     │   │
     │   ├── features       <- Scripts to build and select ML/DL data
