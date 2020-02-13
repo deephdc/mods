@@ -377,12 +377,14 @@ def train(**kwargs):
 
     # save model locally
     file = model.save(os.path.join(models_dir, model_name))
-    dir_remote = cfg.app_models_remote
     
     # copy model to a remote dir
-    logging.info('copy_file(%s, %s): start' % (file, dir_remote))
-    copy_file(file, dir_remote)
-    logging.info('copy_file(%s, %s): done' % (file, dir_remote))
+    if cfg.app_models_remote != None:
+        logging.info('copy_file(%s, %s): start' % (file, cfg.app_models_remote))
+        copy_file(file, cfg.app_models_remote)
+        logging.info('copy_file(%s, %s): done' % (file, cfg.app_models_remote))
+    else:
+        logging.info('skipping uploading model into a remote storage: cfg.app_models_remote=%s' % cfg.app_models_remote)
     
     message = {
         'dir_models': models_dir,
