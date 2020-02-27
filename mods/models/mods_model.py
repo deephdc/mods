@@ -58,7 +58,6 @@ import mods.utils as utl
 
 
 # TODO: TF2 problem: https://github.com/keras-team/keras/issues/13353
-# TODO: store data select query, select time range, exclusion filters and window+slide into the models zip
 class mods_model:
     # generic
     __FILE = 'file'
@@ -78,7 +77,11 @@ class mods_model:
     __BATCH_NORMALIZATION = 'batch_normalization'
     __DROPOUT_RATE = 'dropout_rate'
     __DATA_SELECT_QUERY = 'data_select_query'
+    __TRAIN_TIME_RANGE = 'train_time_range'
+    __TEST_TIME_RANGE = 'test_time_range'
     __WINDOW_SLIDE = 'window_slide'
+    __TRAIN_TIME_RANGES_EXCLUDED = 'train_time_ranges_excluded'
+    __TEST_TIME_RANGES_EXCLUDED = 'test_time_ranges_excluded'
     # metrics
     __TRAINING_TIME = 'training_time'
     # scaler
@@ -397,11 +400,56 @@ class mods_model:
     def get_data_select_query(self):
         return self.cfg_model()[mods_model.__DATA_SELECT_QUERY]
 
+    def set_train_time_range(self, train_time_range):
+        self.cfg_model()[mods_model.__TRAIN_TIME_RANGE] = train_time_range.to_str()
+
+    def get_train_time_range(self):
+        return self.cfg_model()[mods_model.__TRAIN_TIME_RANGE].from_str()
+
+    def set_test_time_range(self, test_time_range):
+        self.cfg_model()[mods_model.__TEST_TIME_RANGE] = test_time_range.to_str()
+
+    def get_test_time_range(self):
+        return self.cfg_model()[mods_model.__TEST_TIME_RANGE].from_str()
+
     def set_window_slide(self, window_slide):
         self.cfg_model()[mods_model.__WINDOW_SLIDE] = window_slide
 
     def get_window_slide(self):
         return self.cfg_model()[mods_model.__WINDOW_SLIDE]
+
+    def set_train_time_ranges_excluded(self, train_time_ranges_excluded):
+        try:
+            train_time_ranges_excluded = [r.to_str() for r in train_time_ranges_excluded]
+        except Exception as e:
+            logging.info(str(e))
+            train_time_ranges_excluded = []
+        self.cfg_model()[mods_model.__TRAIN_TIME_RANGES_EXCLUDED] = train_time_ranges_excluded
+
+    def get_train_time_ranges_ecluded(self):
+        train_time_ranges_excluded = self.cfg_model()[mods_model.__TRAIN_TIME_RANGES_EXCLUDED]
+        try:
+            train_time_ranges_excluded = [r.from_str() for r in train_time_ranges_excluded]
+        except Exception as e:
+            logging.info(str(e))
+            train_time_ranges_excluded = []
+        return train_time_ranges_excluded
+
+    def set_test_time_ranges_excluded(self, test_time_ranges_excluded):
+        try:
+            test_time_ranges_excluded = [r.to_str() for r in test_time_ranges_excluded]
+        except Exception as e:
+            logging.info(str(e))
+            test_time_ranges_excluded = []
+        self.cfg_model()[mods_model.__TEST_TIME_RANGES_EXCLUDED] = test_time_ranges_excluded
+
+    def get_test_time_ranges_ecluded(self):
+        try:
+            test_time_ranges_excluded = self.cfg_model()[mods_model.__TEST_TIME_RANGES_EXCLUDED]
+        except Exception as e:
+            logging.info(str(e))
+            test_time_ranges_excluded = []
+        return test_time_ranges_excluded
 
     def set_training_time(self, training_time):
         self.__metrics[self.__TRAINING_TIME] = training_time
@@ -413,6 +461,7 @@ class mods_model:
             if t is not None:
                 return t
         except Exception as e:
+            logging.info(str(e))
             return self.__metrics[self.__TRAINING_TIME]
 
     def get_scaler(self):

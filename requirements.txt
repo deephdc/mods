@@ -12,7 +12,6 @@ keras-self-attention
 keras-tcn
 gevent>=1.4.0
 requests
-# numpy==1.16.2
 numpy>=1.18.1
 sympy
 statsmodels
