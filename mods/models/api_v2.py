@@ -226,11 +226,6 @@ class PredictArgsSchema(Schema):
         missing=cfg.batch_size,
         description="Batch size"
     )
-    #help = fields.Boolean(
-    #    required=False,
-    #    missing=False,
-    #    enum=[True, False]
-    #)
 
 
 def load_model(
@@ -310,7 +305,7 @@ def train(**kwargs):
     # deserialize key-word arguments
     train_args = schema.load(kwargs)
 
-    logging.info('train_args:', train_args)
+    logging.info('train_args: %s', train_args)
 
     models_dir = cfg.app_models
     model_name = train_args['model_name']
@@ -430,17 +425,12 @@ def predict(**kwargs):
     # deserialize key-word arguments
     predict_args = schema.load(kwargs)
 
-    logging.info('predict_args:', predict_args)
+    logging.info('predict_args: %s', predict_args)
 
-    #if 'help' in predict_args and predict_args['help']:
-    #    return {
-    #        'models': cfg.list_models(),
-    #    }
-
+    models_dir = cfg.app_models
     model_name = predict_args['model_name']
 
     # support full paths for command line calls
-    models_dir = cfg.app_models
     full_paths = predict_args['full_paths'] if 'full_paths' in predict_args else False
     if full_paths:
         logging.info('full_paths:', full_paths)
