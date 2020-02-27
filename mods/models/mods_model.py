@@ -462,6 +462,7 @@ class mods_model:
             if t is not None:
                 return t
         except Exception as e:
+            logging.info(str(e))
             return self.__metrics[self.__TRAINING_TIME]
 
     def get_scaler(self):
