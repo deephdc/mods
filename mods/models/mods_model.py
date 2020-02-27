@@ -58,7 +58,6 @@ import mods.utils as utl
 
 
 # TODO: TF2 problem: https://github.com/keras-team/keras/issues/13353
-# TODO: store data select query, select time range, exclusion filters and window+slide into the models zip
 class mods_model:
     # generic
     __FILE = 'file'
