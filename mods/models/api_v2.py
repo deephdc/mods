@@ -312,12 +312,10 @@ def train(**kwargs):
 
     logging.info('train_args:', train_args)
 
+    models_dir = cfg.app_models
     model_name = train_args['model_name']
-    data_select_query = train_args['data_select_query']
-    window_slide = train_args['window_slide']
 
     # support full paths for command line calls
-    models_dir = cfg.app_models
     full_paths = train_args['full_paths'] if 'full_paths' in train_args else False
     if full_paths:
         logging.info('full_paths:', full_paths)
@@ -326,9 +324,9 @@ def train(**kwargs):
 
     # read train data from the datapool
     df_train, cached_file_train = utl.datapool_read(
-        data_select_query,
+        train_args['data_select_query'],
         train_args['train_time_range'],
-        window_slide,
+        train_args['window_slide'],
         train_args['train_time_ranges_excluded'],
         cfg.app_data_features
     )
@@ -338,7 +336,7 @@ def train(**kwargs):
     # read test data from the datapool
     df_test, cached_file_test = utl.datapool_read(
         train_args['data_select_query'],
-        train_args['train_time_range'],
+        train_args['test_time_range'],
         train_args['window_slide'],
         train_args['test_time_ranges_excluded'],
         cfg.app_data_features
@@ -371,10 +369,16 @@ def train(**kwargs):
     # put computed metrics into the model to be saved in model's zip
     model.update_metrics(metrics)
     # store data select query into the model
-    model.set_data_select_query(data_select_query)
+    model.set_data_select_query(train_args['data_select_query'])
+    # store time ranges
+    model.set_train_time_range(train_args['train_time_range'])
+    model.set_test_time_range(train_args['test_time_range'])
     # store window_slide into the model
-    model.set_window_slide(window_slide)
-
+    model.set_window_slide(train_args['window_slide'])
+    # store exclusion filters
+    model.set_train_time_ranges_excluded(train_args['train_time_ranges_excluded'])
+    model.set_test_time_ranges_excluded(train_args['test_time_ranges_excluded'])
+ 
     # save model locally
     file = model.save(os.path.join(models_dir, model_name))
     
@@ -391,8 +395,8 @@ def train(**kwargs):
         'model_name': model_name,
         'steps_ahead': model.get_steps_ahead(),
         'batch_size': model.get_batch_size(),
-        'window_slide': window_slide,
-        'data_select_query': data_select_query,
+        'window_slide': train_args['window_slide'],
+        'data_select_query': train_args['data_select_query'],
         'train_time_range': str(train_args['train_time_range']),
         'train_time_ranges_excluded': str(train_args['train_time_ranges_excluded']),
         'train_cached_df': cached_file_train,

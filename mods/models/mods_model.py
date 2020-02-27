@@ -397,11 +397,35 @@ class mods_model:
     def get_data_select_query(self):
         return self.cfg_model()[mods_model.__DATA_SELECT_QUERY]
 
+    def set_train_time_range(self, train_time_range):
+        self.cfg_model()[mods_model.__TRAIN_TIME_RANGE] = train_time_range
+
+    def get_train_time_range(self):
+        return self.cfg_model()[mods_model.__TRAIN_TIME_RANGE]
+
+    def set_test_time_range(self, test_time_range):
+        self.cfg_model()[mods_model.__TEST_TIME_RANGE] = test_time_range
+
+    def get_test_time_range(self):
+        return self.cfg_model()[mods_model.__TEST_TIME_RANGE]
+
     def set_window_slide(self, window_slide):
         self.cfg_model()[mods_model.__WINDOW_SLIDE] = window_slide
 
     def get_window_slide(self):
         return self.cfg_model()[mods_model.__WINDOW_SLIDE]
+
+    def set_train_time_ranges_excluded(self, train_time_ranges_excluded):
+        self.cfg_model()[mods_model.__TRAIN_TIME_RANGES_EXCLUDED] = train_time_ranges_excluded
+
+    def get_train_time_ranges_ecluded(self):
+        return self.cfg_model()[mods_model.__TRAIN_TIME_RANGES_EXCLUDED]
+
+    def set_test_time_ranges_excluded(self, test_time_ranges_excluded):
+        self.cfg_model()[mods_model.__TEST_TIME_RANGES_EXCLUDED] = test_time_ranges_excluded
+
+    def get_test_time_ranges_ecluded(self):
+        return self.cfg_model()[mods_model.__TEST_TIME_RANGES_EXCLUDED]
 
     def set_training_time(self, training_time):
         self.__metrics[self.__TRAINING_TIME] = training_time
