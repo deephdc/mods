@@ -801,7 +801,6 @@ class mods_model:
                     ]
                     if len(kwargs['header']) == 1:
                         kwargs['header'] = kwargs['header'][0]
-            # logging.info('HEADER: %s' % kwargs['pd_header'])
         df = pd.read_csv(*args, **kwargs)
         if fill_missing_rows_in_timeseries is True:
             df = utl.fill_missing_rows(df)

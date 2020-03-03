@@ -1,8 +1,15 @@
-import datetime
-
 import arrow
+import datetime
+import json
 import pytz
 
+from json import JSONEncoder
+
+def _default(self, obj):
+    return getattr(obj.__class__, "to_json", _default.default)(obj)
+
+_default.default = JSONEncoder().default
+JSONEncoder.default = _default
 
 def format_datetime(dt: datetime.datetime):
     s = ""
@@ -75,4 +82,10 @@ class TimeRange:
         return self.to_str()
 
     def __str__(self):
+        return self.to_str()
+
+    def toJSON(self):
+        return self.to_str()
+
+    def to_json(self):
         return self.to_str()

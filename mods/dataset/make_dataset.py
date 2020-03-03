@@ -23,10 +23,8 @@ Created on Mon Oct 15 10:14:37 2018
 import logging
 import os
 import zipfile
+from shutil import copytree, ignore_patterns
 from pathlib import Path
-
-from distutils.dir_util import copy_tree
-from dotenv import find_dotenv, load_dotenv
 
 import mods.config as cfg
 
@@ -54,8 +52,13 @@ def find_n_unzip(dir, depth=0):
         if depth != 0 and os.path.isdir(path):
             find_n_unzip(path, depth - 1)
         elif os.path.isfile(path) and path.lower().endswith('zip'):
-            logging.info('unzipping: %s' % path)
+            logging.info('unzip(%s): start' % path)
             unzip(path)
+            logging.info('unzip(%s): done' % path)
+
+
+def include_only_zip_files(dirpath, contents):
+    return set(contents) - set(ignore_patterns('*.zip')(dirpath, contents))
 
 
 def prepare_data(
@@ -66,37 +69,25 @@ def prepare_data(
 ):
     """ Function to prepare data
     """
-    # copy data directory structure from remote to local
-    logging.info('copy_tree(%s, %s): start' % (remote_data_dir, local_data_dir))
-    copy_tree(remote_data_dir, local_data_dir)
-    logging.info('copy_tree(%s, %s): done' % (remote_data_dir, local_data_dir))
+    logging.info('prepare_data(...): start')
+    try:
+        # copy data directory structure from remote to local
+        if remote_data_dir != local_data_dir:
+            logging.info('copytree(%s, %s): start' % (remote_data_dir, local_data_dir))
+            copytree(remote_data_dir, local_data_dir, ignore=include_only_zip_files)
+            logging.info('copytree(%s, %s): done' % (remote_data_dir, local_data_dir))
+    except Exception as e:
+        logging.info(e)
     
-    # find and unzip data
     find_n_unzip(local_data_dir, depth=1)
     
     # copy models directory structure from remote to local
-    logging.info('copy_tree(%s, %s): start' % (remote_models_dir, local_models_dir))
-    copy_tree(remote_models_dir, local_models_dir)
-    logging.info('copy_tree(%s, %s): done' % (remote_models_dir, local_models_dir))
-
-
-def main(input_filepath, output_filepath):
-    """ Runs data processing scripts to turn raw data from (../raw) into
-        cleaned data ready to be analyzed (saved in ../processed).
-    """
-    logger = logging.getLogger(__name__)
-    logger.info('making final data set from raw data')
-
-
-if __name__ == '__main__':
-    log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    logging.basicConfig(level=logging.INFO, format=log_fmt)
-
-    # not used in this stub but often useful for finding various files
-    project_dir = Path(__file__).resolve().parents[2]
-
-    # find .env automagically by walking up directories until it's found, then
-    # load up the .env entries as environment variables
-    load_dotenv(find_dotenv())
-
-    main()
+    try:
+        if remote_models_dir != local_models_dir:
+            logging.info('copytree(%s, %s): start' % (remote_models_dir, local_models_dir))
+            copytree(remote_models_dir, local_models_dir, ignore=include_only_zip_files)
+            logging.info('copytree(%s, %s): done' % (remote_models_dir, local_models_dir))
+    except Exception as e:
+        logging.info(e)
+    
+    logging.info('prepare_data(...): done')
