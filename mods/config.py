@@ -85,12 +85,16 @@ app_models          = os.path.join(IN_OUT_BASE_DIR, 'models')
 app_checkpoints     = os.path.join(IN_OUT_BASE_DIR, 'checkpoints')
 app_cache           = os.path.join(IN_OUT_BASE_DIR, 'cache')
 app_data_pool_cache = os.path.join(app_cache, 'datapool')
-app_tensorboard     = os.path.join(IN_OUT_BASE_DIR, 'tensorboard')
+app_logs            = os.path.join(IN_OUT_BASE_DIR, 'logs')
+app_tensorboard     = os.path.join(app_logs, 'tensorboard')
 
 #pathlib.Path(app_data).mkdir(parents=True, exist_ok=True)
 #pathlib.Path(app_models).mkdir(parents=True, exist_ok=True)
 pathlib.Path(app_checkpoints).mkdir(parents=True, exist_ok=True)
 pathlib.Path(app_cache).mkdir(parents=True, exist_ok=True)
+pathlib.Path(app_logs).mkdir(parents=True, exist_ok=True)
+pathlib.Path(app_tensorboard).mkdir(parents=True, exist_ok=True)
+
 
 # Generic settings
 time_range_inclusive_beg = True  # True: <beg; False: (beg
