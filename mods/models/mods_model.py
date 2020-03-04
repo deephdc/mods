@@ -670,7 +670,6 @@ class mods_model:
         training_time = time.time() - start_time
         self.set_training_time(training_time)
         logging.info('training time: %s' % training_time)
-        logging.info('history.losses: %s' % history.losses)
 
     def plot(self, *args):
         logging.info('this method is not yet implemented')
