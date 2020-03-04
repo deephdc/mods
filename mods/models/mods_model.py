@@ -35,8 +35,7 @@ import joblib
 import keras
 import numpy as np
 import pandas as pd
-from keras.callbacks import EarlyStopping
-from keras.callbacks import ModelCheckpoint
+from keras.callbacks import Callback, EarlyStopping, ModelCheckpoint, TensorBoard
 from keras.layers import Bidirectional
 from keras.layers import Dense
 from keras.layers import Flatten
@@ -641,7 +640,9 @@ class mods_model:
             verbose=1
         )
 
-        callbacks_list = [checkpoints, earlystops]
+        tensorboard = TensorBoard(log_dir=os.path.join(cfg.app_tensorboard, "{}".format(time.time())))
+
+        callbacks_list = [checkpoints, earlystops, tensorboard]
 
         # Replace None by 0
         df_train.replace('None', 0, inplace=True)
@@ -666,7 +667,10 @@ class mods_model:
             epochs=num_epochs,
             callbacks=callbacks_list
         )
-        self.set_training_time(time.time() - start_time)
+        training_time = time.time() - start_time
+        self.set_training_time(training_time)
+        logging.info('training time: %s' % training_time)
+        logging.info('history.losses: %s' % history.losses)
 
     def plot(self, *args):
         logging.info('this method is not yet implemented')
