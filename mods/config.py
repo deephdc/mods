@@ -26,8 +26,7 @@ import datetime
 import fnmatch
 import logging
 import os
-from os import path
-from os.path import expanduser
+import pathlib
 from mods.mods_types import TimeRange
 
 
@@ -50,9 +49,9 @@ def list_dir(dir, pattern='*.tsv'):
 
 
 # identify basedir for the package
-BASE_DIR = path.dirname(path.normpath(path.dirname(__file__)))
+BASE_DIR = os.path.dirname(os.path.normpath(os.path.dirname(__file__)))
 
-# default location for input and output data, e.g. directories 'data' and 'models',
+#default location for input and output data, e.g. directories 'data' and 'models',
 # is either set relative to the application path or via environment setting
 IN_OUT_BASE_DIR = BASE_DIR
 if 'APP_INPUT_OUTPUT_BASE_DIR' in os.environ:
@@ -63,48 +62,47 @@ if 'APP_INPUT_OUTPUT_BASE_DIR' in os.environ:
         msg = "[WARNING] \"APP_INPUT_OUTPUT_BASE_DIR=" + \
         "{}\" is not a valid directory! ".format(env_in_out_base_dir) + \
         "Using \"BASE_DIR={}\" instead.".format(BASE_DIR)
-        print(msg)
+        logging.info(msg)
 
-# directories for input data and output models
-REMOTE_DATA_DIR = os.path.join(IN_OUT_BASE_DIR, 'data')
-REMOTE_MODELS_DIR = os.path.join(IN_OUT_BASE_DIR, 'models')
+REMOTE_BASE_DIR = IN_OUT_BASE_DIR
+if 'APP_REMOTE_BASE_DIR' in os.environ:
+    env_remote_base_dir = os.environ['APP_REMOTE_BASE_DIR']
+    if os.path.isdir(env_remote_base_dir):
+        REMOTE_BASE_DIR = env_remote_base_dir
+    else:
+        msg = "[WARNING] \"APP_REMOTE_BASE_DIR=" + \
+        "{}\" is not a valid directory! ".format(env_remote_base_dir) + \
+        "Using \"IN_OUT_BASE_DIR={}\" instead.".format(IN_OUT_BASE_DIR)
+        logging.info(msg)
 
 # Application dirs
-app_data_remote     = REMOTE_DATA_DIR
-app_models_remote   = REMOTE_MODELS_DIR
-app_data            = os.path.join(BASE_DIR, 'data')
+app_data_remote     = os.path.join(REMOTE_BASE_DIR, 'data')
+app_models_remote   = os.path.join(REMOTE_BASE_DIR, 'models')
+app_data            = os.path.join(IN_OUT_BASE_DIR, 'data')
 app_data_features   = os.path.join(app_data, 'tsv')
 app_data_test       = os.path.join(app_data, 'test')
-app_models          = os.path.join(BASE_DIR, 'models')
-app_checkpoints     = os.path.join(BASE_DIR, 'checkpoints')
-app_cache           = os.path.join(BASE_DIR, 'cache')
+app_models          = os.path.join(IN_OUT_BASE_DIR, 'models')
+app_checkpoints     = os.path.join(IN_OUT_BASE_DIR, 'checkpoints')
+app_cache           = os.path.join(IN_OUT_BASE_DIR, 'cache')
 app_data_pool_cache = os.path.join(app_cache, 'datapool')
+app_logs            = os.path.join(IN_OUT_BASE_DIR, 'logs')
+app_tensorboard     = os.path.join(app_logs, 'tensorboard')
+
+#pathlib.Path(app_data).mkdir(parents=True, exist_ok=True)
+#pathlib.Path(app_models).mkdir(parents=True, exist_ok=True)
+pathlib.Path(app_checkpoints).mkdir(parents=True, exist_ok=True)
+pathlib.Path(app_cache).mkdir(parents=True, exist_ok=True)
+pathlib.Path(app_logs).mkdir(parents=True, exist_ok=True)
+pathlib.Path(app_tensorboard).mkdir(parents=True, exist_ok=True)
+
 
 # Generic settings
-time_range_inclusive     = True  # TODO: review and delete
 time_range_inclusive_beg = True  # True: <beg; False: (beg
 time_range_inclusive_end = True  # True: end>; False: end)
-
-# pandas defaults
-# TODO: review and delete
-pd_sep = '\t'  # ',' for csv
-pd_skiprows = 0
-pd_skipfooter = 0
-pd_engine = 'python'
-pd_header = 0
 
 # Datapool defaults
 app_data_pool = app_data_features + 'w01h-s10m/'        # 'w10m-s01m/'
 data_pool_caching = True
-# TODO: missing 'dns|internal_count_uid' in datapool, check it (@stevo)
-# data_select_query = \
-#     'conn|in_count_uid|out_count_uid;' +\
-#     'dns|in_count_uid|in_distinct_query;' +\
-#     'sip|in_count_uid;' +\
-#     'http|in~in_count_uid;' +\
-#     'ssh|in~in_count_uid;' +\
-#     'ssl|in~in_count_uid' +\
-#     '#window_start,window_end'
 
 # !!! column names must be distinct (use tilde (~) to rename column; e.g., orig_col_name~new_col_name !!!
 # TODO: NaN problem: 'sip|internal_count_uid~sip_in;' +\
@@ -115,7 +113,7 @@ data_select_query = \
     '#window_start,window_end'
 
 # Datapools: window-slide
-ws_choices = ['w01h-s10m', 'w10m-s01m']
+ws_choices = ['w01h-s10m', 'w10m-s01m', 'w10m-s10m']
 ws_choice = ws_choices[0]
 
 # Training parameters defaults

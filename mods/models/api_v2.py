@@ -26,7 +26,7 @@ import os
 
 import logging
 import pkg_resources
-from distutils.file_util import copy_file
+from shutil import copyfile
 from keras import backend
 from marshmallow import Schema, INCLUDE
 from webargs import fields
@@ -375,13 +375,15 @@ def train(**kwargs):
     model.set_test_time_ranges_excluded(train_args['test_time_ranges_excluded'])
  
     # save model locally
-    file = model.save(os.path.join(models_dir, model_name))
+    model_file = model.save(os.path.join(models_dir, model_name))
+    logging.info('model_file: %s', model_file)
     
     # copy model to a remote dir
-    if cfg.app_models_remote != None:
-        logging.info('copy_file(%s, %s): start' % (file, cfg.app_models_remote))
-        copy_file(file, cfg.app_models_remote)
-        logging.info('copy_file(%s, %s): done' % (file, cfg.app_models_remote))
+    if cfg.app_models_remote != None and not os.path.samefile(cfg.app_models_remote, cfg.app_models):
+        model_file_remote = os.path.join(cfg.app_models_remote, os.path.basename(model_file))
+        logging.info('copyfile(%s, %s): start' % (model_file, model_file_remote))
+        copyfile(model_file, model_file_remote)
+        logging.info('copyfile(%s, %s): done' % (model_file, model_file_remote))
     else:
         logging.info('skipping uploading model into a remote storage: cfg.app_models_remote=%s' % cfg.app_models_remote)
     

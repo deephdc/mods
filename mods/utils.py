@@ -59,11 +59,10 @@ from mods.mods_types import TimeRange
 # @giang: read .tsv file -> pandas dataframe
 def create_df(filename):
     df = pd.read_csv(filename,
-                     sep=cfg.pd_sep,
+                     sep='\t',
                      skiprows=0,
                      skipfooter=0,
                      engine='python'
-                     # usecols=lambda col: col in cfg.pd_usecols
                      )
     # data cleaning + missing values
     df = df.apply(pd.to_numeric, errors='coerce')
@@ -317,7 +316,7 @@ def parse_datetime(s):
 
 
 # @stevo
-def expand_to_datetime(y, m, d, is_end=False, inclusive_end=cfg.time_range_inclusive):
+def expand_to_datetime(y, m, d, is_end=False, inclusive_end=cfg.time_range_inclusive_end):
     assert y is not None
     if m is None:
         if is_end and inclusive_end:
@@ -334,7 +333,7 @@ def expand_to_datetime(y, m, d, is_end=False, inclusive_end=cfg.time_range_inclu
 
 
 # @stevo
-def expand_to_datetime_range(y, m, d, inclusive_end=cfg.time_range_inclusive):
+def expand_to_datetime_range(y, m, d, inclusive_end=cfg.time_range_inclusive_end):
     assert y is not None
     if m is None:
         if inclusive_end:
