@@ -20,5 +20,5 @@ matplotlib==3.0.3
 seaborn==0.9.1
 joblib==0.14.1
 webargs==6.0.0
-arrow==0.5.15
+arrow==0.15.5
 docutils==0.15.2
