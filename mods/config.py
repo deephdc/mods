@@ -58,6 +58,7 @@ if 'APP_INPUT_OUTPUT_BASE_DIR' in os.environ:
     env_in_out_base_dir = os.environ['APP_INPUT_OUTPUT_BASE_DIR']
     if os.path.isdir(env_in_out_base_dir):
         IN_OUT_BASE_DIR = env_in_out_base_dir
+        logging.info('IN_OUT_BASE_DIR=%s' % IN_OUT_BASE_DIR)
     else:
         msg = "[WARNING] \"APP_INPUT_OUTPUT_BASE_DIR=" + \
         "{}\" is not a valid directory! ".format(env_in_out_base_dir) + \
@@ -69,6 +70,7 @@ if 'APP_REMOTE_BASE_DIR' in os.environ:
     env_remote_base_dir = os.environ['APP_REMOTE_BASE_DIR']
     if os.path.isdir(env_remote_base_dir):
         REMOTE_BASE_DIR = env_remote_base_dir
+        logging.info('REMOTE_BASE_DIR' % REMOTE_BASE_DIR)
     else:
         msg = "[WARNING] \"APP_REMOTE_BASE_DIR=" + \
         "{}\" is not a valid directory! ".format(env_remote_base_dir) + \
@@ -88,12 +90,28 @@ app_data_pool_cache = os.path.join(app_cache, 'datapool')
 app_logs            = os.path.join(IN_OUT_BASE_DIR, 'logs')
 app_tensorboard     = os.path.join(app_logs, 'tensorboard')
 
+logging.info('app_data_remote=%s' % app_data_remote)
+logging.info('app_models_remote=%s' % app_models_remote)
+logging.info('app_data=%s' % app_data)
+logging.info('app_data_features=%s' % app_data_features)
+logging.info('app_data_test=%s' % app_data_test)
+logging.info('app_models=%s' % app_models)
+logging.info('app_checkpoints=%s' % app_checkpoints)
+logging.info('app_cache=%s' % app_cache)
+logging.info('app_data_pool_cache=%s' % app_data_pool_cache)
+logging.info('app_logs=%s' % app_logs)
+logging.info('app_tensorboard=%s' % app_tensorboard)
+
 #pathlib.Path(app_data).mkdir(parents=True, exist_ok=True)
 #pathlib.Path(app_models).mkdir(parents=True, exist_ok=True)
 pathlib.Path(app_checkpoints).mkdir(parents=True, exist_ok=True)
+logging.info('%s %s' % (os.path.isdir(app_checkpoints), app_checkpoints))
 pathlib.Path(app_cache).mkdir(parents=True, exist_ok=True)
+logging.info('%s %s' % (os.path.isdir(app_cache), app_cache))
 pathlib.Path(app_logs).mkdir(parents=True, exist_ok=True)
+logging.info('%s %s' % (os.path.isdir(app_logs), app_logs))
 pathlib.Path(app_tensorboard).mkdir(parents=True, exist_ok=True)
+logging.info('%s %s' % (os.path.isdir(app_tensorboard), app_tensorboard))
 
 
 # Generic settings
