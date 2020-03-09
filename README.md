@@ -1,13 +1,22 @@
-DEEP Open Catalogue: Massive Online Data Streams (MODS)
+DEEP Open Catalogue: Massive Online Data Streams
 ==============================
-![DEEP-Hybrid-DataCloud logo](https://deep-hybrid-datacloud.eu/wp-content/uploads/sites/2/2018/01/logo.png)
 
 [![Build Status](https://jenkins.indigo-datacloud.eu/buildStatus/icon?job=Pipeline-as-code/DEEP-OC-org/mods/master)](https://jenkins.indigo-datacloud.eu/job/Pipeline-as-code/job/DEEP-OC-org/job/mods/job/master/)
 
+This work challenges [proactive network monitoring](https://doi.org/10.1109/ACCESS.2020.2968718) for security and protection of computing infrastructures. The principle of the anomaly detection for security lies in proactive prediction from time-series using prediction models based on artificial neural networks, concretely deep learning models. These models are capable to predict next step(s) in near future based on given current and past steps. The intelligent module is built as a machine learning application leveraging deep learning modeling in order to enhance functionality of intrusion detection system (network IDS) supervising network traffic flows.
+
 DEEP Open Catalog entry: [DEEP Open Catalog](https://marketplace.deep-hybrid-datacloud.eu/modules/deep-oc-mods.html)
 
+[Container](https://github.com/deephdc/DEEP-OC-mods) available in [Docker Hub](https://hub.docker.com/r/deephdc/deep-oc-mods) 
+
 **Project:** 
-This work is part of the [DEEP Hybrid-DataCloud](https://deep-hybrid-datacloud.eu/) project that has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 777435.
+This work is a part of the [DEEP Hybrid-DataCloud](https://deep-hybrid-datacloud.eu/) project that has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 777435.
+
+# Documentation
+
+The documentation of the work is hosted on [Read the Docs](https://docs.deep-hybrid-datacloud.eu/en/latest/).
+
+# Quickstart
 
 To start using this framework run:
 
@@ -24,7 +33,7 @@ pip install -e .
 
 Project Organization
 ------------
-<p>Project based on the <a target="_blank" href="https://github.com/indigo-dc/cookiecutter-data-science">DEEP DS template</a>. #cookiecutter #datascience</p>
+<p>This work is built based on the <a target="_blank" href="https://github.com/indigo-dc/cookiecutter-data-science">DEEP DS template</a>. #cookiecutter #datascience</p>
 
 ## Workflow
 ### Data Preprocessing module
@@ -38,5 +47,23 @@ Project Organization
 3. Model testing
 
 ### Prediction and train throught [DEEPaaS API](https://github.com/indigo-dc/DEEPaaS)
+
+
+Detail Description
+------------
+[![DOI](https://doi.org/10.1109/ACCESS.2020.2968718/status.svg)](https://doi.org/10.1109/ACCESS.2020.2968718)
+
+> G. Nguyen, S. Dlugolinsky, V. Tran, A. Lopez Garcia: 
+> Deep learning for proactive network monitoring and security protection. 
+> IEEE Access, Special section on Deep learning: security and forensics research advances and challenges, 
+> Volume 8, Issue 1, pp. 19696-19716, ISSN 2169-3536, 
+> [DOI 10.1109/ACCESS.2020.2968718](https://doi.org/10.1109/ACCESS.2020.2968718), 2020. 
+
+> G. Nguyen, S. Dlugolinsky, M. Bobak, V. Tran, A. Lopez Garcia, I. Heredia, P. Malik, L. Hluchy: 
+> [Machine Learning and Deep Learning frameworks and libraries for large-scale data mining: a survey](https://doi.org/10.1007/s10462-018-09679-z). 
+> Artificial Intelligence Review, Springer Nature, 2019, ISSN 0269-2821, DOI 10.1007/s10462-018-09679-z
+
+### [More references are available here]((https://github.com/deephdc/mods/tree/master/references))
+
 
 <img src="https://deep-hybrid-datacloud.eu/wp-content/uploads/sites/2/2018/04/datastreams.jpeg" width="600">
