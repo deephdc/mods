@@ -31,26 +31,8 @@ pip install -e .
  - Further package requirements are described in the `requirements.txt` file.
 
 
-Project Organization
-------------
-<p>This work is built based on the <a target="_blank" href="https://github.com/indigo-dc/cookiecutter-data-science">DEEP DS template</a>. #cookiecutter #datascience</p>
-
-## Workflow
-### Data Preprocessing module
-1. Data cleaning and filtering, feature extraction
-2. Data transformation, ML/DL datapool creation 
-3. Feature selection
-
-### Deep Learning module (MODS)
-1. Configuration setting 
-2. Model training
-3. Model testing
-
-### Prediction and train throught [DEEPaaS API](https://github.com/indigo-dc/DEEPaaS)
-
-
-Detail Description
-------------
+Details
+----------
 
 > G. Nguyen, S. Dlugolinsky, V. Tran, A. Lopez Garcia: 
 > [Deep learning for proactive network monitoring and security protection](https://doi.org/10.1109/ACCESS.2020.2968718). 
@@ -63,5 +45,22 @@ Detail Description
 
 ### [More references are available here](https://github.com/deephdc/mods/tree/master/references)
 
+
+Workflow
+----------
+
+### Data Preprocessing module
+1. Data cleaning and filtering, feature extraction
+2. Data transformation, ML/DL datapool creation 
+3. Feature selection
+
+### Deep Learning module (MODS)
+1. Configuration setting 
+2. Model training
+3. Model testing
+
+### Project organization is built based on [DEEP DS template](https://github.com/indigo-dc/cookiecutter-data-science). #cookiecutter #datascience
+
+### Prediction and train throught [DEEPaaS API](https://github.com/indigo-dc/DEEPaaS)
 
 <img src="https://deep-hybrid-datacloud.eu/wp-content/uploads/sites/2/2018/04/datastreams.jpeg" width="600">
