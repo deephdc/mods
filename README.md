@@ -51,13 +51,11 @@ Project Organization
 
 Detail Description
 ------------
-[![DOI](https://doi.org/10.1109/ACCESS.2020.2968718/status.svg)](https://doi.org/10.1109/ACCESS.2020.2968718)
 
 > G. Nguyen, S. Dlugolinsky, V. Tran, A. Lopez Garcia: 
-> Deep learning for proactive network monitoring and security protection. 
+> [Deep learning for proactive network monitoring and security protection](https://doi.org/10.1109/ACCESS.2020.2968718). 
 > IEEE Access, Special section on Deep learning: security and forensics research advances and challenges, 
-> Volume 8, Issue 1, pp. 19696-19716, ISSN 2169-3536, 
-> [DOI 10.1109/ACCESS.2020.2968718](https://doi.org/10.1109/ACCESS.2020.2968718), 2020. 
+> Volume 8, Issue 1, pp. 19696-19716, ISSN 2169-3536, DOI 10.1109/ACCESS.2020.2968718, 2020. 
 
 > G. Nguyen, S. Dlugolinsky, M. Bobak, V. Tran, A. Lopez Garcia, I. Heredia, P. Malik, L. Hluchy: 
 > [Machine Learning and Deep Learning frameworks and libraries for large-scale data mining: a survey](https://doi.org/10.1007/s10462-018-09679-z). 
