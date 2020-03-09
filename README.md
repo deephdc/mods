@@ -4,7 +4,7 @@ DEEP Open Catalogue: Massive Online Data Streams (MODS)
 
 [![Build Status](https://jenkins.indigo-datacloud.eu/buildStatus/icon?job=Pipeline-as-code/DEEP-OC-org/mods/master)](https://jenkins.indigo-datacloud.eu/job/Pipeline-as-code/job/DEEP-OC-org/job/mods/job/master/)
 
-DEEP Open Catalog entry: [DEEP Open Catalog](https://marketplace.deep-hybrid-datacloud.eu/modules/deep-oc-massive-online-data-streams.html)
+DEEP Open Catalog entry: [DEEP Open Catalog](https://marketplace.deep-hybrid-datacloud.eu/modules/deep-oc-mods.html)
 
 **Project:** 
 This work is part of the [DEEP Hybrid-DataCloud](https://deep-hybrid-datacloud.eu/) project that has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 777435.
@@ -103,7 +103,6 @@ Project Organization
 ### DEEP as a Service
 1. [MODS container](https://github.com/deephdc/DEEP-OC-mods) available in [Docker Hub](https://hub.docker.com/r/deephdc/deep-oc-mods) as a part of [`deephdc`](https://hub.docker.com/u/deephdc/) organization
 2. [MODS entry](https://marketplace.deep-hybrid-datacloud.eu/modules/deep-oc-massive-online-data-streams.html) in [DEEP Open Catalog](https://marketplace.deep-hybrid-datacloud.eu/) as an [Use Case of DEEP-HybridDataCloud project](https://deep-hybrid-datacloud.eu/use-cases/)
-3. [MODS online documentation](http://docs.deep-hybrid-datacloud.eu/en/latest/user/modules/mods.html)
 
 <img src="https://deep-hybrid-datacloud.eu/wp-content/uploads/sites/2/2018/04/datastreams.jpeg" width="600">
 
