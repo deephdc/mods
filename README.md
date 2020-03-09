@@ -7,16 +7,16 @@ This work challenges [proactive network monitoring](https://doi.org/10.1109/ACCE
 
 DEEP Open Catalog entry: [DEEP Open Catalog](https://marketplace.deep-hybrid-datacloud.eu/modules/deep-oc-mods.html)
 
-[Container](https://github.com/deephdc/DEEP-OC-mods) available in [Docker Hub](https://hub.docker.com/r/deephdc/deep-oc-mods) 
-
 **Project:** 
 This work is a part of the [DEEP Hybrid-DataCloud](https://deep-hybrid-datacloud.eu/) project that has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 777435.
 
-# Documentation
+Documentation
+----------
 
 The documentation of the work is hosted on [Read the Docs](https://docs.deep-hybrid-datacloud.eu/en/latest/).
 
-# Quickstart
+Quickstart
+----------
 
 To start using this framework run:
 
@@ -31,7 +31,7 @@ pip install -e .
  - Further package requirements are described in the `requirements.txt` file.
 
 
-Details
+Reference:
 ----------
 
 > G. Nguyen, S. Dlugolinsky, V. Tran, A. Lopez Garcia: 
@@ -59,8 +59,8 @@ Workflow
 2. Model training
 3. Model testing
 
-### Project organization is built based on [DEEP DS template](https://github.com/indigo-dc/cookiecutter-data-science). #cookiecutter #datascience
-
-### Prediction and train throught [DEEPaaS API](https://github.com/indigo-dc/DEEPaaS)
+### Project organization 
+1. The package is built based on [DEEP DS template](https://github.com/indigo-dc/cookiecutter-data-science). #cookiecutter #datascience
+2. Prediction and train throught [DEEPaaS API](https://github.com/indigo-dc/DEEPaaS)
 
 <img src="https://deep-hybrid-datacloud.eu/wp-content/uploads/sites/2/2018/04/datastreams.jpeg" width="600">
