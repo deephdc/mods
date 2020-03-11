@@ -73,6 +73,7 @@ class TestModelMethods(unittest.TestCase):
         cfg.app_models_remote = None  # disable remote storage
         cfg.data_pool_caching = False  # disable caching
         cfg.app_data_features = self.app_data_features  # change features dir to test
+        cfg.launch_tensorboard = False # turn off tensorboard for testing
         msg = mods_model.train(**self.train_args)  # call api to train a model
         print(msg)
         self.assertGreater(msg['evaluation']['training_time'],
