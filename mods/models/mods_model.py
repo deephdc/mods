@@ -640,7 +640,7 @@ class mods_model:
             verbose=1
         )
 
-        tensorboard = TensorBoard(log_dir=os.path.join(cfg.app_tensorboard, "{}".format(time.time())))
+        tensorboard = TensorBoard(log_dir=os.path.join(cfg.app_tensorboard_logdir, "{}".format(time.time())))
 
         callbacks_list = [checkpoints, earlystops, tensorboard]
 

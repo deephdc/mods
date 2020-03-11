@@ -311,10 +311,10 @@ def train(**kwargs):
 
     # launch tensorboard
     global tensorboard_process
-    if tensorboard_process is None:
+    if cfg.launch_tensorboard and tensorboard_process is None:
         logging.info('launching Tensorboard')
         try:
-            tensorboard_process = launch_tensorboard(cfg.tensorboard_port, cfg.app_tensorboard_logdir)
+            tensorboard_process = launch_tensorboard(cfg.app_tensorboard_port, cfg.app_tensorboard_logdir)
             logging.info('Tensorboard PID:%d' % tensorboard_process.pid)
         except:
             logging.info('failed to run Tensorboard')
