@@ -26,6 +26,7 @@ import os
 
 import logging
 import pkg_resources
+import subprocess
 from shutil import copyfile
 from keras import backend
 from marshmallow import Schema, INCLUDE
@@ -227,6 +228,13 @@ class PredictArgsSchema(Schema):
         description="Batch size"
     )
 
+def launch_tensorboard(port, logdir):
+    return subprocess.Popen(['tensorboard',
+                     '--logdir', '{}'.format(logdir),
+                     '--port', '{}'.format(port),
+                     '--host', '0.0.0.0',
+                     '--reload_interval', '60',
+                     '--reload_multifile', 'true'])
 
 def load_model(
         model_name=cfg.model_name,
@@ -294,11 +302,22 @@ def get_train_args(**kwargs):
     return TrainArgsSchema().fields
 
 
+tensorboard_process = None
 def train(**kwargs):
     """
     https://docs.deep-hybrid-datacloud.eu/projects/deepaas/en/wip-api_v2/user/v2-api.html#deepaas.model.v2.base.BaseModel.train
     """
     logging.info("train(**kwargs) - kwargs: %s" % (kwargs))
+
+    # launch tensorboard
+    global tensorboard_process
+    if tensorboard_process is None:
+        logging.info('launching Tensorboard')
+        try:
+            tensorboard_process = launch_tensorboard(cfg.tensorboard_port, cfg.app_tensorboard_logdir)
+            logging.info('Tensorboard PID:%d' % tensorboard_process.pid)
+        except:
+            logging.info('failed to run Tensorboard')
 
     # use this schema
     schema = TrainArgsSchema()

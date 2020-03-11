@@ -79,17 +79,20 @@ if 'APP_REMOTE_BASE_DIR' in os.environ:
         logging.info(msg)
 
 # Application dirs
-app_data_remote     = os.path.join(REMOTE_BASE_DIR, 'data')
-app_models_remote   = os.path.join(REMOTE_BASE_DIR, 'models')
-app_data            = os.path.join(IN_OUT_BASE_DIR, 'data')
-app_data_features   = os.path.join(app_data, 'tsv')
-app_data_test       = os.path.join(app_data, 'test')
-app_models          = os.path.join(IN_OUT_BASE_DIR, 'models')
-app_checkpoints     = os.path.join(IN_OUT_BASE_DIR, 'checkpoints')
-app_cache           = os.path.join(IN_OUT_BASE_DIR, 'cache')
-app_data_pool_cache = os.path.join(app_cache, 'datapool')
-app_logs            = os.path.join(IN_OUT_BASE_DIR, 'logs')
-app_tensorboard     = os.path.join(app_logs, 'tensorboard')
+app_data_remote        = os.path.join(REMOTE_BASE_DIR, 'data')
+app_models_remote      = os.path.join(REMOTE_BASE_DIR, 'models')
+app_data               = os.path.join(IN_OUT_BASE_DIR, 'data')
+app_data_features      = os.path.join(app_data, 'tsv')
+app_data_test          = os.path.join(app_data, 'test')
+app_models             = os.path.join(IN_OUT_BASE_DIR, 'models')
+app_checkpoints        = os.path.join(IN_OUT_BASE_DIR, 'checkpoints')
+app_cache              = os.path.join(IN_OUT_BASE_DIR, 'cache')
+app_data_pool_cache    = os.path.join(app_cache, 'datapool')
+app_logs               = os.path.join(IN_OUT_BASE_DIR, 'logs')
+app_tensorboard_logdir = os.path.join(app_logs, 'tensorboard')
+app_tensorboard_port   = os.getenv('monitorPORT', 6006)
+
+launch_tensorboard = True
 
 logging.info('app_data_remote=%s' % app_data_remote)
 logging.info('app_models_remote=%s' % app_models_remote)
@@ -101,7 +104,8 @@ logging.info('app_checkpoints=%s' % app_checkpoints)
 logging.info('app_cache=%s' % app_cache)
 logging.info('app_data_pool_cache=%s' % app_data_pool_cache)
 logging.info('app_logs=%s' % app_logs)
-logging.info('app_tensorboard=%s' % app_tensorboard)
+logging.info('app_tensorboard_logdir=%s' % app_tensorboard_logdir)
+logging.info('app_tensorboard_port=%s' % app_tensorboard_port)
 
 #pathlib.Path(app_data).mkdir(parents=True, exist_ok=True)
 #pathlib.Path(app_models).mkdir(parents=True, exist_ok=True)
@@ -111,26 +115,8 @@ pathlib.Path(app_cache).mkdir(parents=True, exist_ok=True)
 logging.info('%s %s' % (os.path.isdir(app_cache), app_cache))
 pathlib.Path(app_logs).mkdir(parents=True, exist_ok=True)
 logging.info('%s %s' % (os.path.isdir(app_logs), app_logs))
-pathlib.Path(app_tensorboard).mkdir(parents=True, exist_ok=True)
-logging.info('%s %s' % (os.path.isdir(app_tensorboard), app_tensorboard))
-
-def launch_tensorboard(port, logdir):
-    return subprocess.Popen(['tensorboard',
-                     '--logdir', '{}'.format(logdir),
-                     '--port', '{}'.format(port),
-                     '--host', '0.0.0.0',
-                     '--reload_interval', '60',
-                     '--reload_multifile', 'true'])
-
-monitor_port = os.getenv('monitorPORT', 6006)
-logging.info('Launching tensorboard: port=%d, logdir=%s' % (monitor_port, app_tensorboard))
-try:
-    proc = launch_tensorboard(monitor_port, app_tensorboard)
-    logging.info('Tensorboard PID=%d' % proc.pid)
-except (KeyboardInterrupt, SystemExit):
-    raise
-except (AttributeError, Exception) as e:
-    logging.info(str(e))
+pathlib.Path(app_tensorboard_logdir).mkdir(parents=True, exist_ok=True)
+logging.info('%s %s' % (os.path.isdir(app_tensorboard_logdir), app_tensorboard_logdir))
 
 # Generic settings
 time_range_inclusive_beg = True  # True: <beg; False: (beg
