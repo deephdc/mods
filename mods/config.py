@@ -27,6 +27,7 @@ import fnmatch
 import logging
 import os
 import pathlib
+import subprocess
 from mods.mods_types import TimeRange
 
 
@@ -113,6 +114,23 @@ logging.info('%s %s' % (os.path.isdir(app_logs), app_logs))
 pathlib.Path(app_tensorboard).mkdir(parents=True, exist_ok=True)
 logging.info('%s %s' % (os.path.isdir(app_tensorboard), app_tensorboard))
 
+def launch_tensorboard(port, logdir):
+    return subprocess.Popen(['tensorboard',
+                     '--logdir', '{}'.format(logdir),
+                     '--port', '{}'.format(port),
+                     '--host', '0.0.0.0',
+                     '--reload_interval', '60',
+                     '--reload_multifile', 'true'])
+
+monitor_port = os.getenv('monitorPORT', 6006)
+logging.info('Launching tensorboard: port=%d, logdir=%s' % (monitor_port, app_tensorboard))
+try:
+    proc = launch_tensorboard(monitor_port, app_tensorboard)
+    logging.info('Tensorboard PID=%d' % proc.pid)
+except (KeyboardInterrupt, SystemExit):
+    raise
+except (AttributeError, Exception) as e:
+    logging.info(str(e))
 
 # Generic settings
 time_range_inclusive_beg = True  # True: <beg; False: (beg
