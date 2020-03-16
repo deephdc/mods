@@ -26,6 +26,7 @@ import io
 import json
 import logging
 import os
+import subprocess
 import sys
 import tempfile
 import time
@@ -49,12 +50,20 @@ from keras.models import Model
 from keras.optimizers import Adam
 from keras.preprocessing.sequence import TimeseriesGenerator
 from keras_self_attention import SeqSelfAttention
+from multiprocessing import Process
 from sklearn.preprocessing import MinMaxScaler
 from tcn import TCN
 
 import mods.config as cfg
 import mods.utils as utl
 
+def launch_tensorboard(port, logdir):
+    subprocess.call(['tensorboard',
+                     '--logdir', '{}'.format(logdir),
+                     '--port', '{}'.format(port),
+                     '--host', '0.0.0.0',
+                     '--reload_interval', '300',
+                     '--reload_multifile', 'true'])
 
 # TODO: TF2 problem: https://github.com/keras-team/keras/issues/13353
 class mods_model:
@@ -640,9 +649,18 @@ class mods_model:
             verbose=1
         )
 
-        tensorboard = TensorBoard(log_dir=os.path.join(cfg.app_tensorboard_logdir, "{}".format(time.time())))
+        callbacks_list = [checkpoints, earlystops]
 
-        callbacks_list = [checkpoints, earlystops, tensorboard]
+        # launch tensorboard
+        if cfg.launch_tensorboard:
+            logging.info('launching Tensorboard')
+            subprocess.run(['fuser', '-k', '{}/tcp'.format(cfg.app_tensorboard_port)])  # kill any previous process in that port
+            p = Process(target=launch_tensorboard, args=(cfg.app_tensorboard_port, cfg.app_tensorboard_logdir), daemon=True)
+            p.start()
+            logging.info('Tensorboard PID:%d' % p.pid)
+            tensorboard = TensorBoard(log_dir=os.path.join(cfg.app_tensorboard_logdir, "{}".format(time.time())))
+            callbacks_list.append(tensorboard)
+            logging.info('Tensorboard callback was added to the callback list')
 
         # Replace None by 0
         df_train.replace('None', 0, inplace=True)
