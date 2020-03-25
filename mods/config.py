@@ -71,7 +71,7 @@ if 'APP_REMOTE_BASE_DIR' in os.environ:
     env_remote_base_dir = os.environ['APP_REMOTE_BASE_DIR']
     if os.path.isdir(env_remote_base_dir):
         REMOTE_BASE_DIR = env_remote_base_dir
-        logging.info('REMOTE_BASE_DIR' % REMOTE_BASE_DIR)
+        logging.info('REMOTE_BASE_DIR=%s' % REMOTE_BASE_DIR)
     else:
         msg = "[WARNING] \"APP_REMOTE_BASE_DIR=" + \
         "{}\" is not a valid directory! ".format(env_remote_base_dir) + \
