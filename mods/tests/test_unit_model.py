@@ -43,8 +43,7 @@ class TestModelMethods(unittest.TestCase):
             'steps_ahead': '1',
             'batch_size': '1'
         })
-        self.app_data_features = os.path.join(cfg.BASE_DIR, 'mods', 'tests', 'inputs', 'datapool')
-        self.app_data_features_zip = os.path.join(cfg.BASE_DIR, 'mods', 'tests', 'inputs')
+        self.app_data_features = os.path.join(cfg.BASE_DIR, 'mods', 'tests', 'inputs', 'features')
 
     def test_model_metadata_type(self):
         """
@@ -61,26 +60,12 @@ class TestModelMethods(unittest.TestCase):
         self.assertEqual(self.meta['author-email'], 'giang.nguyen@savba.sk, stefan.dlugolinsky@savba.sk')
 
     def test_datapool_read(self):
-        tmp = cfg.data_pool_zipped
-        cfg.data_pool_zipped = False
         df_train, cached_file_train = utl.datapool_read(
             self.train_args['data_select_query'],
             self.train_args['train_time_range'],
             self.train_args['window_slide'],
             excluded=self.train_args['train_time_ranges_excluded'],
             base_dir=self.app_data_features,
-            caching=False
-        )
-        cfg.data_pool_zipped = tmp
-        self.assertEqual(len(df_train), 144)
-
-    def test_datapool_read_zip(self):
-        df_train, cached_file_train = utl.datapool_read_zip(
-            self.train_args['data_select_query'],
-            self.train_args['train_time_range'],
-            self.train_args['window_slide'],
-            excluded=self.train_args['train_time_ranges_excluded'],
-            base_dir=self.app_data_features_zip,
             caching=False
         )
         self.assertEqual(len(df_train), 144)
