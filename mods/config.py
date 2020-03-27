@@ -82,7 +82,7 @@ if 'APP_REMOTE_BASE_DIR' in os.environ:
 app_data_remote        = os.path.join(REMOTE_BASE_DIR, 'data')
 app_models_remote      = os.path.join(REMOTE_BASE_DIR, 'models')
 app_data               = os.path.join(IN_OUT_BASE_DIR, 'data')
-app_data_features      = os.path.join(app_data, 'tsv')
+app_data_features      = os.path.join(app_data, 'datapool')
 app_data_test          = os.path.join(app_data, 'test')
 app_models             = os.path.join(IN_OUT_BASE_DIR, 'models')
 app_checkpoints        = os.path.join(IN_OUT_BASE_DIR, 'checkpoints')
@@ -125,6 +125,7 @@ time_range_inclusive_end = True  # True: end>; False: end)
 # Datapool defaults
 app_data_pool = app_data_features + 'w01h-s10m/'        # 'w10m-s01m/'
 data_pool_caching = True
+data_pool_zipped = True
 
 # !!! column names must be distinct (use tilde (~) to rename column; e.g., orig_col_name~new_col_name !!!
 # TODO: NaN problem: 'sip|internal_count_uid~sip_in;' +\

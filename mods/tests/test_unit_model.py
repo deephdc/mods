@@ -12,6 +12,7 @@ Created on Sat Oct 15 10:27:15 2019
 import unittest
 
 import mods.models.api_v2 as mods_model
+import os
 from mods import config as cfg
 from mods import utils as utl
 from mods.models.api_v2 import TrainArgsSchema
@@ -42,7 +43,8 @@ class TestModelMethods(unittest.TestCase):
             'steps_ahead': '1',
             'batch_size': '1'
         })
-        self.app_data_features = cfg.BASE_DIR + '/mods/tests/inputs/datapool/'
+        self.app_data_features = os.path.join(cfg.BASE_DIR, 'mods', 'tests', 'inputs', 'datapool')
+        self.app_data_features_zip = os.path.join(cfg.BASE_DIR, 'mods', 'tests', 'inputs')
 
     def test_model_metadata_type(self):
         """
@@ -65,6 +67,17 @@ class TestModelMethods(unittest.TestCase):
             self.train_args['window_slide'],
             excluded=self.train_args['train_time_ranges_excluded'],
             base_dir=self.app_data_features,
+            caching=False
+        )
+        self.assertEqual(len(df_train), 144)
+
+    def test_datapool_read_zip(self):
+        df_train, cached_file_train = utl.datapool_read_zip(
+            self.train_args['data_select_query'],
+            self.train_args['train_time_range'],
+            self.train_args['window_slide'],
+            excluded=self.train_args['train_time_ranges_excluded'],
+            base_dir=self.app_data_features_zip,
             caching=False
         )
         self.assertEqual(len(df_train), 144)
