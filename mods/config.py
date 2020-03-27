@@ -22,6 +22,8 @@ MODS configuration file
 @author: stefan dlugolinsky
 """
 
+MODS_DEBUG_MODE = False
+
 import fnmatch
 import logging
 import os
@@ -115,6 +117,7 @@ logging.info('%s %s' % (os.path.isdir(app_tensorboard_logdir), app_tensorboard_l
 # Generic settings
 time_range_inclusive_beg = True  # True: <beg; False: (beg
 time_range_inclusive_end = True  # True: end>; False: end)
+series_sortby_column = 'window_start'
 
 # Datapool defaults
 app_data_pool = app_data_features + 'w01h-s10m/'        # 'w10m-s01m/'

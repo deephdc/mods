@@ -20,8 +20,6 @@ Created on Mon Jan 11 13:34:37 2019
 @author: stefan dlugolinsky
 """
 
-DEBUG = False
-
 import io
 import json
 import logging
@@ -675,7 +673,7 @@ class mods_model:
         df_train = self.normalize(df_train, self.get_scaler())
         tsg_train = self.get_tsg(df_train, steps_ahead=steps_ahead, batch_size=batch_size)
 
-        if DEBUG:
+        if cfg.MODS_DEBUG_MODE:
             # TODO:
             logging.info(self.config)
 
@@ -719,9 +717,9 @@ class mods_model:
         if self.is_delta():
             beg = self.get_sequence_len() - self.get_steps_ahead() + 1
             y = original[beg:]
-            utl.dbg_df(y, self.name, 'y.tsv', print=DEBUG, save=DEBUG)
+            utl.dbg_df(y, self.name, 'y.tsv', print=cfg.MODS_DEBUG_MODE, save=cfg.MODS_DEBUG_MODE)
             d = pred_denorm
-            utl.dbg_df(d, self.name, 'd.tsv', print=DEBUG, save=DEBUG)
+            utl.dbg_df(d, self.name, 'd.tsv', print=cfg.MODS_DEBUG_MODE, save=cfg.MODS_DEBUG_MODE)
             return y + d
         else:
             return pred_denorm
@@ -730,13 +728,13 @@ class mods_model:
     def normalize(self, df, scaler, fit=True):
         # Scale all metrics but each separately
         df = scaler.fit_transform(df) if fit else scaler.transform(df)
-        utl.dbg_scaler(scaler, 'normalize', debug=DEBUG)
+        utl.dbg_scaler(scaler, 'normalize', debug=cfg.MODS_DEBUG_MODE)
         return df
 
     # inverse method to @normalize
     def inverse_normalize(self, df):
         scaler = self.get_scaler()
-        utl.dbg_scaler(scaler, 'inverse_normalize', debug=DEBUG)
+        utl.dbg_scaler(scaler, 'inverse_normalize', debug=cfg.MODS_DEBUG_MODE)
         return scaler.inverse_transform(df)
 
     def get_tsg(self, df,
@@ -761,17 +759,17 @@ class mods_model:
 
     def predict(self, df):
 
-        utl.dbg_df(df, self.name, 'original', print=DEBUG, save=DEBUG)
+        utl.dbg_df(df, self.name, 'original', print=cfg.MODS_DEBUG_MODE, save=cfg.MODS_DEBUG_MODE)
 
         if self.get_interpolate():
             df = df.interpolate()
-            utl.dbg_df(df, self.name, 'interpolated', print=DEBUG, save=DEBUG)
+            utl.dbg_df(df, self.name, 'interpolated', print=cfg.MODS_DEBUG_MODE, save=cfg.MODS_DEBUG_MODE)
 
         trans = self.transform(df)
-        utl.dbg_df(trans, self.name, 'transformed', print=DEBUG, save=DEBUG)
+        utl.dbg_df(trans, self.name, 'transformed', print=cfg.MODS_DEBUG_MODE, save=cfg.MODS_DEBUG_MODE)
 
         norm = self.normalize(trans, self.get_scaler(), fit=False)
-        utl.dbg_df(norm, self.name, 'normalized', print=DEBUG, save=DEBUG)
+        utl.dbg_df(norm, self.name, 'normalized', print=cfg.MODS_DEBUG_MODE, save=cfg.MODS_DEBUG_MODE)
 
         # append #steps_ahead dummy rows at the end of the norm
         # np.ndarray in order to tsg generate last sample
@@ -779,19 +777,19 @@ class mods_model:
         dummy = [np.nan] * self.get_multivariate()
         for i in range(self.get_steps_ahead()):
             norm = np.append(norm, [dummy], axis=0)
-        utl.dbg_df(norm, self.name, 'normalized+nan', print=DEBUG, save=DEBUG)
+        utl.dbg_df(norm, self.name, 'normalized+nan', print=cfg.MODS_DEBUG_MODE, save=cfg.MODS_DEBUG_MODE)
 
         tsg = self.get_tsg(norm, steps_ahead=self.get_steps_ahead(), batch_size=self.get_batch_size())
-        utl.dbg_tsg(tsg, 'norm_tsg', debug=DEBUG)
+        utl.dbg_tsg(tsg, 'norm_tsg', debug=cfg.MODS_DEBUG_MODE)
 
         pred = self.model.predict_generator(tsg)
-        utl.dbg_df(pred, self.name, 'prediction', print=DEBUG, save=DEBUG)
+        utl.dbg_df(pred, self.name, 'prediction', print=cfg.MODS_DEBUG_MODE, save=cfg.MODS_DEBUG_MODE)
 
         pred_denorm = self.inverse_normalize(pred)
-        utl.dbg_df(pred_denorm, self.name, 'pred_denormalized', print=DEBUG, save=DEBUG)
+        utl.dbg_df(pred_denorm, self.name, 'pred_denormalized', print=cfg.MODS_DEBUG_MODE, save=cfg.MODS_DEBUG_MODE)
 
         pred_invtrans = self.inverse_transform(df, pred_denorm)
-        utl.dbg_df(pred_invtrans, self.name, 'pred_inv_trans', print=DEBUG, save=DEBUG)
+        utl.dbg_df(pred_invtrans, self.name, 'pred_inv_trans', print=cfg.MODS_DEBUG_MODE, save=cfg.MODS_DEBUG_MODE)
 
         if isinstance(pred_invtrans, pd.DataFrame):
             pred_invtrans = pred_invtrans.values
