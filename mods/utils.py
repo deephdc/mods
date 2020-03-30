@@ -559,22 +559,19 @@ def datapool_read(
                 df_protocol[protocol][col] = df_protocol[protocol][col].div(1073741824).astype(int)
 
     for protocol in df_protocol.keys():
-        if cfg.MODS_DEBUG_MODE:
-            save_df(df_protocol[protocol], 'debug', 'df_%s' % protocol)
+        dbg_df(df_protocol[protocol], 'debug', 'df_%s' % protocol, print=False, save=cfg.MODS_DEBUG_MODE)
         # sort series in case they were loaded in random order (depends on zip file naming and file system sorting)
         df_protocol[protocol] = df_protocol[protocol].sort_values(by=cfg.series_sortby_column, ascending=True)
-        if cfg.MODS_DEBUG_MODE:
-            save_df(df_protocol[protocol], 'debug', 'df_%s-sorted' % protocol)
+        dbg_df(df_protocol[protocol], 'debug', 'df_%s-sorted' % protocol, print=False, save=cfg.MODS_DEBUG_MODE)
         if df_main is None:
             df_main = df_protocol[protocol]
         else:
             df_main = pd.merge(df_main, df_protocol[protocol], on=merge_on_col)
 
-    if cfg.MODS_DEBUG_MODE:
-        save_df(df_main, 'debug', 'df_main-all-columns')
-
+    dbg_df(df_main, 'debug', 'df_main-all-columns', print=False, save=cfg.MODS_DEBUG_MODE)
     # select only specified columns
     df_main = df_main[keep_cols]
+    dbg_df(df_main, 'debug', 'df_main', print=False, save=cfg.MODS_DEBUG_MODE)
 
     # save dataset to cache
     if caching:
