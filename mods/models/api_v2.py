@@ -89,7 +89,7 @@ class TrainArgsSchema(Schema):
         missing=cfg.train_data_select_query,
         description= \
             """
-            Query for data selection from the datapool.
+            Query for data selection from the features.
             
             format: p1;p2|p2c1|col~p2c2_renamed|...;...#c5,c6,...
                 p1, p2, ...     - protocols; e.g., conn, http, ssh
@@ -317,7 +317,7 @@ def train(**kwargs):
         models_dir = os.path.dirname(model_name)
         model_name = os.path.basename(model_name)
 
-    # read train data from the datapool
+    # read train data from the features
     df_train, cached_file_train = utl.datapool_read(
         train_args['data_select_query'],
         train_args['train_time_range'],
@@ -328,7 +328,7 @@ def train(**kwargs):
     # repair the data
     df_train = utl.fix_missing_num_values(df_train)
 
-    # read test data from the datapool
+    # read test data from the features
     df_test, cached_file_test = utl.datapool_read(
         train_args['data_select_query'],
         train_args['test_time_range'],
@@ -448,7 +448,7 @@ def predict(**kwargs):
     data_select_query = model.get_data_select_query()
     window_slide = model.get_window_slide()
 
-    # read data from the datapool
+    # read data from the features
     df_data, cached_file_train = utl.datapool_read(
         data_select_query,
         predict_args['time_range'],

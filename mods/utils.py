@@ -22,9 +22,11 @@ Created on Mon Apr 23 12:48:52 2018
 
 import datetime
 import hashlib
+import io
 import logging
 import os
 import re
+import zipfile
 from math import sqrt
 
 import numpy as np
@@ -424,22 +426,15 @@ def exclude(d, ranges):
             return True
 
 
-# @stevo datapool reading
+# @stevo features reading from zip files
 def datapool_read(
         data_specs_str,                 # protocol/column/merge specification
         time_range,                     # (beg datetime.datetime, end datetime.datetime)
         ws,                             # window/slide specification; e.g., w01h-s10m
         excluded=[],                    # list of dates and ranges that will be omitted
-        base_dir=cfg.app_data_features, # base dir with the protocol/YYYY/MM/DD/wXXd-sXXd.tsv structure
+        base_dir=cfg.app_data,          # base dir with data
         caching=cfg.data_pool_caching   # caching flag
 ):
-    # regex matching directory of a day
-    REGEX_DIR_DAY = re.compile(r'^' + re.escape(
-        base_dir.rstrip('/')) + '/[^/]+' + r'/(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})')
-
-    keep_cols = []
-    df_main = None
-
     protocols, merge_on_col = parse_data_specs(data_specs_str)
 
     # read dataset from cache
@@ -461,103 +456,122 @@ def datapool_read(
             )
             return df, cache_file
 
+    # original column names for each protocol
+    cols_orig = {}
+    # column names after renaming for each protocol
+    cols = {}
+    # columns to keep
+    keep_cols = []
     for ds in protocols:
-
-        dir_protocol = os.path.join(base_dir, ds['protocol'])
-
-        # protocol's collecting df
-        df_protocol = None
-
+        protocol = ds['protocol']
         # original column names
-        cols_orig = [x[0] for x in ds['cols']]
+        cols_orig[protocol] = [x[0] for x in ds['cols']]
         # column names after renaming
-        cols = [x[1] if len(x) == 2 else x[0] for x in ds['cols']]
-
+        cols[protocol] = [x[1] if len(x) == 2 else x[0] for x in ds['cols']]
         # collect columns, that will be kept in the final dataset
-        keep_cols.extend(cols)
-
+        keep_cols.extend(cols[protocol])
         # columns to be loaded: columns specified for the file as well as columns, that will be used for joins
         # TODO: check duplicate columns?
-        cols_orig.extend(merge_on_col)
+        cols_orig[protocol].extend(merge_on_col)
 
-        for root, directories, filenames in os.walk(dir_protocol):
+    # regex matching directory of a day
+    REGEX_DIR_DAY = re.compile(r'^(?P<protocol>[^/]+)/(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})/(?P<features>w.+?-s.+?)\.tsv')
 
-            # *.tsv base dir filter
-            rematch = REGEX_DIR_DAY.match(root)
-            if not rematch:
+    df_main = None
+    # collecting df for each protocol
+    df_protocol = {}
+    for root, directories, filenames in os.walk(base_dir):
+        for f in filenames:
+            if not f.lower().endswith('.zip'):
+                # skip files that don't end with .zip
                 continue
+            zip_file_name = os.path.join(root, f)
+            # read zip
+            logging.info('reading zip: %s' % zip_file_name)
+            with zipfile.ZipFile(zip_file_name) as zip_file:
+                for member in zip_file.namelist():
+                    rematch = REGEX_DIR_DAY.match(member)
+                    if not rematch:
+                        # *.tsv filter
+                        continue
+                    datapool = str(rematch.group('features'))
+                    if datapool != ws:
+                        # window/slide filter
+                        continue
+                    protocol = str(rematch.group('protocol'))
+                    if protocol not in cols_orig.keys():
+                        # protocol filter
+                        continue
+                    year = int(rematch.group('year'))
+                    month = int(rematch.group('month'))
+                    day = int(rematch.group('day'))
 
-            for f in filenames:
+                    # exclusion filter
+                    dpt = datetime.datetime(year, month, day, tzinfo=pytz.UTC)
 
-                # windows/slide filter
-                if not f.startswith(ws):
-                    continue
+                    data_file = member
+                    if exclude(dpt, excluded) or not is_within_range(dpt, time_range):
+                        logging.info('skipping: %s' % data_file)
+                        continue
 
-                year = int(rematch.group('year'))
-                month = int(rematch.group('month'))
-                day = int(rematch.group('day'))
-
-                # exclusion filter
-                dpt = datetime.datetime(year, month, day, tzinfo=pytz.UTC)
-
-                data_file = os.path.join(root, f)
-                if exclude(dpt, excluded) or not is_within_range(dpt, time_range):
-                    logging.info('skipping: %s' % data_file)
-                    continue
-
-                # load one of the data files
-                logging.info('loading: %s' % data_file)
-                fp = open(data_file)
-                df = pd.read_csv(
-                    fp,
-                    usecols=cols_orig,
-                    header=0,
-                    sep='\t',
-                    skiprows=0,
-                    skipfooter=0,
-                    engine='python',
-                )
-                fp.close()
-
-                if cfg.fill_missing_rows_in_timeseries:
-                    # fill missing rows for the loaded day
-                    range_beg = '%d-%02d-%02d' % (year, month, day)
-                    range_end = str(expand_to_datetime(year, month, day) + relativedelta(days=+1))
-                    df = fill_missing_rows(
-                        df,
-                        range_beg=range_beg,
-                        range_end=range_end
+                    # load one of the data files
+                    logging.info('loading: %s' % data_file)
+                    fp = zip_file.open(data_file)
+                    df = pd.read_csv(
+                        io.TextIOWrapper(fp),
+                        usecols=cols_orig[protocol],
+                        header=0,
+                        sep='\t',
+                        skiprows=0,
+                        skipfooter=0,
+                        engine='python',
                     )
+                    fp.close()
 
-                if df_protocol is None:
-                    df_protocol = df
-                else:
-                    df_protocol = df_protocol.append(df)
+                    if cfg.fill_missing_rows_in_timeseries:
+                        # fill missing rows for the loaded day
+                        range_beg = '%d-%02d-%02d' % (year, month, day)
+                        range_end = str(expand_to_datetime(year, month, day) + relativedelta(days=+1))
+                        df = fill_missing_rows(
+                            df,
+                            range_beg=range_beg,
+                            range_end=range_end
+                        )
 
-        if df_protocol is None:
-            continue
+                    if protocol not in df_protocol.keys():
+                        df_protocol[protocol] = df
+                    else:
+                        df_protocol[protocol] = df_protocol[protocol].append(df)
 
+    for ds in protocols:
+        protocol = ds['protocol']
         # rename columns
         rename_rule = {x[0]: x[1] for x in ds['cols'] if len(x) == 2}
-        df_protocol = df_protocol.rename(index=str, columns=rename_rule)
-
+        df_protocol[protocol] = df_protocol[protocol].rename(index=str, columns=rename_rule)
         # convert units:
         # from B to kB, MB, GB use _kB, MB, GB
-        for col in df_protocol.columns:
+        for col in df_protocol[protocol].columns:
             if col.lower().endswith('_kb'):
-                df_protocol[col] = df_protocol[col].div(1024).astype(int)
+                df_protocol[protocol][col] = df_protocol[protocol][col].div(1024).astype(int)
             elif col.lower().endswith('_mb'):
-                df_protocol[col] = df_protocol[col].div(1048576).astype(int)
+                df_protocol[protocol][col] = df_protocol[protocol][col].div(1048576).astype(int)
             elif col.lower().endswith('_gb'):
-                df_protocol[col] = df_protocol[col].div(1073741824).astype(int)
+                df_protocol[protocol][col] = df_protocol[protocol][col].div(1073741824).astype(int)
 
+    for protocol in df_protocol.keys():
+        dbg_df(df_protocol[protocol], 'debug', 'df_%s' % protocol, print=False, save=cfg.MODS_DEBUG_MODE)
+        # sort series in case they were loaded in random order (depends on zip file naming and file system sorting)
+        df_protocol[protocol] = df_protocol[protocol].sort_values(by=cfg.series_sortby_column, ascending=True)
+        dbg_df(df_protocol[protocol], 'debug', 'df_%s-sorted' % protocol, print=False, save=cfg.MODS_DEBUG_MODE)
         if df_main is None:
-            df_main = df_protocol
+            df_main = df_protocol[protocol]
         else:
-            df_main = pd.merge(df_main, df_protocol, on=merge_on_col)
+            df_main = pd.merge(df_main, df_protocol[protocol], on=merge_on_col)
 
+    dbg_df(df_main, 'debug', 'df_main-all-columns', print=False, save=cfg.MODS_DEBUG_MODE)
     # select only specified columns
     df_main = df_main[keep_cols]
+    dbg_df(df_main, 'debug', 'df_main', print=False, save=cfg.MODS_DEBUG_MODE)
 
     # save dataset to cache
     if caching:

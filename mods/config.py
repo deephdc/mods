@@ -22,14 +22,12 @@ MODS configuration file
 @author: stefan dlugolinsky
 """
 
-import datetime
+MODS_DEBUG_MODE = False
+
 import fnmatch
 import logging
 import os
 import pathlib
-import subprocess
-from mods.mods_types import TimeRange
-
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
@@ -82,12 +80,11 @@ if 'APP_REMOTE_BASE_DIR' in os.environ:
 app_data_remote        = os.path.join(REMOTE_BASE_DIR, 'data')
 app_models_remote      = os.path.join(REMOTE_BASE_DIR, 'models')
 app_data               = os.path.join(IN_OUT_BASE_DIR, 'data')
-app_data_features      = os.path.join(app_data, 'tsv')
-app_data_test          = os.path.join(app_data, 'test')
+app_data_features      = os.path.join(app_data, 'features')
 app_models             = os.path.join(IN_OUT_BASE_DIR, 'models')
 app_checkpoints        = os.path.join(IN_OUT_BASE_DIR, 'checkpoints')
 app_cache              = os.path.join(IN_OUT_BASE_DIR, 'cache')
-app_data_pool_cache    = os.path.join(app_cache, 'datapool')
+app_data_pool_cache    = os.path.join(app_cache, 'features')
 app_logs               = os.path.join(IN_OUT_BASE_DIR, 'logs')
 app_tensorboard_logdir = os.path.join(app_logs, 'tensorboard')
 app_tensorboard_port   = os.getenv('monitorPORT', 6006)
@@ -98,7 +95,6 @@ logging.info('app_data_remote=%s' % app_data_remote)
 logging.info('app_models_remote=%s' % app_models_remote)
 logging.info('app_data=%s' % app_data)
 logging.info('app_data_features=%s' % app_data_features)
-logging.info('app_data_test=%s' % app_data_test)
 logging.info('app_models=%s' % app_models)
 logging.info('app_checkpoints=%s' % app_checkpoints)
 logging.info('app_cache=%s' % app_cache)
@@ -121,6 +117,7 @@ logging.info('%s %s' % (os.path.isdir(app_tensorboard_logdir), app_tensorboard_l
 # Generic settings
 time_range_inclusive_beg = True  # True: <beg; False: (beg
 time_range_inclusive_end = True  # True: end>; False: end)
+series_sortby_column = 'window_start'
 
 # Datapool defaults
 app_data_pool = app_data_features + 'w01h-s10m/'        # 'w10m-s01m/'
@@ -187,7 +184,7 @@ train_ws = ws_choice
 data_predict = 'sample-w1h-s10m.tsv'        # can be removed later?
 
 # test defaults
-test_data = 'data_test.tsv'                     # can be removed later? TODO: we first need to support datapool in the DEEPaaS web interface (@stevo)
+test_data = 'data_test.tsv'                     # can be removed later? TODO: we first need to support features in the DEEPaaS web interface (@stevo)
 test_data_select_query = data_select_query      # same as for train - differs only in the time range
 # test_time_range = '<2019-05-01,2019-05-06)'   # paper plot - 5 days
 test_time_range = '<2019-05-01,2019-06-01)'     # 1 month

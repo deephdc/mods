@@ -12,6 +12,7 @@ Created on Sat Oct 15 10:27:15 2019
 import unittest
 
 import mods.models.api_v2 as mods_model
+import os
 from mods import config as cfg
 from mods import utils as utl
 from mods.models.api_v2 import TrainArgsSchema
@@ -42,7 +43,7 @@ class TestModelMethods(unittest.TestCase):
             'steps_ahead': '1',
             'batch_size': '1'
         })
-        self.app_data_features = cfg.BASE_DIR + '/mods/tests/inputs/datapool/'
+        self.app_data_features = os.path.join(cfg.BASE_DIR, 'mods', 'tests', 'inputs', 'features')
 
     def test_model_metadata_type(self):
         """
