@@ -25,7 +25,9 @@ Train models with first order differential to monitor changes
 import os
 
 import logging
+import datetime
 import pkg_resources
+import re
 from shutil import copyfile
 from keras import backend
 from marshmallow import Schema, INCLUDE
@@ -309,6 +311,11 @@ def train(**kwargs):
 
     models_dir = cfg.app_models
     model_name = train_args['model_name']
+
+    if cfg.model_name_append_timestamp:
+        ts = datetime.datetime.timestamp(datetime.datetime.now())
+        model_name = re.sub(r'(?i)(\.zip)?$', r'-%s\1' % str(ts), model_name)
+        logging.info('renamed model to %s' % model_name)
 
     # support full paths for command line calls
     full_paths = train_args['full_paths'] if 'full_paths' in train_args else False

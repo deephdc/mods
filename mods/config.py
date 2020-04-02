@@ -89,8 +89,6 @@ app_logs               = os.path.join(IN_OUT_BASE_DIR, 'logs')
 app_tensorboard_logdir = os.path.join(app_logs, 'tensorboard')
 app_tensorboard_port   = os.getenv('monitorPORT', 6006)
 
-launch_tensorboard = True
-
 logging.info('app_data_remote=%s' % app_data_remote)
 logging.info('app_models_remote=%s' % app_models_remote)
 logging.info('app_data=%s' % app_data)
@@ -118,6 +116,8 @@ logging.info('%s %s' % (os.path.isdir(app_tensorboard_logdir), app_tensorboard_l
 time_range_inclusive_beg = True  # True: <beg; False: (beg
 time_range_inclusive_end = True  # True: end>; False: end)
 series_sortby_column = 'window_start'
+launch_tensorboard = True
+model_name_append_timestamp = True
 
 # Datapool defaults
 app_data_pool = app_data_features + 'w01h-s10m/'        # 'w10m-s01m/'
