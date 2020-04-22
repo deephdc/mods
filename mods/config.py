@@ -77,7 +77,7 @@ if 'APP_REMOTE_BASE_DIR' in os.environ:
         logging.info(msg)
 
 EXPERIMENT_NAMESPACE = '_default_'
-if 'APP_EXPERIMENT_NAME' in os.environ:
+if 'APP_EXPERIMENT_NAMESPACE' in os.environ:
     EXPERIMENT_NAMESPACE = os.environ['APP_EXPERIMENT_NAMESPACE']
     logging.info('EXPERIMENT_NAMESPACE=%s' % EXPERIMENT_NAMESPACE)
 
