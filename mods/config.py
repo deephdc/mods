@@ -76,16 +76,21 @@ if 'APP_REMOTE_BASE_DIR' in os.environ:
         "Using \"IN_OUT_BASE_DIR={}\" instead.".format(IN_OUT_BASE_DIR)
         logging.info(msg)
 
+EXPERIMENT_NAMESPACE = '_default_'
+if 'APP_EXPERIMENT_NAME' in os.environ:
+    EXPERIMENT_NAMESPACE = os.environ['APP_EXPERIMENT_NAMESPACE']
+    logging.info('EXPERIMENT_NAMESPACE=%s' % EXPERIMENT_NAMESPACE)
+
 # Application dirs
 app_data_remote        = os.path.join(REMOTE_BASE_DIR, 'data')
-app_models_remote      = os.path.join(REMOTE_BASE_DIR, 'models')
+app_models_remote      = os.path.join(REMOTE_BASE_DIR, 'models', EXPERIMENT_NAMESPACE)
 app_data               = os.path.join(IN_OUT_BASE_DIR, 'data')
 app_data_features      = os.path.join(app_data, 'features')
-app_models             = os.path.join(IN_OUT_BASE_DIR, 'models')
-app_checkpoints        = os.path.join(IN_OUT_BASE_DIR, 'checkpoints')
-app_cache              = os.path.join(IN_OUT_BASE_DIR, 'cache')
+app_models             = os.path.join(IN_OUT_BASE_DIR, 'models', EXPERIMENT_NAMESPACE)
+app_checkpoints        = os.path.join(IN_OUT_BASE_DIR, 'checkpoints', EXPERIMENT_NAMESPACE)
+app_cache              = os.path.join(IN_OUT_BASE_DIR, 'cache', EXPERIMENT_NAMESPACE)
 app_data_pool_cache    = os.path.join(app_cache, 'features')
-app_logs               = os.path.join(IN_OUT_BASE_DIR, 'logs')
+app_logs               = os.path.join(IN_OUT_BASE_DIR, 'logs', EXPERIMENT_NAMESPACE)
 app_tensorboard_logdir = os.path.join(app_logs, 'tensorboard')
 app_tensorboard_port   = os.getenv('monitorPORT', 6006)
 
@@ -102,7 +107,7 @@ logging.info('app_tensorboard_logdir=%s' % app_tensorboard_logdir)
 logging.info('app_tensorboard_port=%s' % app_tensorboard_port)
 
 #pathlib.Path(app_data).mkdir(parents=True, exist_ok=True)
-#pathlib.Path(app_models).mkdir(parents=True, exist_ok=True)
+pathlib.Path(app_models).mkdir(parents=True, exist_ok=True)
 pathlib.Path(app_checkpoints).mkdir(parents=True, exist_ok=True)
 logging.info('%s %s' % (os.path.isdir(app_checkpoints), app_checkpoints))
 pathlib.Path(app_cache).mkdir(parents=True, exist_ok=True)
@@ -117,6 +122,8 @@ time_range_inclusive_beg = True  # True: <beg; False: (beg
 time_range_inclusive_end = True  # True: end>; False: end)
 series_sortby_column = 'window_start'
 launch_tensorboard = True
+
+model_name = 'model-default'
 model_name_append_timestamp = True
 
 # Datapool defaults
@@ -161,7 +168,6 @@ num_epochs = 50                             # number of training epochs
 epochs_patience = 10                        # early stopping
 batch_size = 1                              # faster training --> to be tested later
 batch_size_test = 1                         # don't change
-
 stacked_blocks = 3                          # 1 = no stack
 batch_normalization = False                 # no significant effect when used with ADAM
 dropout_rate = 1.0                          # range <0.5, 0.8>, 0.0=no outputs, 1.0=no dropout
@@ -180,11 +186,7 @@ train_time_range_excluded = []
 train_ws_choices = ws_choices
 train_ws = ws_choice
 
-# prediction defaults
-data_predict = 'sample-w1h-s10m.tsv'        # can be removed later?
-
 # test defaults
-test_data = 'data_test.tsv'                     # can be removed later? TODO: we first need to support features in the DEEPaaS web interface (@stevo)
 test_data_select_query = data_select_query      # same as for train - differs only in the time range
 # test_time_range = '<2019-05-01,2019-05-06)'   # paper plot - 5 days
 test_time_range = '<2019-05-01,2019-06-01)'     # 1 month
@@ -202,7 +204,6 @@ interpolate = False
 def list_models():
     return list_dir(app_models, '*.zip')
 
-model_name = 'model-default.zip'
 fill_missing_rows_in_timeseries = True                        # fills missing rows in time series data
 
 # Evaluation metrics on real values
