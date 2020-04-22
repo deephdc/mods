@@ -547,7 +547,8 @@ def datapool_read(
         protocol = ds['protocol']
         # rename columns
         rename_rule = {x[0]: x[1] for x in ds['cols'] if len(x) == 2}
-        df_protocol[protocol] = df_protocol[protocol].rename(index=str, columns=rename_rule)
+        if len(rename_rule) > 0:
+            df_protocol[protocol] = df_protocol[protocol].rename(index=str, columns=rename_rule)
         # convert units:
         # from B to kB, MB, GB use _kB, MB, GB
         for col in df_protocol[protocol].columns:
