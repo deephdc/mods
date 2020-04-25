@@ -55,6 +55,7 @@ from tcn import TCN
 import mods.config as cfg
 import mods.utils as utl
 
+
 def launch_tensorboard(port, logdir):
     subprocess.call(['tensorboard',
                      '--logdir', '{}'.format(logdir),
@@ -62,6 +63,7 @@ def launch_tensorboard(port, logdir):
                      '--host', '0.0.0.0',
                      '--reload_interval', '300',
                      '--reload_multifile', 'true'])
+
 
 # TODO: TF2 problem: https://github.com/keras-team/keras/issues/13353
 class mods_model:
@@ -696,15 +698,19 @@ class mods_model:
             self.predict(self.sample_data)
         logging.info('Model initialized')
 
+    # for steps_ahead=1:
     # First order differential for numpy array      y' = d(y)/d(t) = f(y,t)
     # be carefull                                   len(dt) == len(data)-1
     # e.g., [5,2,9,1] --> [2-5,9-2,1-9] == [-3,7,-8]
-    def delta(self, df):
+    #
+    # for steps_ahead=2:
+    # [5,2,9,1] --> [9-5,1-2] == [4,-1]
+    def delta(self, df, steps_ahead=1):
         if isinstance(df, pd.DataFrame):
             # pandas data frame
-            return df.diff(periods=1, axis=0)[1:]
+            return df.diff(periods=steps_ahead, axis=0)[steps_ahead:]
         # numpy ndarray
-        return df[1:] - df[:-1]
+        return df[steps_ahead:] - df[:-steps_ahead]
 
     def transform(self, df):
         if self.is_delta():
@@ -715,8 +721,7 @@ class mods_model:
 
     def inverse_transform(self, original, pred_denorm):
         if self.is_delta():
-            beg = self.get_sequence_len() - self.get_steps_ahead() + 1
-            y = original[beg:]
+            y = original[-len(pred_denorm):]
             utl.dbg_df(y, self.name, 'y.tsv', print=cfg.MODS_DEBUG_MODE, save=cfg.MODS_DEBUG_MODE)
             d = pred_denorm
             utl.dbg_df(d, self.name, 'd.tsv', print=cfg.MODS_DEBUG_MODE, save=cfg.MODS_DEBUG_MODE)
@@ -737,11 +742,22 @@ class mods_model:
         utl.dbg_scaler(scaler, 'inverse_normalize', debug=cfg.MODS_DEBUG_MODE)
         return scaler.inverse_transform(df)
 
+    def append_nan(self, df, n):
+        if isinstance(df, pd.DataFrame):
+            for i in range(n):
+                df = df.append(pd.Series(), ignore_index=True)
+        else:
+            dummy = [np.nan] * self.get_multivariate()
+            for i in range(n):
+                df = np.append(df, [dummy], axis=0)
+        return df
+
     def get_tsg(self, df,
                 steps_ahead=cfg.steps_ahead,
                 batch_size=cfg.batch_size
                 ):
-
+        if isinstance(df, pd.DataFrame):
+            df = df.to_numpy()
         x = y = df
         length = self.get_sequence_len()
         if steps_ahead > 1:
@@ -774,9 +790,7 @@ class mods_model:
         # append #steps_ahead dummy rows at the end of the norm
         # np.ndarray in order to tsg generate last sample
         # for prediction of the future state
-        dummy = [np.nan] * self.get_multivariate()
-        for i in range(self.get_steps_ahead()):
-            norm = np.append(norm, [dummy], axis=0)
+        norm = self.append_nan(norm, self.get_steps_ahead())
         utl.dbg_df(norm, self.name, 'normalized+nan', print=cfg.MODS_DEBUG_MODE, save=cfg.MODS_DEBUG_MODE)
 
         tsg = self.get_tsg(norm, steps_ahead=self.get_steps_ahead(), batch_size=self.get_batch_size())

@@ -40,7 +40,7 @@ class TestModelMethods(unittest.TestCase):
             'num_epochs': '1',
             'epochs_patience': '10',
             'blocks': '12',
-            'steps_ahead': '1',
+            'steps_ahead': '3',
             'batch_size': '1'
         })
         self.app_data_features = os.path.join(cfg.BASE_DIR, 'mods', 'tests', 'inputs', 'features')
