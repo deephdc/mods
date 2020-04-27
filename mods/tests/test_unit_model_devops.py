@@ -15,8 +15,9 @@ from mods import config as cfg
 
 cfg.sequence_len = 4
 cfg.steps_ahead = 3
-cfg.model_delta = True
+cfg.model_delta = False
 cfg.launch_tensorboard = False
+cfg.MODS_DEBUG_MODE = True
 
 import mods.models.mods_model as MODS
 
@@ -37,28 +38,6 @@ class TestModelMethods(unittest.TestCase):
             }
         )
         self.model.set_multivariate(len(self.df.keys()))
-
-    def test_transform_delta_df_false(self):
-        m = self.model
-        m.set_model_delta(False)
-        df = self.df
-        df_t = m.transform(df)
-        df_t_true = df.copy()
-        self.assertEqual(True, df_t.equals(df_t_true))
-
-    def test_transform_delta_df_true(self):
-        m = self.model
-        m.set_model_delta(True)
-        df = self.df
-        df_t = m.transform(df)
-        df_t_true = pd.DataFrame(
-            {
-                'a': [np.NaN, 2.0, -1.0, 5.0, -2.0, -1.0, 4.0, -4.0, 1.0, -2.0, 3.0, -5.0, 7.0, -4.0, 1.0, -2.0, 6.0],
-                'b': [np.NaN, -1.0, 5.0, -2.0, -1.0, 4.0, -4.0, 1.0, -2.0, 3.0, -5.0, 7.0, -4.0, 1.0, -2.0, 6.0, -8.0]
-            }
-        )
-        df_t_true = df_t_true.reindex_like(df_t)
-        self.assertEqual(True, df_t.equals(df_t_true))
 
     def test_append_nan_df(self):
         m = self.model
@@ -100,9 +79,9 @@ class TestModelMethods(unittest.TestCase):
         #     }
         # )
         m.train(df)
-        x = df[:-m.get_steps_ahead()]
-        y_true = df[-m.get_steps_ahead():]
-        y_pred = m.predict(x)
+        x_test = df[:-m.get_steps_ahead()]
+        y_pred = m.predict(x_test)
+        y_true = df[-len(y_pred):]
         print(y_pred)
 
 

@@ -362,11 +362,9 @@ def train(**kwargs):
 
     # evaluate the model
     x_test = df_test[:-model.get_steps_ahead()]
-    y_true = df_test[model.get_sequence_len() + model.get_steps_ahead():] \
-        if model.is_delta() \
-        else \
-        df_test[model.get_sequence_len() + model.get_steps_ahead() - 1:]
     y_pred = model.predict(x_test)
+    y_true = df_test[-len(y_pred):] if model.is_delta() \
+        else df_test[-len(y_pred) - 1:]
     metrics = utl.compute_metrics(
         y_true,
         y_pred,

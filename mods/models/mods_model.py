@@ -705,7 +705,8 @@ class mods_model:
     #
     # for steps_ahead=2:
     # [5,2,9,1] --> [9-5,1-2] == [4,-1]
-    def delta(self, df, steps_ahead=1):
+    def delta(self, df):
+        steps_ahead = self.get_steps_ahead()
         if isinstance(df, pd.DataFrame):
             # pandas data frame
             return df.diff(periods=steps_ahead, axis=0)[steps_ahead:]
