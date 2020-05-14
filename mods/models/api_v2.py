@@ -475,6 +475,18 @@ def predict(**kwargs):
 
     predictions = model.predict(df_data)
 
+    # TODO: evaluate the model if enough data is provided
+    # x_test = df_data[:-model.get_steps_ahead()]
+    # y_pred = model.predict(x_test)
+    # y_true = df_data[-len(y_pred):] if model.is_delta() \
+    #     else df_data[-len(y_pred) - 1:]
+    # metrics = utl.compute_metrics(
+    #     y_true,
+    #     y_pred,
+    #     model,
+    # )
+    metrics = model.get_metrics()
+
     message = {
         'dir_models': models_dir,
         'model_name': model_name,
@@ -485,11 +497,7 @@ def predict(**kwargs):
         'cached_df': cached_file_train,
         'steps_ahead': model.get_steps_ahead(),
         'batch_size': model.get_batch_size(),
-        'evaluation': utl.compute_metrics(
-            df_data[model.get_sequence_len():-model.get_steps_ahead()],
-            predictions[:-model.get_steps_ahead()],
-            model,
-        ),
+        'evaluation': model.get_metrics(),
         'predictions': predictions.tolist()
     }
 
