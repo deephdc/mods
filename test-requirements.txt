@@ -12,7 +12,7 @@ testtools>=1.4.0
 pytest
 pytest-cov
 
-tensorflow==2.0.1
+tensorflow==2.4.0
 #tf-nightly
 pydot-ng
 flaat
