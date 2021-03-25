@@ -6,7 +6,7 @@ python-dotenv==0.5.1
 pandas==0.25.3
 h5py==2.10.0
 python-dateutil==2.8.0
-PyYAML==5.1.2
+PyYAML==5.4
 keras==2.3.1
 keras-self-attention==0.42.0
 keras-tcn==3.0.1
