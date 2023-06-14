@@ -437,6 +437,12 @@ def datapool_read(
 ):
     protocols, merge_on_col = parse_data_specs(data_specs_str)
 
+    if isinstance(time_range, str):
+        logging.info('converting time_range ''%s'' to TimeRange' % time_range)
+        time_range = TimeRange.from_str(time_range)
+        logging.info('time_range converted to %s' % str(time_range))
+        
+
     # read dataset from cache
     cache_dir = None
     cache_key = None
@@ -541,12 +547,16 @@ def datapool_read(
                     if protocol not in df_protocol.keys():
                         df_protocol[protocol] = df
                     else:
-                        df_protocol[protocol] = df_protocol[protocol].append(df)
+                        df_protocol[protocol] = pd.concat([df_protocol[protocol], df], axis=0)
+                    logging.info('df_protocol[protocol].shape: %s' % str(df_protocol[protocol].shape))
 
     for ds in protocols:
         protocol = ds['protocol']
+        logging.info('protocol: %s' % protocol)
         # rename columns
         rename_rule = {x[0]: x[1] for x in ds['cols'] if len(x) == 2}
+        logging.info('rename_rule: %s' % str(rename_rule))
+        logging.info('df_protocol.keys(): %s' % str(df_protocol.keys()))
         df_protocol[protocol] = df_protocol[protocol].rename(index=str, columns=rename_rule)
         # convert units:
         # from B to kB, MB, GB use _kB, MB, GB
@@ -572,6 +582,9 @@ def datapool_read(
     # select only specified columns
     df_main = df_main[keep_cols]
     dbg_df(df_main, 'debug', 'df_main', print=False, save=cfg.MODS_DEBUG_MODE)
+
+    logging.info('df_main.shape: %s' % str(df_main.shape))
+    logging.info('df_main.columns: %s' % str(df_main.columns))
 
     # save dataset to cache
     if caching:
