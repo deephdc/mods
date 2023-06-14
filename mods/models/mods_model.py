@@ -34,19 +34,19 @@ import joblib
 import keras
 import numpy as np
 import pandas as pd
-from keras.callbacks import Callback, EarlyStopping, ModelCheckpoint, TensorBoard
-from keras.layers import Bidirectional
-from keras.layers import Dense
-from keras.layers import Flatten
-from keras.layers import Input
-from keras.layers import RepeatVector
-from keras.layers.convolutional import Conv1D
-from keras.layers.convolutional import MaxPooling1D
-from keras.layers.recurrent import GRU
-from keras.layers.recurrent import LSTM
-from keras.models import Model
-from keras.optimizers import Adam
-from keras.preprocessing.sequence import TimeseriesGenerator
+from tensorflow.keras.callbacks import Callback, EarlyStopping, ModelCheckpoint, TensorBoard
+from tensorflow.keras.layers import Bidirectional
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Flatten
+from tensorflow.keras.layers import Input
+from tensorflow.keras.layers import RepeatVector
+from tensorflow.keras.layers import Conv1D
+from tensorflow.keras.layers import MaxPooling1D
+from tensorflow.keras.layers import GRU
+from tensorflow.keras.layers import LSTM
+from tensorflow.keras.models import Model
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
 from keras_self_attention import SeqSelfAttention
 from multiprocessing import Process
 from sklearn.preprocessing import MinMaxScaler

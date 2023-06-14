@@ -85,7 +85,7 @@ if 'APP_EXPERIMENT_NAMESPACE' in os.environ:
 app_data_remote        = os.path.join(REMOTE_BASE_DIR, 'data')
 app_models_remote      = os.path.join(REMOTE_BASE_DIR, 'models', EXPERIMENT_NAMESPACE)
 app_data               = os.path.join(IN_OUT_BASE_DIR, 'data')
-app_data_features      = os.path.join(app_data, 'features')
+app_data_features      = os.path.join(app_data, 'datapools', 'mods')
 app_models             = os.path.join(IN_OUT_BASE_DIR, 'models', EXPERIMENT_NAMESPACE)
 app_checkpoints        = os.path.join(IN_OUT_BASE_DIR, 'checkpoints', EXPERIMENT_NAMESPACE)
 app_cache              = os.path.join(IN_OUT_BASE_DIR, 'cache', EXPERIMENT_NAMESPACE)
